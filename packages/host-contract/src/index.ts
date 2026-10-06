@@ -61,3 +61,59 @@ export function entityId<B extends string>(prefix: string, _brand: B) {
     .regex(new RegExp(`^${prefix}-(${SEED_SUFFIX}|${UUID_SUFFIX})$`))
     .brand<B>();
 }
+
+/** A user the shell can act as. Auth isn't scored, so this is only a name to show and stamp. */
+export const UserId = entityId('user', 'UserId');
+export type UserId = z.infer<typeof UserId>;
+
+export const ActiveUser = z.object({ id: UserId, name: z.string().min(1) });
+export type ActiveUser = z.infer<typeof ActiveUser>;
+
+/** A display currency. Rates are stored in EUR, so `perEur` is units of this currency per 1 EUR (D11). */
+export const Currency = z.object({ code: CurrencyCode, perEur: z.number().positive() });
+export type Currency = z.infer<typeof Currency>;
+
+/**
+ * The URL path an app's router is mounted under: `''` (the origin root) or segments like
+ * `/people`, never with a trailing slash. It is what React Router takes as `basename` (D22).
+ */
+export const BasePath = z
+  .string()
+  .regex(/^(\/[A-Za-z0-9._~-]+)*$/)
+  .brand<'BasePath'>();
+export type BasePath = z.infer<typeof BasePath>;
+
+/**
+ * Everything the shell pushes into a remote (D10, D11, D22). It is plain data plus one function, and
+ * this package has no React dependency: the shell types a loaded `./App` as
+ * `ComponentType<RemoteAppProps>` and each remote types its own `App` the same way.
+ */
+export interface HostContext {
+  readonly currency: Currency;
+  readonly activeUser: ActiveUser;
+  /** The path the remote's router is mounted under. Fixed for the life of a mount. */
+  readonly basePath: BasePath;
+  /**
+   * Navigates to an absolute URL path anywhere in the host. A remote's own navigation stays under
+   * `basePath` and goes through its router; anything outside it goes through here. Hosted, the shell
+   * follows a navigation with a `popstate` event so a mounted remote's router re-reads the URL.
+   * Standalone, it opens the other app's standalone URL.
+   */
+  readonly navigate: (to: string) => void;
+}
+
+/** The props of a remote's exposed `./App` component. */
+export interface RemoteAppProps {
+  readonly ctx: HostContext;
+}
+
+/** What `mount` returns: push a new context in without remounting, or tear the app down. */
+export interface RemoteHandle {
+  update(ctx: HostContext): void;
+  unmount(): void;
+}
+
+/** The shape of a remote's exposed `./mount` (D10): the framework-agnostic seam. */
+export interface RemoteModule {
+  mount(el: HTMLElement, ctx: HostContext): RemoteHandle;
+}

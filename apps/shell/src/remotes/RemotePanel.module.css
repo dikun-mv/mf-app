@@ -1,0 +1,20 @@
+.panel {
+  min-width: 0;
+}
+
+.loading {
+  display: flex;
+  gap: var(--bl-space-2);
+  align-items: center;
+}
+
+.failedTitle {
+  margin: 0;
+  font-weight: 600;
+}
+
+.failedDetail {
+  margin: var(--bl-space-1) 0 var(--bl-space-2);
+  color: var(--bl-color-text-muted);
+  overflow-wrap: anywhere;
+}

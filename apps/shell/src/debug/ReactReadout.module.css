@@ -1,0 +1,22 @@
+.readout {
+  padding: var(--bl-space-2) var(--bl-space-3);
+  border: 1px dashed var(--bl-color-border);
+  border-radius: var(--bl-radius);
+  color: var(--bl-color-text-muted);
+  font-size: 0.875rem;
+}
+
+.heading {
+  margin: 0 0 var(--bl-space-1);
+  font-size: 0.875rem;
+}
+
+.list {
+  margin: 0;
+  padding-left: var(--bl-space-3);
+}
+
+.verdict {
+  margin: var(--bl-space-1) 0 0;
+  font-weight: 600;
+}

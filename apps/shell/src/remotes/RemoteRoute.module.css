@@ -1,0 +1,11 @@
+.container {
+  padding: var(--bl-space-3);
+  border: 1px solid var(--bl-color-border);
+  border-radius: var(--bl-radius);
+}
+
+/* The shell re-theming a panel: remotes read these through their own tokens (ui/tokens.css). */
+.contrast {
+  --bl-theme-color-primary: #7a1fa2;
+  --bl-theme-color-border: #7a1fa2;
+}

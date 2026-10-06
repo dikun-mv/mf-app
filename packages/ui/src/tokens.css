@@ -1,0 +1,28 @@
+/*
+ * Design tokens (D13). They are scoped to the attribute every app's root element sets, so a remote
+ * carries its own tokens standalone and hosted, and nothing leaks to the rest of the page.
+ *
+ * A token is `var(--bl-theme-<name>, <default>)`. Because the root of a hosted remote sits inside the
+ * shell's panel container, the shell re-themes a panel by setting `--bl-theme-<name>` on that container:
+ * the custom property inherits down and is read here, while each remote keeps its own defaults.
+ * (Setting `--bl-<name>` on the container would have no effect, because the remote's root declares it.)
+ */
+[data-baseline-root] {
+  --bl-color-primary: var(--bl-theme-color-primary, #2456d6);
+  --bl-color-primary-contrast: var(--bl-theme-color-primary-contrast, #ffffff);
+  --bl-color-danger: var(--bl-theme-color-danger, #b3261e);
+  --bl-color-warning: var(--bl-theme-color-warning, #8a5a00);
+  --bl-color-surface: var(--bl-theme-color-surface, #ffffff);
+  --bl-color-surface-muted: var(--bl-theme-color-surface-muted, #f3f4f6);
+  --bl-color-border: var(--bl-theme-color-border, #c9ccd3);
+  --bl-color-text: var(--bl-theme-color-text, #1b1d22);
+  --bl-color-text-muted: var(--bl-theme-color-text-muted, #5b6070);
+  --bl-space-1: var(--bl-theme-space-1, 0.25rem);
+  --bl-space-2: var(--bl-theme-space-2, 0.5rem);
+  --bl-space-3: var(--bl-theme-space-3, 1rem);
+  --bl-radius: var(--bl-theme-radius, 0.375rem);
+  --bl-font: var(--bl-theme-font, system-ui, -apple-system, 'Segoe UI', sans-serif);
+
+  font-family: var(--bl-font);
+  color: var(--bl-color-text);
+}

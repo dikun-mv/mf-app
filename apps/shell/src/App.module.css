@@ -1,0 +1,5 @@
+.root {
+  box-sizing: border-box;
+  min-height: 100vh;
+  background: var(--bl-color-surface);
+}
