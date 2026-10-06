@@ -1,6 +1,6 @@
 import { describe, expect, it } from '@rstest/core';
 import { expectTypeOf } from 'expect-type';
-import { CurrencyCode, IsoDate, IsoDateTime, Month, entityId } from './index';
+import { ActiveUser, BasePath, Currency, CurrencyCode, IsoDate, IsoDateTime, Month, entityId } from './index';
 
 describe('IsoDate', () => {
   it('accepts real calendar days', () => {
@@ -84,5 +84,28 @@ describe('branding', () => {
     // @ts-expect-error a plain string is not an IsoDate
     const bad: IsoDate = '2026-03-12';
     expect(bad).toBe('2026-03-12');
+  });
+});
+
+describe('host primitives', () => {
+  it('accepts the demo users and currencies', () => {
+    expect(ActiveUser.safeParse({ id: 'user-1', name: 'Demo Planner' }).success).toBe(true);
+    expect(Currency.safeParse({ code: 'USD', perEur: 1.08 }).success).toBe(true);
+  });
+
+  it.each([
+    { code: 'usd', perEur: 1 },
+    { code: 'USD', perEur: 0 },
+    { code: 'USD', perEur: Infinity },
+  ])('rejects the currency %j', (value) => {
+    expect(Currency.safeParse(value).success).toBe(false);
+  });
+
+  it.each(['', '/people', '/remotes/people'])('accepts the base path %j', (value) => {
+    expect(BasePath.safeParse(value).success).toBe(true);
+  });
+
+  it.each(['/', '/people/', 'people', '/a b'])('rejects the base path %j', (value) => {
+    expect(BasePath.safeParse(value).success).toBe(false);
   });
 });
