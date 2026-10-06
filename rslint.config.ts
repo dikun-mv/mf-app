@@ -35,5 +35,13 @@ export default defineConfig([
 
   { files: ['**/*.tsx'], ...jsxA11yPlugin.configs.recommended },
 
-  { files: ['**/*.test.{ts,tsx}'], ...rstestPlugin.configs.recommended },
+  {
+    files: ['**/*.test.{ts,tsx}'],
+    ...rstestPlugin.configs.recommended,
+    rules: {
+      ...rstestPlugin.configs.recommended.rules,
+      // Property tests assert inside fast-check, and shared helpers wrap `expect`.
+      'rstest/expect-expect': ['warn', { assertFunctionNames: ['expect', 'expect*', 'fc.assert'] }],
+    },
+  },
 ]);

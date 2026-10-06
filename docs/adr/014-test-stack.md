@@ -39,6 +39,10 @@ Two workarounds are needed:
 
 2. **Coverage `include`.** Keep it to `*.ts`/`*.tsx`. A glob that also matches `*.module.css` prints a harmless "can not generate coverage" warning per CSS file.
 
+## Phase 1 additions
+
+`pnpm test:coverage` runs the istanbul provider over `packages/*/src`. Property tests read `FC_RUNS` for the number of runs (default 300 to 400), so `FC_RUNS=5000 pnpm test` runs them much harder.
+
 ## Phase 0 layout
 
-Projects `domain`, `services` and `tooling` (the dependency-rule fixtures in `infra/`). The jsdom `components` project is added with T2.3a.
+Projects `domain`, `services` and `tooling` (the dependency-rule fixtures in `.dependency-cruiser.test.ts`). The jsdom `components` project is added with T2.3a.

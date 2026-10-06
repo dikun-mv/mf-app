@@ -5,6 +5,7 @@ packages:
 
 # Versions every package must share (D21). Packages reference them as `catalog:`.
 catalog:
+  '@date-fns/utc': ^2.1.1
   date-fns: ^4.4.0
   react: ^18.3.1
   react-dom: ^18.3.1
