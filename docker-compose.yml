@@ -1,0 +1,62 @@
+# The whole suite behind one gateway: `docker compose up`, then http://localhost:8080.
+# Design notes and the break methods are in docs/adr/031-infra-and-break-methods.md.
+name: baseline
+
+services:
+  # The only published port. Everything else is reachable only through it.
+  gateway:
+    image: nginx:1.29-alpine
+    ports:
+      - '8080:80'
+    volumes:
+      - ./infra/nginx/gateway.conf:/etc/nginx/conf.d/default.conf:ro
+    # No depends_on on purpose: the gateway resolves upstreams per request, so it
+    # starts and serves the rest when any one of them is down (T2.6).
+    healthcheck:
+      test: ['CMD', 'wget', '-qO', '/dev/null', 'http://127.0.0.1/healthz']
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  shell:
+    build:
+      context: .
+      dockerfile: infra/docker/shell.Dockerfile
+    # Read by the entrypoint, which writes /config.json. Unset means the
+    # built-in default; set them in the shell or in a .env file.
+    environment:
+      PEOPLE_REMOTE_URL:
+      DELIVERY_REMOTE_URL:
+      FX_TABLE:
+      DEFAULT_CURRENCY:
+      USERS:
+    healthcheck:
+      test: ['CMD', 'wget', '-qO', '/dev/null', 'http://127.0.0.1/config.json']
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  people:
+    build:
+      context: .
+      dockerfile: infra/docker/people.Dockerfile
+    environment:
+      # Empty means "keep the <base href> from the build".
+      BASE_PATH: ${PEOPLE_BASE_PATH:-}
+    healthcheck:
+      test: ['CMD', 'wget', '-qO', '/dev/null', 'http://127.0.0.1/remoteEntry.js']
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  delivery:
+    build:
+      context: .
+      dockerfile: infra/docker/delivery.Dockerfile
+    environment:
+      BASE_PATH: ${DELIVERY_BASE_PATH:-}
+    healthcheck:
+      test: ['CMD', 'wget', '-qO', '/dev/null', 'http://127.0.0.1/remoteEntry.js']
+      interval: 10s
+      timeout: 3s
+      retries: 3
