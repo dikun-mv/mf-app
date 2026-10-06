@@ -1,0 +1,22 @@
+{
+  "name": "@baseline/delivery-contract",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@baseline/host-contract": "workspace:^",
+    "@baseline/people-contract": "workspace:^"
+  },
+  "peerDependencies": {
+    "zod": "catalog:"
+  },
+  "devDependencies": {
+    "zod": "catalog:"
+  }
+}
