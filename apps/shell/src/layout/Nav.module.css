@@ -1,0 +1,24 @@
+.nav {
+  display: flex;
+  gap: var(--bl-space-2);
+}
+
+.link {
+  padding: var(--bl-space-1) var(--bl-space-3);
+  border-radius: var(--bl-radius);
+  color: var(--bl-color-text);
+  text-decoration: none;
+}
+
+.link:hover {
+  background: var(--bl-color-surface-muted);
+}
+
+.active {
+  background: var(--bl-color-primary);
+  color: var(--bl-color-primary-contrast);
+}
+
+.active:hover {
+  background: var(--bl-color-primary);
+}
