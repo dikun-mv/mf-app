@@ -13,3 +13,7 @@ Top-down largest remainder (about 40 lines). In a stress test (+-10% edits, 20 r
 ## Why
 
 The only option that meets brief section 3.7 everywhere: 0 violations in about 224,000 checked cells in the same stress test. Cost: about 150-200 lines of pure TS in `delivery-domain`. Known effect: editing one cell can move a neighbour by one display step (neighbour jitter).
+
+## Refined in Phase 1
+
+The claim that a single row reduces exactly to largest-remainder rounding needed a second cost level. See ADR 027.

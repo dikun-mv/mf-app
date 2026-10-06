@@ -1,0 +1,20 @@
+{
+  "name": "@baseline/delivery-domain",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@baseline/delivery-contract": "workspace:^",
+    "@baseline/host-contract": "workspace:^",
+    "@baseline/people-contract": "workspace:^",
+    "@date-fns/utc": "catalog:",
+    "date-fns": "catalog:",
+    "zod": "catalog:"
+  }
+}
