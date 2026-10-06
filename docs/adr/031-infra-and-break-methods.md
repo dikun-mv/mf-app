@@ -28,7 +28,7 @@ Status: accepted
 Each leaves the gateway, the shell and the other remote running. The shell shows an in-place error with a retry for the broken remote (T2.5).
 
 1. **Stop the container.** `docker compose stop people`. The gateway returns `502` for `/remotes/people/…` and the remote fails to load. Bring it back with `docker compose start people`, then use the retry button. The same works for `delivery`.
-2. **Bad remote URL.** `PEOPLE_REMOTE_URL=/remotes/people/nope docker compose up -d shell`. This recreates the shell container with a different `config.json`, and the shell asks for a `remoteEntry.js` that is a `404` (not HTML, because of the no-fallback rule). Undo with `docker compose up -d shell` without the variable. A URL on a dead host, for example `http://localhost:9/remoteEntry.js`, breaks it the same way with a network error.
+2. **Bad remote URL.** `PEOPLE_REMOTE_URL=/remotes/people/nope.js docker compose up -d shell`. This recreates the shell container with a different `config.json`, and the shell asks for a file that is a `404` (not HTML, because of the no-fallback rule). Undo with `docker compose up -d shell` without the variable. A URL without an extension, such as `…/nope`, also breaks the remote, but it is answered with the remote's `index.html` (`200`, a page route) and fails only when the browser tries to run it as a script. A URL on a dead host, for example `http://localhost:9/remoteEntry.js`, fails with a network error.
 3. **In the browser.** `?break=people`, handled by the shell itself: no infrastructure involved.
 
 ## Alternatives
