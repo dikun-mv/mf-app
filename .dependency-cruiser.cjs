@@ -4,7 +4,7 @@
  *   Delivery team: apps/delivery, services/delivery-api, packages/delivery-domain, packages/delivery-contract
  *   Platform:      apps/shell, packages/ui, packages/host-contract
  * Only `*-contract` packages and `ui` may cross a team line. Each rule is proved to fail by
- * infra/dependency-rules/rules.test.ts.
+ * .dependency-cruiser.test.ts.
  */
 
 const PEOPLE = '^(apps/people|services/people-api|packages/people-domain|packages/people-contract)/';
@@ -61,8 +61,15 @@ module.exports = {
       comment:
         'A *-contract package imports only zod and other contract packages: no domain, service, app, ui or other npm package.',
       severity: 'error',
-      from: { path: '^packages/[^/]+-contract/' },
+      from: { path: '^packages/[^/]+-contract/', pathNot: '\\.test\\.ts$' },
       to: { pathNot: ['^packages/[^/]+-contract/', npmPackage(['zod'])] },
+    },
+    {
+      name: 'contract-tests-are-leaves',
+      comment: 'A contract package’s tests follow the same rule, and may also import the test tools.',
+      severity: 'error',
+      from: { path: '^packages/[^/]+-contract/.*\\.test\\.ts$' },
+      to: { pathNot: ['^packages/[^/]+-contract/', npmPackage(['zod', '@rstest/core', 'fast-check', 'expect-type'])] },
     },
     {
       name: 'domain-is-framework-free',

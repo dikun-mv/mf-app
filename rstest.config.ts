@@ -19,7 +19,7 @@ export default defineConfig({
     {
       name: 'tooling',
       testEnvironment: 'node',
-      include: ['infra/**/*.test.ts'],
+      include: ['.dependency-cruiser.test.ts'],
     },
   ],
 });

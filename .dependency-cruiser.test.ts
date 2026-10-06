@@ -10,7 +10,7 @@ import { afterAll, describe, expect, it } from '@rstest/core';
 // exit non-zero naming that rule. A clean baseline (which includes the allowed cross-team
 // imports) must pass, so the rules can't be satisfied by forbidding everything.
 
-const repoRoot = fileURLToPath(new URL('../..', import.meta.url));
+const repoRoot = fileURLToPath(new URL('.', import.meta.url));
 const depcruiseBin = join(repoRoot, 'node_modules/dependency-cruiser/bin/dependency-cruiser.mjs');
 const config = join(repoRoot, '.dependency-cruiser.cjs');
 
@@ -28,7 +28,7 @@ const workspacePackages: Record<string, string> = {
   '@baseline/delivery-api': 'services/delivery-api',
 };
 
-const npmPackages = ['zod', 'react', 'react-dom', 'clsx', 'date-fns', 'hono', 'lodash'];
+const npmPackages = ['zod', 'react', 'react-dom', 'clsx', 'date-fns', 'hono', 'lodash', '@rstest/core'];
 
 /** A layout that obeys every rule, including the imports that are allowed to cross teams. */
 const clean: Files = {
@@ -168,6 +168,16 @@ describe('dependency boundary rules', () => {
       files: { 'packages/delivery-contract/src/leak.ts': `import '@baseline/ui';` },
     },
     {
+      rule: 'contract-tests-are-leaves',
+      description: 'contract test imports a domain package',
+      files: { 'packages/people-contract/src/index.test.ts': `import '@baseline/people-domain';` },
+    },
+    {
+      rule: 'contract-tests-are-leaves',
+      description: 'contract test imports an npm package outside zod and the test tools',
+      files: { 'packages/people-contract/src/index.test.ts': `import 'lodash';` },
+    },
+    {
       rule: 'domain-is-framework-free',
       description: 'domain imports react',
       files: { 'packages/people-domain/src/leak.ts': `import 'react';` },
@@ -211,6 +221,16 @@ describe('dependency boundary rules', () => {
       files: { 'apps/shell/src/leak.ts': `import './does-not-exist';` },
     },
   ];
+
+  it('lets a contract’s own tests import the test tools, while its production code stays held to the rule', () => {
+    const tools = buildRepo({
+      'packages/people-contract/src/index.test.ts': `import '@rstest/core';\nimport { EmployeeId } from './index';\nexport const spec = EmployeeId;`,
+    });
+    expect(lintDeps(tools).status).toBe(0);
+
+    const production = buildRepo({ 'packages/people-contract/src/helper.ts': `import '@rstest/core';` });
+    expect(lintDeps(production).output).toContain('contracts-are-leaves');
+  });
 
   it.each(violations)('$rule fails when $description', ({ rule, files }) => {
     const { status, output } = lintDeps(buildRepo(files));

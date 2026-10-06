@@ -22,22 +22,22 @@ The brief scores whether the remotes are "genuinely independent or quietly coupl
 
 ## Rules (all severity `error`)
 
-| Rule                                           | Forbids                                                                                                        |
-| ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| `no-cross-app`                                 | An app importing another app                                                                                   |
-| `no-cross-team-internals-people` / `-delivery` | A team importing the other team's app, service or domain. Only `*-contract` packages and `ui` cross team lines |
-| `shell-no-team-internals`                      | The shell importing any team app, service or domain package                                                    |
-| `app-to-own-service-types-only`                | An app importing a service at runtime; only `import type` (Hono's typed client) is allowed                     |
-| `contracts-are-leaves`                         | A `*-contract` package importing anything but `zod` and other contract packages                                |
-| `domain-is-framework-free`                     | A `*-domain` package importing react, ui, an app or a service                                                  |
-| `services-no-ui`                               | A service importing an app or `ui`                                                                             |
-| `ui-deps`                                      | `ui` importing any workspace package or any npm package except react, react-dom and clsx                       |
-| `no-circular`                                  | Import cycles                                                                                                  |
-| `not-to-unresolvable`                          | Imports that don't resolve                                                                                     |
+| Rule                                           | Forbids                                                                                                             |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `no-cross-app`                                 | An app importing another app                                                                                        |
+| `no-cross-team-internals-people` / `-delivery` | A team importing the other team's app, service or domain. Only `*-contract` packages and `ui` cross team lines      |
+| `shell-no-team-internals`                      | The shell importing any team app, service or domain package                                                         |
+| `app-to-own-service-types-only`                | An app importing a service at runtime; only `import type` (Hono's typed client) is allowed                          |
+| `contracts-are-leaves`                         | A `*-contract` package importing anything but `zod` and other contract packages (its own tests are exempt, ADR 028) |
+| `domain-is-framework-free`                     | A `*-domain` package importing react, ui, an app or a service                                                       |
+| `services-no-ui`                               | A service importing an app or `ui`                                                                                  |
+| `ui-deps`                                      | `ui` importing any workspace package or any npm package except react, react-dom and clsx                            |
+| `no-circular`                                  | Import cycles                                                                                                       |
+| `not-to-unresolvable`                          | Imports that don't resolve                                                                                          |
 
 ## Verified in Phase 0
 
-`infra/dependency-rules/rules.test.ts` builds a temporary repo with the same layout, linked through `node_modules` symlinks the way pnpm links workspace packages. A clean baseline, which includes the allowed cross-team imports (Delivery to `people-contract`, both apps to `ui`, an app's type-only import of its own service), must pass. Each rule is then violated in at least one way (19 cases) and must make the real `depcruise` CLI exit non-zero naming that rule.
+`.dependency-cruiser.test.ts` builds a temporary repo with the same layout, linked through `node_modules` symlinks the way pnpm links workspace packages. A clean baseline, which includes the allowed cross-team imports (Delivery to `people-contract`, both apps to `ui`, an app's type-only import of its own service), must pass. Each rule is then violated in at least one way (19 cases) and must make the real `depcruise` CLI exit non-zero naming that rule.
 
 Writing this test caught a real typo in `shell-no-team-internals`, which would have let the shell import a service.
 
