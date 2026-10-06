@@ -401,17 +401,17 @@ This proves the micro-frontend mechanics before any features are built.
 
 > **Runtime interface.** The values the apps, the containers and the data services share (names, ports, routes, volumes, `config.json`) are fixed up front in ADR 029. T3.7 (client adapters) moves to Phases 4–6, where the screens that use them are built. T2.9 has no stub services: the gateway answers every `/api/…` path with a JSON 404 until Phase 3 adds the services.
 
-- [ ] **T2.1** Scaffold `apps/shell`, `apps/people` and `apps/delivery` with Rsbuild, React 18, `@rsbuild/plugin-react` and `@module-federation/rsbuild-plugin`. Remove all template boilerplate.
-- [ ] **T2.2** Configure MF in the remotes:
+- [x] **T2.1** Scaffold `apps/shell`, `apps/people` and `apps/delivery` with Rsbuild, React 18, `@rsbuild/plugin-react` and `@module-federation/rsbuild-plugin`. Remove all template boilerplate.
+- [x] **T2.2** Configure MF in the remotes:
   - Use `pluginModuleFederation({ name, filename: 'remoteEntry.js', exposes, shared })`, exposing `./App` and `./mount`.
   - Share `react` and `react-dom` with `singleton: true` and `requiredVersion`. **Don't** share `react-router` (D22).
   - Bootstrap asynchronously through `index.ts → import('./bootstrap')`, so shared modules are negotiated before React loads.
   - **The shell** also uses `pluginModuleFederation`, with **no `remotes`** (they're registered at runtime, T2.4) but the same `react` and `react-dom` singleton `shared` config, and the same async bootstrap.
-- [ ] **T2.3** **Standalone and hosted from one build.**
+- [x] **T2.3** **Standalone and hosted from one build.**
   - First write `host-contract`'s `HostContext` and `RemoteModule` (the T3.3 content), because the skeleton needs them. T3.3 then only reviews and finalises them.
   - The remote's `index.html` boots `mount()` with a standalone `HostContext`: default currency, a stub user, `basePath` set to the remote's own path (e.g. `/remotes/people`), and a `navigate` that opens other apps' standalone URLs (D22).
   - The same build's `remoteEntry.js` is what the shell loads.
-- [ ] **T2.3a** **React Router in each app (D22).**
+- [x] **T2.3a** **React Router in each app (D22).**
   - Add `react-router` (v7) to each app separately. It's deliberately **not** in the shared pnpm catalog and **not** in MF `shared`, so each app bundles and upgrades its own copy.
   - **Shell:** `createBrowserRouter` with `/people/*` and `/delivery/*` (each renders that remote's panel host) and `/` → `<Navigate to="/people" replace />`. It reads only the first segment.
   - **Remotes:** `createRouter(basePath)` in `src/routing/` returns `createBrowserRouter(routes, { basename: basePath })`. The app renders `<RouterProvider>` in both modes. Hosted, the `basePath` comes from `HostContext`; standalone, it's the remote's own path.
@@ -419,22 +419,22 @@ This proves the micro-frontend mechanics before any features are built.
   - **Shell navigation:** `HostContext.navigate(to)` uses the shell router's `navigate`, then dispatches `new PopStateEvent('popstate')`. A remote that's already mounted then re-reads the URL, e.g. when the nav link `/people` is clicked while `/people/emp-003` is open. The shell's own nav links go through the same function.
   - Remotes never call `pushState` or their router's `navigate` outside their `basePath`; they use `HostContext.navigate` instead.
   - **Tests** (Rstest + Testing Library, the first use of the `components` project from T0.3, so set it up here): `createMemoryRouter` with the same route objects. Cover register → detail → back, an unknown id, and that the shell's `navigate` resyncs a mounted remote.
-- [ ] **T2.4** **Runtime remote resolution.**
+- [x] **T2.4** **Runtime remote resolution.**
   - The shell has no remotes in its bundle config.
   - At boot it fetches `/config.json`, then calls `registerRemotes` and `loadRemote('people/App')`.
   - The container entrypoint writes `config.json` from env (`PEOPLE_REMOTE_URL`, `DELIVERY_REMOTE_URL`, FX table).
   - **The public path is resolved at runtime too.** A remote's chunks and CSS must resolve relative to wherever its `remoteEntry.js` was loaded from, not a prefix baked in at build time. Use `output.assetPrefix: 'auto'` in each remote. Verify by serving one remote build from a different path than it was built for.
   - **Deep-link reloads must load assets too (D22).** At `/people/emp-003` or `/remotes/people/emp-003`, script and CSS URLs in `index.html` must not resolve relative to the current path; a reference like `./static/…` would become `/people/static/…`. Use absolute asset URLs for the shell. For a remote's standalone `index.html`, set a `<base href>` at container start from the runtime config (the entrypoint already writes `config.json`), so the build stays path-independent. Verify a reload on a deep link in both modes, together with the different-path check above.
-- [ ] **T2.5** **Isolation on failure.**
+- [x] **T2.5** **Isolation on failure.**
   - Wrap each panel in `Suspense` and an `ErrorBoundary`, covering both load failures (network or 404 on `remoteEntry`) and render or runtime errors.
   - Show an in-place message with a retry. The nav and the other panel keep working.
   - Add a load timeout.
-- [ ] **T2.6** **Break switch.** Give at least two ways to trigger failure:
+- [x] **T2.6** **Break switch.** Give at least two ways to trigger failure:
   1. `docker compose stop people`
   2. `?break=people`, or a shell dev toggle that registers a bogus URL
   3. optionally, `PEOPLE_REMOTE_URL=…/nope` in env
-- [ ] **T2.7** **Singleton proof.** Show a shell debug readout or log of `React.version` and an identity check across the three apps. Add a test or check that hooks work across the boundary.
-- [ ] **T2.8** **CSS Modules in all three apps.**
+- [x] **T2.7** **Singleton proof.** Show a shell debug readout or log of `React.version` and an identity check across the three apps. Add a test or check that hooks work across the boundary.
+- [x] **T2.8** **CSS Modules in all three apps.**
   - Configure each app's Rsbuild config:
 
     ```ts
@@ -455,7 +455,7 @@ This proves the micro-frontend mechanics before any features are built.
     2. **When hosted, an exposed remote module brings its CSS with it**, and the CSS loads from the remote's own origin and path.
     3. Class names carry the app prefix, including classes from `ui`.
     4. A typo in a class name fails `typecheck`.
-- [ ] **T2.8a** **Create `packages/ui`.**
+- [x] **T2.8a** **Create `packages/ui`.**
   - Set up `package.json` (React as a `peerDependency`, `clsx` as a dependency), `tokens.css` scoped to `[data-baseline-root]`, and the typed `vars` map.
   - Wire it into the three apps as `workspace:^`, compiled from source by each app's Rsbuild. Check that the workspace sources get the JS and CSS Modules rules; add them to `source.include` if they don't.
   - Start with only what the skeleton uses: `Button`, `InlineMessage`, `Spinner`, `ErrorBoundary`.
@@ -464,7 +464,7 @@ This proves the micro-frontend mechanics before any features are built.
     2. The shell can override a token on a panel container.
     3. People's and Delivery's copies of `ui` emit **different** class names.
     4. No styles leak between apps.
-- [ ] **T2.9** **Docker.**
+- [x] **T2.9** **Docker.**
   - Multi-stage Dockerfiles for the apps: a `node:24` build stage, then `nginx` serving the static output. The build context is the repo root, because the apps compile workspace packages from source.
   - Dockerfiles for the services: a `node:24` build stage runs `pnpm --filter <service> build` (**Rslib**, D25). It bundles the service and its workspace packages into `dist/`. A `node:24-slim` runtime stage copies only `dist/` and the seed file. **The build context is the repo root**, so the build stage can see the workspace packages.
   - One named volume per service for its `db.json`.
@@ -480,7 +480,7 @@ This proves the micro-frontend mechanics before any features are built.
 
 - [ ] **T3.1** Write `people-contract` v1: types, zod schemas, REST paths, event names, and the effective-dating rule in prose. Add a conformance fixture (A. Okafor's records and expected slices).
 - [ ] **T3.2** Write `delivery-contract` v1: `EmployeeMonthLoad` (`employeeId`, `month`, `allocatedPersonMonths`, `overCapacity`, `causingAllocationId`), `load.changed`.
-- [ ] **T3.3** Finalise `host-contract` (started in T1.1 and T2.3): `HostContext` (`currency`, `activeUser`, `basePath`, `navigate(to)`), `RemoteModule` (`mount`, `update`, `unmount`), `RemoteAppProps` (`{ ctx: HostContext }`), `Currency`, `ActiveUser`. The contract has **no React dependency** (T0.2 rule 5): the shell types the loaded `./App` as `ComponentType<RemoteAppProps>`, and each remote types its own `App` the same way. Document that a remote's own navigation stays under `basePath`, and that anything outside it goes through `navigate` (D22).
+- [x] **T3.3** Finalise `host-contract` (started in T1.1 and T2.3): `HostContext` (`currency`, `activeUser`, `basePath`, `navigate(to)`), `RemoteModule` (`mount`, `update`, `unmount`), `RemoteAppProps` (`{ ctx: HostContext }`), `Currency`, `ActiveUser`. The contract has **no React dependency** (T0.2 rule 5): the shell types the loaded `./App` as `ComponentType<RemoteAppProps>`, and each remote types its own `App` the same way. Document that a remote's own navigation stays under `basePath`, and that anything outside it goes through `navigate` (D22).
 - [ ] **T3.4** Build the **service skeleton**, shared by both services but copied rather than imported, so each team owns its own:
   - a Hono app with `/health`
   - a lowdb `JSONFilePreset` at `DATA_DIR/db.json` (from env), seeded from `SEED_FILE` (from env). The Dockerfile copies `docs/data.json` into the image, so the seed never depends on a host mount
