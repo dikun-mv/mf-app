@@ -94,6 +94,9 @@ add_user() {
 seen_codes=""
 each_item "$FX_TABLE" add_currency
 [ -n "$currencies" ] || fail "FX_TABLE is empty"
+# One code, checked for shape first so that it can only match a whole entry.
+printf '%s' "$DEFAULT_CURRENCY" | grep -Eq '^[A-Z]{3}$' ||
+  fail "DEFAULT_CURRENCY '$DEFAULT_CURRENCY' must be three capital letters"
 case " $seen_codes " in
   *" $DEFAULT_CURRENCY "*) ;;
   *) fail "DEFAULT_CURRENCY '$DEFAULT_CURRENCY' is not in FX_TABLE ($seen_codes )" ;;
