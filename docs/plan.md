@@ -252,11 +252,11 @@ docs/               # brief, plan, ADRs
 
 ### Phase 0 — Foundation
 
-- [ ] **T0.0** **Tooling container, before anything else.** Create `docker-compose.yml` with a `tools` service: the `node:24` image (Node 24 LTS), pnpm through Corepack, the repo mounted at `/repo`, and `node_modules` and the pnpm store in named volumes. Every `pnpm` command in this plan runs as `docker compose run --rm tools pnpm …`. T2.9 later adds the app, service and gateway containers to the same file.
-- [ ] **T0.1** Pin versions: `"packageManager": "pnpm@<current stable, exact version>"` and `"engines": { "node": ">=24" }` in the root `package.json`, and `node:24` base images in every Dockerfile. Initialise the pnpm workspace with root `tsconfig.base.json`: `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`. Define a pnpm catalog in `pnpm-workspace.yaml` for the versions every package must share: `zod` (D21), `react`, `react-dom` and `date-fns`.
+- [x] **T0.0** **Tooling container, before anything else.** Create `docker-compose.yml` with a `tools` service: the `node:24` image (Node 24 LTS), pnpm through Corepack, the repo mounted at `/repo`, and `node_modules` and the pnpm store in named volumes. Every `pnpm` command in this plan runs as `docker compose run --rm tools pnpm …`. T2.9 later adds the app, service and gateway containers to the same file.
+- [x] **T0.1** Pin versions: `"packageManager": "pnpm@<current stable, exact version>"` and `"engines": { "node": ">=24" }` in the root `package.json`, and `node:24` base images in every Dockerfile. Initialise the pnpm workspace with root `tsconfig.base.json`: `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`. Define a pnpm catalog in `pnpm-workspace.yaml` for the versions every package must share: `zod` (D21), `react`, `react-dom` and `date-fns`.
   - **Workspace packages ship TypeScript source, with no build of their own:** each `packages/*` `package.json` has `"exports": { ".": "./src/index.ts" }`. Rsbuild compiles them inside each app (T2.8a), Rslib inside each service (D25), and Rstest in tests.
   - **`pnpm typecheck`** = `pnpm -r typecheck`. Every package and app has `"typecheck": "tsc --noEmit"`, with a `tsconfig.json` that extends `tsconfig.base.json`.
-- [ ] **T0.2** Set up **Rslint** (D24), **Prettier** and **dependency-cruiser** (D23). `pnpm lint` runs `lint:code` (Rslint), `format:check` (Prettier) and `lint:deps` (dependency-cruiser).
+- [x] **T0.2** Set up **Rslint** (D24), **Prettier** and **dependency-cruiser** (D23). `pnpm lint` runs `lint:code` (Rslint), `format:check` (Prettier) and `lint:deps` (dependency-cruiser).
   - **Rslint config:** the built-in plugins `@typescript-eslint`, `react-hooks`, `rstest` and `jsx-a11y`, in array form.
     - `@typescript-eslint`: the strict type-checked set, with `no-explicit-any` and `no-unsafe-*` as errors.
     - `react-hooks`: `rules-of-hooks` and `exhaustive-deps` as errors.
@@ -287,7 +287,7 @@ docs/               # brief, plan, ADRs
       10. **`not-to-unresolvable`:** every import resolves.
     - **Resolve against real paths:** set `tsConfig` to the root `tsconfig.base.json` and keep `preserveSymlinks: false` (the default), so pnpm's workspace symlinks resolve to `packages/…` and the path rules match.
     - **Prove each rule fails:** a fixture test (or a one-off check recorded in the ADR) adds a forbidden import for each rule and confirms `pnpm lint:deps` exits non-zero with that rule's name.
-- [ ] **T0.3** Set up Rstest (`@rstest/core`) as separate projects:
+- [x] **T0.3** Set up Rstest (`@rstest/core`) as separate projects:
   - `domain` (domain and contract packages, plus each app's `src/data/` adapters, which need no DOM) and `services`, in Node with no DOM.
   - `components` later, in jsdom, reusing each app's Rsbuild config so the React plugin and CSS Modules settings apply.
   - **Confirm on the pinned Rstest version:**
@@ -299,8 +299,8 @@ docs/               # brief, plan, ADRs
 
     If any of these is missing, record the workaround in D14.
   - Add `expect-type` for type-level tests.
-- [ ] **T0.4** Write ADRs D1–D25, in brief.
-- [ ] **T0.5** Make the first real commit. From here on, commit per task with meaningful messages.
+- [x] **T0.4** Write ADRs D1–D25, in brief.
+- [x] **T0.5** Make the first real commit. From here on, commit per task with meaningful messages.
 
 **Exit check:** `pnpm lint`, `pnpm typecheck` and `pnpm test` run green through `docker compose run --rm tools`.
 
