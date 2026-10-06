@@ -1,17 +1,16 @@
 import { useState, version as reactVersion } from 'react';
-import { version as reactDomVersion } from 'react-dom';
-import { createRoot } from 'react-dom/client';
+import { flushSync, version as reactDomVersion } from 'react-dom';
 
 /**
  * What one app saw when it imported react and react-dom (T2.7). Each app writes its probe into a
  * page-wide registry; the shell compares the function references. If react is a singleton, every
- * app holds the very same `useState` and `createRoot`.
+ * app holds the very same `useState` and `flushSync`.
  */
 export interface ReactProbe {
   readonly reactVersion: string;
   readonly reactDomVersion: string;
   readonly useState: unknown;
-  readonly createRoot: unknown;
+  readonly flushSync: unknown;
 }
 
 declare global {
@@ -20,7 +19,7 @@ declare global {
   }
 }
 
-const own: ReactProbe = { reactVersion, reactDomVersion, useState, createRoot };
+const own: ReactProbe = { reactVersion, reactDomVersion, useState, flushSync };
 
 /** Records the shell's own react in the registry, next to the remotes'. */
 export function reportShellReact(): void {
@@ -42,7 +41,7 @@ export function probeRows(registry: Record<string, ReactProbe> | undefined): Pro
       app,
       reactVersion: probe.reactVersion,
       reactDomVersion: probe.reactDomVersion,
-      sameAsShell: probe.useState === own.useState && probe.createRoot === own.createRoot,
+      sameAsShell: probe.useState === own.useState && probe.flushSync === own.flushSync,
     }))
     .sort((a, b) => (a.app === 'shell' ? -1 : b.app === 'shell' ? 1 : a.app.localeCompare(b.app)));
 }
