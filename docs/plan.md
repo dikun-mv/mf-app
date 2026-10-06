@@ -20,7 +20,7 @@ Each phase ends with an **exit check**. Don't start the next phase until it pass
 **How to use this plan**
 - **Decisions D1–D25 are settled.** Implement them; don't re-open them. If one turns out to be unworkable (e.g. a library doesn't support an assumed feature), stop and report it rather than switching approach silently. Rows marked *Future option* are deliberately **not** built now.
 - Work phase by phase. Don't start a phase until the previous exit check passes. Phase 1's reference test (T1.7) gates everything.
-- **No Node on the host.** Run every install, build, lint and test command inside Docker (`docker compose run --rm tools pnpm …`, set up in T0.0). Don't assume the host has Node.
+- **Dev tooling runs on the host; Docker only runs the suite.** Run every install, build, lint and test command directly with `pnpm` (Node 24 LTS plus Corepack on the host, set up in T0.0). There is no tooling container and no dev container. `docker compose up` must still work with no Node on the host, because Node runs inside the suite's own images.
 - Commit per task with meaningful messages. A real history is a requirement (§6 of the brief).
 
 **Assumptions to verify on the pinned versions** (written from memory and not yet tested; confirm each before relying on it)
@@ -94,7 +94,7 @@ Record each decision in `docs/adr/NNN-*.md` and summarise it in the README. Each
 | D1 | Bundler + MF | **Rsbuild/Rspack + `@module-federation/rsbuild-plugin`**, with `@rsbuild/plugin-react` and the MF 2.0 runtime API from `@module-federation/enhanced/runtime` (`init`, `registerRemotes`, `loadRemote`) | Vite + `@module-federation/vite` | MF is native to Rspack. Rsbuild bundles in dev too, so dev serves a real `remoteEntry.js` with the same sharing rules as production. That lowers the risk to the React-singleton requirement. CSS Modules and typed CSS Modules are first-party. Rstest (D14) reuses the Rsbuild config, so the app and its tests share one pipeline. Cost: less familiar than Vite. |
 | D2 | Monorepo | pnpm workspaces. `apps/*` for the three builds, `packages/*` for per-team domain and contract packages plus the platform-owned `ui`, `services/*` for data APIs | Separate repos | One clone and one `docker compose up`. Ownership boundaries are enforced with dependency-cruiser (D23). |
 | D3 | Canonical allocation unit | **Person-months** (unrounded `number`) | Hours | The seed and the reference input are already in PM, so import is lossless. Capacity becomes "Σ PM per person-month > 1". The other three units are pure functions of (PM, employee, month, rates). |
-| D4 | Data layer | **One small Hono service per team** (`people-api`, `delivery-api`) running in Docker, each seeded from its slice of `data.json`. **Requests are validated with the team's contract schemas, and every rule comes from the team's own domain package**, which the team's app also uses | Browser-only stores (IndexedDB per app); json-server; PocketBase | Ownership is visible and real: each team owns its service. Standalone and hosted see the same data. Each domain rule exists once in TypeScript and runs on the client (instant feedback) and the server (enforcement). No host Node, because Node runs in containers. |
+| D4 | Data layer | **One small Hono service per team** (`people-api`, `delivery-api`) running in Docker, each seeded from its slice of `data.json`. **Requests are validated with the team's contract schemas, and every rule comes from the team's own domain package**, which the team's app also uses | Browser-only stores (IndexedDB per app); json-server; PocketBase | Ownership is visible and real: each team owns its service. Standalone and hosted see the same data. Each domain rule exists once in TypeScript and runs on the client (instant feedback) and the server (enforcement). The suite needs no host Node, because Node runs in containers. |
 | D5 | Persistence | **lowdb**: one JSON file per service on a Docker volume, written atomically (temp file + rename). Seed on first boot only. Logical transactions come from the in-memory change-set pattern in plan §3 (Service design) | `better-sqlite3`; `node-persist` | Pure JS with no native build, the same JSON shape as the fixtures, and atomic writes built in. Survives reload and container restart. Reset with `docker compose down -v` or a reset script. |
 | D6 | Transport between remotes | **Server-Sent Events** from each service through Hono's `streamSSE` (`/api/people/v1/events`), plus REST reads. Events carry a version and an entity id. Consumers refetch or patch their read model | In-page typed event bus provided by the shell, plus `BroadcastChannel`; polling | Works hosted, standalone and across tabs. No remote depends on the other remote's JS being loaded. |
 | D7 | Delivery pricing (the assessed question, §4) | **Delivery reads People's published rate records and computes cost itself** | Delivery asks People for computed cost | Pricing a plan is Delivery's job. A grid of about 720 cells reprices on every keystroke and on € edits that need the blended rate, so it must be local and synchronous. Delivery keeps pricing when the People remote is down. People's contract stays data-only and stable. Cost: Delivery must honour the effective-dating rule. Mitigate with a contract conformance fixture that People publishes and Delivery tests against. |
@@ -240,9 +240,9 @@ services/
 infra/
   nginx/            # gateway config
   docker/           # Dockerfiles, entrypoint that writes config.json
-docker-compose.yml  # tools (T0.0), apps, services, gateway (T2.9)
+docker-compose.yml  # apps, services, gateway (T2.9)
 package.json, pnpm-workspace.yaml (catalog), tsconfig.base.json
-rslint config (D24), .prettierrc, .dependency-cruiser.cjs (D23)
+rslint config (D24), .prettierrc, .nvmrc, .dependency-cruiser.cjs (D23) and its test
 docs/               # brief, plan, ADRs
 ```
 
@@ -252,7 +252,7 @@ docs/               # brief, plan, ADRs
 
 ### Phase 0 — Foundation
 
-- [x] **T0.0** **Tooling container, before anything else.** Create `docker-compose.yml` with a `tools` service: the `node:24` image (Node 24 LTS), pnpm through Corepack, the repo mounted at `/repo`, and `node_modules` and the pnpm store in named volumes. Every `pnpm` command in this plan runs as `docker compose run --rm tools pnpm …`. T2.9 later adds the app, service and gateway containers to the same file.
+- [x] **T0.0** **Host tooling, before anything else.** Node 24 LTS on the host (pinned by `.nvmrc`, so `nvm use` picks it), with pnpm through Corepack (`corepack enable`; the pnpm version comes from `packageManager`, T0.1). No tooling container and no dev container: Docker is only for running the suite (T2.9), which adds `docker-compose.yml`.
 - [x] **T0.1** Pin versions: `"packageManager": "pnpm@<current stable, exact version>"` and `"engines": { "node": ">=24" }` in the root `package.json`, and `node:24` base images in every Dockerfile. Initialise the pnpm workspace with root `tsconfig.base.json`: `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`. Define a pnpm catalog in `pnpm-workspace.yaml` for the versions every package must share: `zod` (D21), `react`, `react-dom` and `date-fns`.
   - **Workspace packages ship TypeScript source, with no build of their own:** each `packages/*` `package.json` has `"exports": { ".": "./src/index.ts" }`. Rsbuild compiles them inside each app (T2.8a), Rslib inside each service (D25), and Rstest in tests.
   - **`pnpm typecheck`** = `pnpm -r typecheck`. Every package and app has `"typecheck": "tsc --noEmit"`, with a `tsconfig.json` that extends `tsconfig.base.json`.
