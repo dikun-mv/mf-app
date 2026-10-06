@@ -1,0 +1,9 @@
+# Given with the exercise; not ours to reformat.
+docs/data.json
+docs/taks.md
+docs/plan.md
+
+pnpm-lock.yaml
+dist
+coverage
+*.module.css.d.ts
