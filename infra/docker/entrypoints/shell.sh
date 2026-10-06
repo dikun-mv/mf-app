@@ -63,14 +63,19 @@ add_currency() {
   _rate="${1#*=}"
   printf '%s' "$_code" | grep -Eq '^[A-Z]{3}$' ||
     fail "FX_TABLE code '$_code' must be three capital letters"
-  printf '%s' "$_rate" | grep -Eq '^[0-9]+(\.[0-9]+)?$' ||
-    fail "FX_TABLE rate '$_rate' for $_code must be a plain positive number"
+  # A JSON number (no leading zeros) that is greater than zero, like the shell's
+  # schema requires.
+  printf '%s' "$_rate" | grep -Eq '^(0|[1-9][0-9]*)(\.[0-9]+)?$' ||
+    fail "FX_TABLE rate '$_rate' for $_code must be a plain number such as 1 or 0.85 (no leading zeros)"
+  printf '%s' "$_rate" | grep -q '[1-9]' ||
+    fail "FX_TABLE rate '$_rate' for $_code must be greater than zero"
   [ "$currencies" ] && currencies="$currencies,"
   currencies="$currencies{\"code\":\"$_code\",\"perEur\":$_rate}"
   seen_codes="$seen_codes $_code"
 }
 
 users_json=""
+USER_ID_PATTERN='^user-([0-9]+|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$'
 add_user() {
   case "$1" in
     *=*) ;;
@@ -79,6 +84,9 @@ add_user() {
   _id="${1%%=*}"
   _name="${1#*=}"
   [ -n "$_id" ] && [ -n "$_name" ] || fail "USERS entry '$1' needs a non-empty id and name"
+  # The id pattern of UserId in host-contract: user-<digits> or user-<lowercase uuid>.
+  printf '%s' "$_id" | grep -Eq "$USER_ID_PATTERN" ||
+    fail "USERS id '$_id' must look like user-1 or user-<uuid>"
   [ "$users_json" ] && users_json="$users_json,"
   users_json="$users_json{\"id\":\"$(json_escape "$_id")\",\"name\":\"$(json_escape "$_name")\"}"
 }
