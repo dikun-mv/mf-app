@@ -12,19 +12,20 @@ export interface FederationRuntime {
   loadRemote(id: string): Promise<unknown>;
 }
 
+// Function-valued properties, not methods, so they can be passed to `useSyncExternalStore` unbound.
 export interface RemoteLoader {
   /** Loads `<name>/App` once; a second call shares the in-flight or finished load. A failed load is forgotten, so calling again retries. */
-  load(name: RemoteName): Promise<RemoteApp>;
-  getStatus(name: RemoteName): RemoteStatus;
+  readonly load: (name: RemoteName) => Promise<RemoteApp>;
+  readonly getStatus: (name: RemoteName) => RemoteStatus;
   /** A primitive that changes whenever any status does, for `useSyncExternalStore`. */
-  getSnapshot(): string;
-  subscribe(listener: () => void): () => void;
+  readonly getSnapshot: () => string;
+  readonly subscribe: (listener: () => void) => () => void;
 }
 
 /** The remote did not answer within the load timeout (T2.5). */
 export class RemoteLoadTimeoutError extends Error {
   constructor(name: RemoteName, timeoutMs: number) {
-    super(`The ${name} remote did not load within ${timeoutMs / 1000} s.`);
+    super(`The ${name} remote did not load within ${String(timeoutMs / 1000)} s.`);
     this.name = 'RemoteLoadTimeoutError';
   }
 }
@@ -75,7 +76,7 @@ export function createRemoteLoader(
 
   const setStatus = (name: RemoteName, next: RemoteStatus): void => {
     status.set(name, next);
-    snapshot = REMOTE_NAMES.map((n) => `${n}:${status.get(n)}`).join(',');
+    snapshot = REMOTE_NAMES.map((n) => `${n}:${status.get(n) ?? 'idle'}`).join(',');
     listeners.forEach((listener) => {
       listener();
     });

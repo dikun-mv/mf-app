@@ -39,7 +39,7 @@ export interface LoadedConfig {
 /** Fetches and validates `/config.json`. Throws with a readable message when it is missing or wrong. */
 export async function loadConfig(location: Pick<Location, 'origin' | 'search'>): Promise<LoadedConfig> {
   const response = await fetch('/config.json', { cache: 'no-cache' });
-  if (!response.ok) throw new Error(`/config.json returned ${response.status}`);
+  if (!response.ok) throw new Error(`/config.json returned ${String(response.status)}`);
   const parsed = ShellConfig.safeParse(await response.json());
   if (!parsed.success) throw new Error(`/config.json is invalid: ${parsed.error.message}`);
   const resolved = resolveRemotes(parsed.data.remotes, location.origin);

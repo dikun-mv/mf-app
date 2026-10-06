@@ -5,7 +5,7 @@ import { isRouteErrorResponse, useRouteError } from 'react-router';
 export function RouteError() {
   const error = useRouteError();
   const text = isRouteErrorResponse(error)
-    ? `${error.status} ${error.statusText}`
+    ? `${String(error.status)} ${error.statusText}`
     : error instanceof Error
       ? error.message
       : 'Unknown error';

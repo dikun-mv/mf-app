@@ -70,7 +70,7 @@ export const ActiveUser = z.object({ id: UserId, name: z.string().min(1) });
 export type ActiveUser = z.infer<typeof ActiveUser>;
 
 /** A display currency. Rates are stored in EUR, so `perEur` is units of this currency per 1 EUR (D11). */
-export const Currency = z.object({ code: CurrencyCode, perEur: z.number().positive().finite() });
+export const Currency = z.object({ code: CurrencyCode, perEur: z.number().positive() });
 export type Currency = z.infer<typeof Currency>;
 
 /**

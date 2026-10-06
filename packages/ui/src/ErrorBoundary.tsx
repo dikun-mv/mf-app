@@ -39,6 +39,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
   };
 
   override render(): ReactNode {
-    return this.state.failed ? this.props.fallback({ error: this.state.error, reset: this.reset }) : this.props.children;
+    return this.state.failed
+      ? this.props.fallback({ error: this.state.error, reset: this.reset })
+      : this.props.children;
   }
 }

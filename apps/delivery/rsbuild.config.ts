@@ -42,7 +42,7 @@ export default defineConfig(({ command }) => {
       // the container entrypoint rewrites the built value when BASE_PATH is set.
       tags: [{ tag: 'base', attrs: { href: isDev ? '/' : `/remotes/${NAME}/` }, head: true, append: false }],
     },
-    dev: { assetPrefix: `http://localhost:${DEV_PORT}/` },
+    dev: { assetPrefix: `http://localhost:${String(DEV_PORT)}/` },
     // Only the shell's dev server may load this dev build cross-origin.
     server: { port: DEV_PORT, strictPort: true, cors: { origin: 'http://localhost:3000' } },
   };
