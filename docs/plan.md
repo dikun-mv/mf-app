@@ -399,6 +399,8 @@ This phase delivers the reference calculation first. Domain logic goes in `packa
 
 This proves the micro-frontend mechanics before any features are built.
 
+> **Runtime interface.** The values the apps, the containers and the data services share (names, ports, routes, volumes, `config.json`) are fixed up front in ADR 029. T3.7 (client adapters) moves to Phases 4–6, where the screens that use them are built. T2.9 has no stub services: the gateway answers every `/api/…` path with a JSON 404 until Phase 3 adds the services.
+
 - [ ] **T2.1** Scaffold `apps/shell`, `apps/people` and `apps/delivery` with Rsbuild, React 18, `@rsbuild/plugin-react` and `@module-federation/rsbuild-plugin`. Remove all template boilerplate.
 - [ ] **T2.2** Configure MF in the remotes:
   - Use `pluginModuleFederation({ name, filename: 'remoteEntry.js', exposes, shared })`, exposing `./App` and `./mount`.
