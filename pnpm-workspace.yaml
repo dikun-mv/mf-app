@@ -1,0 +1,11 @@
+packages:
+  - apps/*
+  - packages/*
+  - services/*
+
+# Versions every package must share (D21). Packages reference them as `catalog:`.
+catalog:
+  date-fns: ^4.4.0
+  react: ^18.3.1
+  react-dom: ^18.3.1
+  zod: ^4.6.5
