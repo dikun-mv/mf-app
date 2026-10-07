@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event';
 import { Suspense } from 'react';
 import { useUnit } from '../../../features/switch-unit';
 import { RepositoryError } from '../../../shared/api';
+import { AnnouncementProvider } from '../../../shared/lib';
 import { createFakeRepository, renderWithApp, seedData } from '../../../shared/testing';
 import { StaffingGrid } from './StaffingGrid';
 
@@ -14,7 +15,9 @@ function Page() {
   const [unit] = useUnit();
   return (
     <Suspense fallback={null}>
-      <StaffingGrid projectId={ProjectId.parse('prj-1')} unit={unit} />
+      <AnnouncementProvider>
+        <StaffingGrid projectId={ProjectId.parse('prj-1')} unit={unit} />
+      </AnnouncementProvider>
     </Suspense>
   );
 }
@@ -89,6 +92,25 @@ describe('StaffingGrid with units and editing', () => {
     expect(repository.written).toHaveLength(1);
   });
 
+  it('reports a saved cell in the status line, and keeps the report until the next action', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const status = await screen.findByRole('status');
+    expect(status).toBeEmptyDOMElement();
+
+    await user.click(await screen.findByRole('button', { name: 'Anja Keller, Apr 2026, person-months: 0.20' }));
+    await user.clear(screen.getByRole('textbox'));
+    await user.type(screen.getByRole('textbox'), '0.3{Enter}');
+    await waitFor(() => {
+      expect(status).toHaveTextContent('Saved 0.30 PM for Anja Keller, Design, Apr 2026.');
+    });
+
+    // An edit that changes nothing is not an action.
+    await user.click(screen.getByRole('button', { name: 'Anja Keller, Apr 2026, person-months: 0.30' }));
+    await user.keyboard('{Enter}');
+    expect(status).toHaveTextContent('Saved 0.30 PM for Anja Keller, Design, Apr 2026.');
+  });
+
   it('says so at the top of the grid when a save fails, and puts the old value back', async () => {
     const user = userEvent.setup();
     const repository = createFakeRepository(seedData());
@@ -100,6 +122,7 @@ describe('StaffingGrid with units and editing', () => {
 
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent("Your change wasn't saved");
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
     expect(alert.compareDocumentPosition(screen.getByRole('table')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(
       await screen.findByRole('button', { name: 'Anja Keller, Apr 2026, person-months: 0.20' }),

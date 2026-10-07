@@ -4,6 +4,7 @@ import { InlineMessage, PageHeader } from '@baseline/ui';
 import { Link, useParams } from 'react-router';
 import { useProject } from '../../../entities/project';
 import { useUnit } from '../../../features/switch-unit';
+import { AnnouncementProvider } from '../../../shared/lib';
 import { PageBoundary } from '../../../shared/ui';
 import { StaffingGrid } from '../../../widgets/staffing-grid';
 import styles from './ProjectScreen.module.css';
@@ -41,8 +42,10 @@ function ProjectPage({ id }: { id: ProjectId }) {
         subtitle={`${formatDate(project.startDate)} – ${formatDate(project.endDate)}`}
       />
       <PageBoundary subject="Staffing grid">
-        {/* Keyed by project: its collapsed nodes, open actions and focused cell are not carried to the next one. */}
-        <StaffingGrid key={id} projectId={id} unit={unit} />
+        {/* Keyed by project: its collapsed nodes, open actions, focused cell and status line are not carried to the next one. */}
+        <AnnouncementProvider key={id}>
+          <StaffingGrid projectId={id} unit={unit} />
+        </AnnouncementProvider>
       </PageBoundary>
     </>
   );
