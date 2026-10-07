@@ -3,7 +3,7 @@ import { RateRecord, RateRecordId } from '@baseline/people-contract';
 import { describe, expect, it } from '@rstest/core';
 import fc from 'fast-check';
 import { newRateRecordId } from './ids';
-import { addRate, checkRateHistory, correctRate, historyOf, removeRate } from './rateHistory';
+import { addRate, checkRateHistory, correctRate, historyOf, rateOn, removeRate } from './rateHistory';
 import { seedRateRecords, seedRatesOf } from './testing/seed';
 
 const rate = (id: string, validFrom: string, hourlyCost: number): RateRecord =>
@@ -178,5 +178,34 @@ describe('rate history properties', () => {
     expect(newRateRecordId(() => '00000000-0000-4000-8000-000000000001')).toBe(
       'rate-00000000-0000-4000-8000-000000000001',
     );
+  });
+});
+
+describe('rateOn', () => {
+  const day = (value: string) => IsoDate.parse(value);
+
+  it('is the record that started most recently on or before the day', () => {
+    expect(rateOn(okafor, day('2026-10-07'))?.id).toBe('rate-002');
+    expect(rateOn(okafor, day('2026-03-11'))?.id).toBe('rate-001');
+  });
+
+  it('prices a record’s own first day at its cost', () => {
+    expect(rateOn(okafor, day('2026-03-12'))?.hourlyCost).toBe(95);
+    expect(rateOn(okafor, day('2025-01-01'))?.hourlyCost).toBe(80);
+  });
+
+  it('is none before the first rate and with no rates', () => {
+    expect(rateOn(okafor, day('2024-12-31'))).toBeNull();
+    expect(rateOn([], day('2026-10-07'))).toBeNull();
+  });
+
+  it('does not depend on the order of the records', () => {
+    expect(rateOn([...okafor].reverse(), day('2026-10-07'))?.id).toBe('rate-002');
+    expect(rateOn([...okafor].reverse(), day('2025-06-01'))?.id).toBe('rate-001');
+  });
+
+  it('ignores records that start after the day, even when they come first', () => {
+    const future = rate('rate-003', '2027-01-01', 120);
+    expect(rateOn([future, ...okafor], day('2026-10-07'))?.id).toBe('rate-002');
   });
 });

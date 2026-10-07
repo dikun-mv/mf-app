@@ -1,6 +1,10 @@
 // people-domain: plain TypeScript for People's rules. No React, no I/O.
 
+export * from './amount';
+export * from './capacity';
+export * from './format';
 export * from './ids';
 export * from './pricingImpact';
 export * from './rateHistory';
 export * from './result';
+export * from './search';
