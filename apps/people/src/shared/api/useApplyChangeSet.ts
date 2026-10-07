@@ -73,15 +73,23 @@ export function applyChangeSetOptions(
     mutationFn: (changes) => repository.applyRateChanges(changes),
     onMutate: async (changes) => {
       const token = Symbol('write');
-      writesFor(queryClient).inFlight.set(token, new Set(touchedRateIds(changes)));
-      await queryClient.cancelQueries({ queryKey: rateRecordKeys.all });
-      const cached = queryClient.getQueryData<readonly RateRecord[]>(rateRecordKeys.all);
-      const previous = new Map<RateRecordId, RateRecord | undefined>(
-        touchedRateIds(changes).map((id) => [id, cached?.find((record) => record.id === id)]),
-      );
-      // Nothing cached means nothing to show yet; the write still goes to the server.
-      if (cached) queryClient.setQueryData(rateRecordKeys.all, applyRateChangeSet(cached, changes));
-      return { previous, token };
+      const writes = writesFor(queryClient);
+      writes.inFlight.set(token, new Set(touchedRateIds(changes)));
+      try {
+        await queryClient.cancelQueries({ queryKey: rateRecordKeys.all });
+        const cached = queryClient.getQueryData<readonly RateRecord[]>(rateRecordKeys.all);
+        const previous = new Map<RateRecordId, RateRecord | undefined>(
+          touchedRateIds(changes).map((id) => [id, cached?.find((record) => record.id === id)]),
+        );
+        // Nothing cached means nothing to show yet; the write still goes to the server.
+        if (cached) queryClient.setQueryData(rateRecordKeys.all, applyRateChangeSet(cached, changes));
+        return { previous, token };
+      } catch (error) {
+        // `onSettled` gets no context when `onMutate` throws, so this write must leave the set here, or no
+        // failed write would ever refetch again.
+        writes.inFlight.delete(token);
+        throw error;
+      }
     },
     onSuccess: (records, changes) => {
       const deleted = new Set<string>(changes.delete);

@@ -229,4 +229,19 @@ describe('useApplyChangeSet with writes queued behind each other', () => {
     await a;
     expect(cached()).toEqual([current]);
   });
+
+  it('still refetches after a failed write once an earlier write threw in onMutate', async () => {
+    const { run, cached, refetch, reached } = queued();
+    // Updating a record that is not cached makes the change set refuse to apply: `onMutate` throws.
+    await expect(run({ ...EMPTY_RATE_CHANGE_SET, update: [x] })).rejects.toThrow(/rate-3/);
+    expect(refetch).toHaveBeenCalledTimes(1);
+
+    const next = run({ ...EMPTY_RATE_CHANGE_SET, create: [y] });
+    await rs.waitFor(() => {
+      expect(cached()).toEqual([old, current, y]);
+    });
+    (await reached(0)).reject(new ApiError('unavailable', 'people'));
+    await expect(next).rejects.toBeInstanceOf(ApiError);
+    expect(refetch).toHaveBeenCalledTimes(2);
+  });
 });
