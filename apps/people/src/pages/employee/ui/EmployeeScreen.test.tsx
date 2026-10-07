@@ -14,12 +14,18 @@ async function renderEmployee(id: string, options: Parameters<typeof renderWithA
   return app;
 }
 
-/** The history's rows as text, header row left out. */
+/** The history's rows as text (the day, then the cost and its mark), header row and actions left out. */
 const historyRows = () =>
   within(screen.getByRole('table', { name: 'Rate history' }))
     .getAllByRole('row')
     .slice(1)
-    .map((row) => row.textContent);
+    .map((row) =>
+      within(row)
+        .getAllByRole('cell')
+        .slice(0, 2)
+        .map((cell) => cell.textContent)
+        .join(''),
+    );
 
 describe('an employee page', () => {
   it('shows the name, then role, weekly hours and id', async () => {

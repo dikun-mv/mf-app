@@ -27,3 +27,22 @@
   font-size: var(--bl-text-xs);
   font-weight: var(--bl-weight-strong);
 }
+
+/* Correct and Remove at the end of the row. */
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--bl-space-2);
+  white-space: nowrap;
+}
+
+/* The actions column has no visible heading; assistive technology still reads one. */
+.hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

@@ -2,11 +2,9 @@
 // Please do not change this file!
 interface CssExports {
   actions: string;
-  current: string;
-  empty: string;
-  hidden: string;
-  section: string;
-  title: string;
+  cell: string;
+  fields: string;
+  form: string;
 }
 declare const cssExports: CssExports;
 export default cssExports;
