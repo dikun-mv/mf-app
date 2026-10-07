@@ -1,6 +1,6 @@
 # ADR 032: PocketBase per team for the data layer (D4, D5, D6, D8, D25)
 
-Status: accepted (2026-10-07, after Phase 2 and before any Phase 3 work). Supersedes ADRs 004, 005, 006, 008 and 025, and the service rows of ADR 029.
+Status: accepted (2026-10-07, after Phase 2 and before any Phase 3 work). Supersedes ADRs 004, 005, 006, 008 and 025, and the service rows of ADR 029. Amends ADRs 016, 018, 021 and 023.
 
 ## Context
 

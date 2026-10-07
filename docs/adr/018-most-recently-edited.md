@@ -1,10 +1,10 @@
 # ADR 018: "Most recently edited" (D18)
 
-Status: accepted
+Status: accepted; amended by [ADR 032](032-pocketbase-data-layer.md) (2026-10-07)
 
 ## Decision
 
-`Allocation.editedAt: IsoDateTime`, never null. Seeding gives every seed row the same `seededAt`. Each effort edit sets `editedAt = now` on the server, in the apply step, as `toISOString()` (UTC, millisecond precision, fixed length, so string comparison sorts by time). Moves and D9 re-pointing don't change it.
+`Allocation.editedAt: IsoDateTime`, never null. Seeding gives every seed row the same `seededAt`. Each effort edit sets `editedAt = now` on the server, in a `delivery-pb` request hook (on create, or when `amount` changes), as `toISOString()` (UTC, millisecond precision, fixed length, so string comparison sorts by time). Moves and D9 re-pointing don't change it.
 
 The causer is the contributing allocation with the latest `editedAt`, ties broken by the highest `id`, with one ordering for every comparison. The seed causers are therefore the higher id in each pair (alloc-293, -073, -043, -101, -613, -421). No `editedBy`.
 

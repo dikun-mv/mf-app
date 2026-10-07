@@ -1,6 +1,8 @@
 # ADR 023: Boundary enforcement (D23)
 
-Status: accepted
+Status: accepted; amended by [ADR 032](032-pocketbase-data-layer.md) (2026-10-07)
+
+> This ADR records the rules as built in Phase 0. ADR 032 changes two things, done in T3.4: the service paths become `services/people-pb` and `services/delivery-pb`, and `app-to-own-service-types-only` (written for Hono's typed client) is replaced by `apps-no-services`, because PocketBase services have no TypeScript to import.
 
 ## Decision
 

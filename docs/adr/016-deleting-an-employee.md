@@ -1,10 +1,10 @@
 # ADR 016: Deleting an employee (D16)
 
-Status: accepted
+Status: accepted; amended by [ADR 032](032-pocketbase-data-layer.md) (2026-10-07)
 
 ## Decision
 
-Forbidden. `people-api` has no delete endpoint and People's UI has no delete action.
+Forbidden. The `employees` collection in `people-pb` keeps its create and delete API rules locked (superusers only), and People's UI has no delete action.
 
 ## Alternative
 
