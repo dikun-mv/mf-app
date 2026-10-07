@@ -100,9 +100,10 @@ module.exports = {
     },
     {
       name: 'ui-deps',
-      comment: 'ui is presentational: it imports nothing but itself, react, react-dom and clsx (no workspace package).',
+      comment:
+        'ui is presentational: it imports nothing but itself, react, react-dom and clsx (no workspace package). Only its component tests and src/testing/ may also import the test libraries.',
       severity: 'error',
-      from: { path: '^packages/ui/' },
+      from: { path: '^packages/ui/', pathNot: ['\\.test\\.tsx$', '^packages/ui/src/testing/'] },
       to: {
         pathNot: ['^packages/ui/', npmPackage(['react', 'react-dom', 'clsx', '@types/react', '@types/react-dom'])],
       },

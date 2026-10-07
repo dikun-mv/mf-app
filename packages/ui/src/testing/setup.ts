@@ -1,4 +1,11 @@
-import { cleanup } from './dom';
+import { afterEach, expect } from '@rstest/core';
+import * as matchers from '@testing-library/jest-dom/matchers';
+import { cleanup } from '@testing-library/react';
+
+expect.extend(matchers);
+afterEach(() => {
+  cleanup();
+});
 
 // jsdom has no modal <dialog> yet (no showModal/close). This stands in for the parts the Dialog
 // primitive uses: `showModal` sets `open`, `close` clears it and fires `close`, as a browser does.
@@ -12,7 +19,3 @@ if (typeof HTMLDialogElement.prototype.showModal !== 'function') {
     this.dispatchEvent(new Event('close'));
   };
 }
-
-afterEach(() => {
-  cleanup();
-});
