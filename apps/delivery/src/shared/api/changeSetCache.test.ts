@@ -282,4 +282,61 @@ describe('realtime events that race a write’s answer', () => {
     writeResult(client, write, change, { items: [], allocations: [] });
     expect(takeRefetch(client)).toBe(true);
   });
+
+  describe('with a later write pending on the same record', () => {
+    const second = edit(0.9);
+    const secondStamp = IsoDateTime.parse('2026-05-01T10:00:02.000Z');
+    const secondAnswer = { items: [], allocations: [{ ...effort, amount: 0.9, editedAt: secondStamp }] };
+    const firstEcho = { ...effort, amount: 0.75, editedAt: stamp };
+
+    it('owes nothing when the earlier write’s echo arrives after its answer and before the later write’s', () => {
+      const client = loaded();
+      const first = edit(0.75);
+      const a = make(client, first);
+      const b = make(client, second);
+
+      writeResult(client, a, first, answer(0.75));
+      // A has ended, so its late echo is absorbed by B.
+      applyRealtimeEvent(client, 'allocations', { action: 'update', record: firstEcho });
+      writeResult(client, b, second, secondAnswer);
+
+      expect(takeRefetch(client)).toBe(false);
+      expect(readCollection(client, 'allocations')).toEqual([{ ...effort, amount: 0.9, editedAt: secondStamp }]);
+    });
+
+    it('still owes a refetch for another user’s edit in between', () => {
+      const client = loaded();
+      const first = edit(0.75);
+      const a = make(client, first);
+      const b = make(client, second);
+
+      writeResult(client, a, first, answer(0.75));
+      applyRealtimeEvent(client, 'allocations', { action: 'update', record: firstEcho });
+      applyRealtimeEvent(client, 'allocations', { action: 'update', record: theirs });
+      writeResult(client, b, second, secondAnswer);
+
+      expect(takeRefetch(client)).toBe(true);
+    });
+
+    it('remembers the answers of every earlier write across three', () => {
+      const client = loaded();
+      const first = edit(0.75);
+      const third = edit(1);
+      const a = make(client, first);
+      const b = make(client, second);
+      const c = make(client, third);
+
+      writeResult(client, a, first, answer(0.75));
+      writeResult(client, b, second, secondAnswer);
+      // Both earlier echoes come late, while only C is pending.
+      applyRealtimeEvent(client, 'allocations', { action: 'update', record: firstEcho });
+      applyRealtimeEvent(client, 'allocations', {
+        action: 'update',
+        record: { ...effort, amount: 0.9, editedAt: secondStamp },
+      });
+      writeResult(client, c, third, { items: [], allocations: [{ ...effort, amount: 1, editedAt: stamp }] });
+
+      expect(takeRefetch(client)).toBe(false);
+    });
+  });
 });

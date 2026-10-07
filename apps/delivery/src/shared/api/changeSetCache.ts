@@ -70,12 +70,19 @@ export function rollBack(client: QueryClient, write: Write): void {
 const agree = (event: object | undefined, answer: object | undefined): boolean =>
   event === undefined || answer === undefined ? event === answer : sameRecord(event, answer);
 
+/** True when `event` is none of the versions the server's answer or an earlier write's answer account for. */
+const unexpected = <T extends object>(
+  event: T | undefined,
+  answer: T | undefined,
+  known: readonly (T | undefined)[] = [],
+): boolean => !agree(event, answer) && !known.some((version) => agree(event, version));
+
 /**
- * Whether a realtime event that arrived while `write` was pending disagrees with the server's answer to it.
- * The answer carries the write's own value, but another user's edit may have committed after it, with its
- * event and the answer arriving in either order; the answer alone can't tell, and the records carry no
- * clock to compare (items have none), so the cache can't know which is newer. The echo of the write itself
- * agrees with the answer and costs nothing.
+ * Whether a realtime event that arrived while `write` was pending is neither its own answer nor the answer of
+ * an earlier write whose echo came late. The answer carries the write's own value, but another user's edit
+ * may have committed after it, with its event and the answer arriving in either order; the answer alone
+ * can't tell, and the records carry no clock to compare (items have none), so the cache can't know which is
+ * newer. The echo of the write itself, or of an earlier write on the same record, costs nothing.
  */
 function eventsDisagree(write: Write, result: ChangeSetResult): boolean {
   const itemAnswers = new Map<string, BreakdownItem | undefined>(result.items.map((item) => [item.id, item]));
@@ -84,9 +91,23 @@ function eventsDisagree(write: Write, result: ChangeSetResult): boolean {
   );
   // What the change set deleted has no answer: the server's version of it is "gone".
   return (
-    [...write.absorbedItems].some((id) => !agree(write.items.get(id), itemAnswers.get(id))) ||
-    [...write.absorbedAllocations].some((id) => !agree(write.allocations.get(id), allocationAnswers.get(id)))
+    [...write.absorbedItems].some((id) =>
+      unexpected(write.items.get(id), itemAnswers.get(id), write.knownItems.get(id)),
+    ) ||
+    [...write.absorbedAllocations].some((id) =>
+      unexpected(write.allocations.get(id), allocationAnswers.get(id), write.knownAllocations.get(id)),
+    )
   );
+}
+
+/** Hands a later write the versions of record `id` that this write's answer and its own `known` account for. */
+function handOn<T>(
+  from: Map<string, (T | undefined)[]>,
+  to: Map<string, (T | undefined)[]>,
+  id: string,
+  answer: T | undefined,
+): void {
+  to.set(id, [...(to.get(id) ?? []), answer, ...(from.get(id) ?? [])]);
 }
 
 /**
@@ -104,23 +125,31 @@ export function writeResult(client: QueryClient, write: Write, changeSet: Change
   const later = writesAfter(client, write);
   for (const item of result.items) {
     const next = later.find((other) => other.items.has(item.id));
-    if (next) next.items.set(item.id, item);
-    else patchCollection(client, 'breakdownItems', (records) => upsertRecord(records, item));
+    if (next) {
+      next.items.set(item.id, item);
+      handOn(write.knownItems, next.knownItems, item.id, item);
+    } else patchCollection(client, 'breakdownItems', (records) => upsertRecord(records, item));
   }
   for (const allocation of result.allocations) {
     const next = later.find((other) => other.allocations.has(allocation.id));
-    if (next) next.allocations.set(allocation.id, allocation);
-    else patchCollection(client, 'allocations', (records) => upsertRecord(records, allocation));
+    if (next) {
+      next.allocations.set(allocation.id, allocation);
+      handOn(write.knownAllocations, next.knownAllocations, allocation.id, allocation);
+    } else patchCollection(client, 'allocations', (records) => upsertRecord(records, allocation));
   }
   for (const id of changeSet.delete.itemIds) {
     const next = later.find((other) => other.items.has(id));
-    if (next) next.items.set(id, undefined);
-    else patchCollection(client, 'breakdownItems', (records) => removeRecord(records, id));
+    if (next) {
+      next.items.set(id, undefined);
+      handOn(write.knownItems, next.knownItems, id, undefined);
+    } else patchCollection(client, 'breakdownItems', (records) => removeRecord(records, id));
   }
   for (const id of changeSet.delete.allocationIds) {
     const next = later.find((other) => other.allocations.has(id));
-    if (next) next.allocations.set(id, undefined);
-    else patchCollection(client, 'allocations', (records) => removeRecord(records, id));
+    if (next) {
+      next.allocations.set(id, undefined);
+      handOn(write.knownAllocations, next.knownAllocations, id, undefined);
+    } else patchCollection(client, 'allocations', (records) => removeRecord(records, id));
   }
   endWrite(client, write);
 }

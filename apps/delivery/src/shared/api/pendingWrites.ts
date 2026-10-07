@@ -20,6 +20,13 @@ export interface Write {
    */
   readonly absorbedItems: Set<string>;
   readonly absorbedAllocations: Set<string>;
+  /**
+   * Versions of a record that earlier writes' answers showed the server to hold, handed on when they ended
+   * while this write was pending. Their realtime echoes may arrive late, after the earlier write has ended,
+   * and are then absorbed here: they are expected, not another user's edit (see `writeResult`).
+   */
+  readonly knownItems: Map<string, (BreakdownItem | undefined)[]>;
+  readonly knownAllocations: Map<string, (Allocation | undefined)[]>;
 }
 
 interface Pending {
@@ -49,6 +56,8 @@ export function beginWrite(client: QueryClient): Write {
     allocations: new Map(),
     absorbedItems: new Set(),
     absorbedAllocations: new Set(),
+    knownItems: new Map(),
+    knownAllocations: new Map(),
   };
   pending(client).writes.push(write);
   return write;
