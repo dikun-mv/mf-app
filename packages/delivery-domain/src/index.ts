@@ -9,6 +9,7 @@ export * from './format';
 export * from './grid';
 export * from './ids';
 export * from './invariants';
+export * from './itemPath';
 export * from './parseAmount';
 export * from './pricing';
 export * from './projectGrid';
