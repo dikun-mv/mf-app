@@ -137,3 +137,111 @@ describe('useApplyChangeSet', () => {
     expect(writes).toEqual([1, 2]);
   });
 });
+
+describe('useApplyChangeSet with writes queued behind each other', () => {
+  /** Every write waits for the test to answer it; `answers[n]` exists once write n has reached the server. */
+  function queued() {
+    const answers: ReturnType<typeof deferred>[] = [];
+    const app = setup(() => {
+      const answer = deferred();
+      answers.push(answer);
+      return answer.promise;
+    });
+    const refetch = rs.spyOn(app.client, 'invalidateQueries');
+    const reached = async (n: number) => {
+      await rs.waitFor(() => {
+        expect(answers.length).toBeGreaterThan(n);
+      });
+      return answers[n] ?? deferred();
+    };
+    return { ...app, refetch, reached };
+  }
+
+  const x = rate(3, '2026-11-01', 98);
+  const y = rate(4, '2026-12-01', 99);
+
+  it('keeps the queued write’s change when the first fails, and refetches only after the last settles', async () => {
+    const { run, cached, refetch, reached } = queued();
+    const a = run({ ...EMPTY_RATE_CHANGE_SET, create: [x] });
+    const b = run({ ...EMPTY_RATE_CHANGE_SET, create: [y] });
+    await rs.waitFor(() => {
+      expect(cached()).toEqual([old, current, x, y]);
+    });
+
+    (await reached(0)).reject(new ApiError('unavailable', 'people'));
+    await expect(a).rejects.toBeInstanceOf(ApiError);
+    // A is undone, B's optimistic change is still shown, and nothing has replaced it with older server data.
+    expect(cached()).toEqual([old, current, y]);
+    expect(refetch).not.toHaveBeenCalled();
+
+    (await reached(1)).resolve([y]);
+    await b;
+    expect(cached()).toEqual([old, current, y]);
+    expect(refetch).toHaveBeenCalledTimes(1);
+    expect(refetch).toHaveBeenCalledWith({ queryKey: rateRecordKeys.all });
+  });
+
+  it('refetches once, after both, when the queued write fails too', async () => {
+    const { run, cached, refetch, reached } = queued();
+    const a = run({ ...EMPTY_RATE_CHANGE_SET, create: [x] });
+    const b = run({ ...EMPTY_RATE_CHANGE_SET, create: [y] });
+    await rs.waitFor(() => {
+      expect(cached()).toEqual([old, current, x, y]);
+    });
+
+    (await reached(0)).reject(new ApiError('unavailable', 'people'));
+    await expect(a).rejects.toBeInstanceOf(ApiError);
+    expect(refetch).not.toHaveBeenCalled();
+
+    (await reached(1)).reject(new ApiError('unavailable', 'people'));
+    await expect(b).rejects.toBeInstanceOf(ApiError);
+    expect(cached()).toEqual([old, current]);
+    expect(refetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not put back a record that a write still in flight has changed', async () => {
+    const { run, cached, reached } = queued();
+    const a = run({ ...EMPTY_RATE_CHANGE_SET, update: [{ ...current, hourlyCost: 120 }] });
+    const b = run({ ...EMPTY_RATE_CHANGE_SET, delete: [current.id] });
+    await rs.waitFor(() => {
+      expect(cached()).toEqual([old]);
+    });
+
+    (await reached(0)).reject(new ApiError('server', 'people'));
+    await expect(a).rejects.toBeInstanceOf(ApiError);
+    expect(cached()).toEqual([old]);
+
+    (await reached(1)).resolve([]);
+    await b;
+    expect(cached()).toEqual([old]);
+  });
+
+  it('removes a deleted record again when a refetch brought it back before the write was confirmed', async () => {
+    const { run, client, cached, reached } = queued();
+    const a = run({ ...EMPTY_RATE_CHANGE_SET, delete: [old.id] });
+    await rs.waitFor(() => {
+      expect(cached()).toEqual([current]);
+    });
+
+    // Something refetched the collection while the delete was on its way: the server still had the record.
+    client.setQueryData(rateRecordKeys.all, [old, current]);
+    (await reached(0)).resolve([]);
+    await a;
+    expect(cached()).toEqual([current]);
+  });
+
+  it('still refetches after a failed write once an earlier write threw in onMutate', async () => {
+    const { run, cached, refetch, reached } = queued();
+    // Updating a record that is not cached makes the change set refuse to apply: `onMutate` throws.
+    await expect(run({ ...EMPTY_RATE_CHANGE_SET, update: [x] })).rejects.toThrow(/rate-3/);
+    expect(refetch).toHaveBeenCalledTimes(1);
+
+    const next = run({ ...EMPTY_RATE_CHANGE_SET, create: [y] });
+    await rs.waitFor(() => {
+      expect(cached()).toEqual([old, current, y]);
+    });
+    (await reached(0)).reject(new ApiError('unavailable', 'people'));
+    await expect(next).rejects.toBeInstanceOf(ApiError);
+    expect(refetch).toHaveBeenCalledTimes(2);
+  });
+});
