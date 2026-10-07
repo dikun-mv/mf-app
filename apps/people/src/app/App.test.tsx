@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from '@rstest/core';
 import { act, render, screen } from '@testing-library/react';
 import App from './App';
 import { mount } from './mount';
-import { testContext } from './testing/hostContext';
+import { testContext } from '../shared/testing';
 
 function goTo(path: string, { notify }: { notify: boolean }): void {
   window.history.pushState({}, '', path);

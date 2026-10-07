@@ -1,8 +1,7 @@
 import type { RouteObject } from 'react-router';
-import { EmployeeScreen } from '../screens/EmployeeScreen';
-import { NotFoundScreen } from '../screens/NotFoundScreen';
-import { RegisterScreen } from '../screens/RegisterScreen';
-import { RouteError } from '../screens/RouteError';
+import { EmployeeScreen } from '../../pages/employee';
+import { RegisterScreen } from '../../pages/register';
+import { NotFoundScreen, RouteError } from '../../shared/ui';
 
 // Elements are hoisted: they never change, so React can skip re-creating them.
 const register = <RegisterScreen />;

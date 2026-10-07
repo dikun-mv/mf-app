@@ -2,8 +2,8 @@ import { EmployeeId } from '@baseline/people-contract';
 import { Button } from '@baseline/ui';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router';
-import { NotFoundScreen } from './NotFoundScreen';
-import styles from './Screen.module.css';
+import { NotFoundScreen } from '../../../shared/ui';
+import styles from './EmployeeScreen.module.css';
 
 /** Placeholder for one employee. The id from the URL is parsed into a branded `EmployeeId`. */
 export function EmployeeScreen() {
