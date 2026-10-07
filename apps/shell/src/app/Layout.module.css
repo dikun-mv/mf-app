@@ -1,4 +1,5 @@
-/* Bar on top, the panel taking whatever height is left, the strip at the foot of the page. */
+/* Bar on top, the panel taking whatever height is left, the strip at the foot of the page. The remote's
+   own root pads its content (it must, standalone), so the main area adds no padding of its own. */
 .layout {
   display: grid;
   grid-template-rows: auto 1fr auto;
@@ -7,5 +8,4 @@
 
 .main {
   min-width: 0;
-  padding: var(--bl-space-4);
 }

@@ -57,9 +57,13 @@ export default function App() {
           <RouterProvider router={router} />
         </ShellProvider>
       ) : state.phase === 'failed' ? (
-        <InlineMessage tone="error">The shell could not start: {state.message}</InlineMessage>
+        <div className={styles.boot}>
+          <InlineMessage tone="error">The shell could not start: {state.message}</InlineMessage>
+        </div>
       ) : (
-        <Spinner />
+        <div className={styles.boot}>
+          <Spinner aria-label="Starting Baseline" />
+        </div>
       )}
     </div>
   );

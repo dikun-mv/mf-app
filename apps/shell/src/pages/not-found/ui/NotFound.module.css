@@ -1,0 +1,4 @@
+/* The same inset a remote's root gives its content, so the message lines up with the panels. */
+.page {
+  padding: var(--bl-space-3);
+}
