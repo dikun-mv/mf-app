@@ -1,4 +1,4 @@
-import type { BreakdownItemId } from '@baseline/delivery-contract';
+import type { Allocation, BreakdownItemId } from '@baseline/delivery-contract';
 import {
   indexItems,
   isLeaf,
@@ -33,40 +33,55 @@ export interface PlanWithPending {
   readonly plan: PlanState;
   /** The keys of the rows that exist only because of a pending assignment. */
   readonly pendingKeys: ReadonlySet<string>;
+  /**
+   * Assignments that have done their job and must be forgotten, or the row would come back later: the
+   * person has an allocation on the item (the row is real now), the item is no longer a leaf, or it is gone.
+   */
+  readonly stale: readonly PendingAssignment[];
 }
+
+const NOTHING_STALE: readonly PendingAssignment[] = [];
 
 /**
  * The plan with a placeholder of zero person-months for each pending assignment that still has no
  * allocation, in the project's first month. `gridView` then draws the person's row; zero adds nothing to
  * any sum, load or marker. A row whose first value was saved has real allocations by then and needs no
- * placeholder. Assignments to items that are gone, or are no longer leaves, are skipped (D9).
+ * placeholder. Assignments to items that are gone, or are no longer leaves, are skipped (D9). Those, and
+ * the ones whose row became real, are also returned as `stale` for the page to drop: an assignment is only
+ * pending until the first value is saved, so clearing that value later, or deleting the child that made the
+ * item a non-leaf, must not bring the empty row back.
  */
 export function withPendingRows(plan: PlanState, assigned: readonly PendingAssignment[]): PlanWithPending {
   const pendingKeys = new Set<string>();
-  if (assigned.length === 0) return { plan, pendingKeys };
+  if (assigned.length === 0) return { plan, pendingKeys, stale: NOTHING_STALE };
 
   const index = indexItems(plan.items);
   const held = new Set(plan.allocations.map((allocation) => rowKey(allocation.breakdownItemId, allocation.employeeId)));
-  const placeholders = assigned.flatMap(({ itemId, employeeId }, position) => {
+  const placeholders: Allocation[] = [];
+  const stale: PendingAssignment[] = [];
+  for (const [position, entry] of assigned.entries()) {
+    const { itemId, employeeId } = entry;
     const item = index.byId.get(itemId);
     const project = plan.projects.find((candidate) => candidate.id === item?.projectId);
     const month = project === undefined ? undefined : projectMonths(project)[0];
     const key = rowKey(itemId, employeeId);
-    if (month === undefined || !isLeaf(index, itemId) || held.has(key) || pendingKeys.has(key)) return [];
+    if (month === undefined || !isLeaf(index, itemId) || held.has(key) || pendingKeys.has(key)) {
+      stale.push(entry);
+      continue;
+    }
     pendingKeys.add(key);
-    return [
-      {
-        id: AllocationId.parse(`alloc-${String(position)}`),
-        breakdownItemId: itemId,
-        employeeId,
-        month,
-        amount: 0,
-        editedAt: PLACEHOLDER_EDITED_AT,
-      },
-    ];
-  });
-  if (placeholders.length === 0) return { plan, pendingKeys };
-  return { plan: { ...plan, allocations: [...plan.allocations, ...placeholders] }, pendingKeys };
+    placeholders.push({
+      id: AllocationId.parse(`alloc-${String(position)}`),
+      breakdownItemId: itemId,
+      employeeId,
+      month,
+      amount: 0,
+      editedAt: PLACEHOLDER_EDITED_AT,
+    });
+  }
+  const dropped = stale.length === 0 ? NOTHING_STALE : stale;
+  if (placeholders.length === 0) return { plan, pendingKeys, stale: dropped };
+  return { plan: { ...plan, allocations: [...plan.allocations, ...placeholders] }, pendingKeys, stale: dropped };
 }
 
 /**

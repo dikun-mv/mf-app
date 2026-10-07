@@ -42,6 +42,8 @@ export function useGridFeedback(): GridFeedback {
 export interface PendingAssignments {
   readonly assigned: readonly PendingAssignment[];
   readonly assign: (itemId: BreakdownItemId, employeeId: EmployeeId) => void;
+  /** Forgets assignments that are done with: their row is real, or their item stopped being a leaf. */
+  readonly forget: (entries: readonly PendingAssignment[]) => void;
 }
 
 export function useGridAssignments(): PendingAssignments {
@@ -49,7 +51,11 @@ export function useGridAssignments(): PendingAssignments {
   const assign = useCallback((itemId: BreakdownItemId, employeeId: EmployeeId) => {
     setAssigned((current) => [...current, { itemId, employeeId }]);
   }, []);
-  return { assigned, assign };
+  // By identity, so an assignment made since the stale ones were found is kept.
+  const forget = useCallback((entries: readonly PendingAssignment[]) => {
+    setAssigned((current) => current.filter((entry) => !entries.includes(entry)));
+  }, []);
+  return { assigned, assign, forget };
 }
 
 export interface GridActions extends PendingAssignments {

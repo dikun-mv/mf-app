@@ -69,4 +69,21 @@ describe('withPendingRows', () => {
     const rows = personRows(withChild, [{ itemId: LEAF, employeeId: NEW_PERSON }]);
     expect(rows.some((row) => row.employeeId === NEW_PERSON)).toBe(false);
   });
+
+  it('marks an assignment stale once the person has an allocation on the item, so clearing it later brings no row back', () => {
+    const entry = { itemId: LEAF, employeeId: EmployeeId.parse('emp-001') };
+    expect(withPendingRows(plan, [entry]).stale).toEqual([entry]);
+    const fresh = { itemId: LEAF, employeeId: NEW_PERSON };
+    expect(withPendingRows(plan, [fresh]).stale).toEqual([]);
+  });
+
+  it('marks an assignment stale when the item gained a child or is gone, and a repeat of one', () => {
+    const entry = { itemId: LEAF, employeeId: NEW_PERSON };
+    const withChild: PlanState = { ...plan, items: [...plan.items, item('wbs-3', 'prj-1', 'wbs-2', 'Checks')] };
+    expect(withPendingRows(withChild, [entry]).stale).toEqual([entry]);
+    const gone = { itemId: BreakdownItemId.parse('wbs-9'), employeeId: NEW_PERSON };
+    expect(withPendingRows(plan, [gone]).stale).toEqual([gone]);
+    const repeat = { ...entry };
+    expect(withPendingRows(plan, [entry, repeat]).stale).toEqual([repeat]);
+  });
 });

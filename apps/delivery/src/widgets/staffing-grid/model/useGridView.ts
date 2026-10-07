@@ -23,6 +23,8 @@ export interface GridModel {
   readonly units: readonly DisplayUnit[];
   /** People's employees or rates are still on their first load (not failed), so hours and cost may yet work. */
   readonly peopleLoading: boolean;
+  /** Assignments to forget: their row is real now, or their item is no longer a leaf (see `withPendingRows`). */
+  readonly staleAssignments: readonly PendingAssignment[];
 }
 
 /**
@@ -50,7 +52,7 @@ export function useGridView(
     [employees, rates],
   );
   // People added to a leaf in this page and not yet given a value get their row from a placeholder (T6.7).
-  const { plan, pendingKeys } = useMemo(
+  const { plan, pendingKeys, stale } = useMemo(
     () => withPendingRows({ projects, items, allocations }, assigned),
     [projects, items, allocations, assigned],
   );
@@ -60,5 +62,5 @@ export function useGridView(
   );
   const units = useMemo(() => availableUnits(people), [people]);
   const peopleLoading = employeesQuery.isPending || ratesQuery.isPending;
-  return { result, units, peopleLoading };
+  return { result, units, peopleLoading, staleAssignments: stale };
 }

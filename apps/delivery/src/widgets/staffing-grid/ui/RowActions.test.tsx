@@ -1,9 +1,9 @@
 import { ProjectId } from '@baseline/delivery-contract';
 import { describe, expect, it } from '@rstest/core';
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Suspense } from 'react';
-import { RepositoryError } from '../../../shared/api';
+import { applyRealtimeEvent, RepositoryError } from '../../../shared/api';
 import { allocation, createFakeRepository, item, renderWithApp, seedData } from '../../../shared/testing';
 import { StaffingGrid } from './StaffingGrid';
 
@@ -212,5 +212,72 @@ describe('Row actions', () => {
     unmount();
     renderGrid();
     expect(await screen.findAllByRole('rowheader', { name: 'Henrik Bauer' })).toHaveLength(before);
+  });
+
+  describe('an assigned person with no value yet', () => {
+    // Ledger migration › Data checks, a leaf at the second level with nothing on it.
+    const leafData = () => {
+      const seed = seedData();
+      return { ...seed, breakdownItems: [...seed.breakdownItems, item('wbs-100', 'prj-1', 'wbs-001', 'Data checks')] };
+    };
+    const rowsOf = (name: string) => screen.queryAllByRole('rowheader', { name }).length;
+
+    async function assignSara(user: ReturnType<typeof userEvent.setup>) {
+      await user.click(await moreOf('Data checks'));
+      await user.click(screen.getByRole('button', { name: 'Assign person…' }));
+      const dialog = await screen.findByRole('dialog', { name: 'Assign a person to "Data checks"' });
+      await user.selectOptions(await within(dialog).findByRole('combobox', { name: 'Employee' }), 'emp-060');
+      await user.click(within(dialog).getByRole('button', { name: 'Assign' }));
+      await screen.findByText(/Added Sara Lindholm to Data checks/);
+    }
+
+    it('does not get its empty row back after a value is saved and then cleared', async () => {
+      const { user, queryClient } = renderGrid(leafData());
+      await screen.findAllByRole('rowheader', { name: /Data checks/ });
+      const before = rowsOf('Sara Lindholm');
+      await assignSara(user);
+      expect(rowsOf('Sara Lindholm')).toBe(before + 1);
+
+      // Saving the first value (what the cell editor does) makes the row real.
+      const saved = allocation('alloc-950', 'wbs-100', 'emp-060', '2026-03', 0.5);
+      act(() => {
+        applyRealtimeEvent(queryClient, 'allocations', { action: 'create', record: saved });
+      });
+      await waitFor(() => {
+        const checks = screen.getByRole('rowheader', { name: /Data checks/ }).closest('tr');
+        expect(checks && within(checks).getAllByRole('cell').at(-1)).toHaveTextContent('0.50');
+      });
+      expect(rowsOf('Sara Lindholm')).toBe(before + 1);
+
+      // Clearing it removes the allocation; the row goes with it instead of reverting to a pending one.
+      act(() => {
+        applyRealtimeEvent(queryClient, 'allocations', { action: 'delete', record: saved });
+      });
+      await waitFor(() => {
+        expect(rowsOf('Sara Lindholm')).toBe(before);
+      });
+    });
+
+    it('does not get its empty row back after a child is added under the leaf and then deleted', async () => {
+      const { user } = renderGrid(leafData());
+      await screen.findAllByRole('rowheader', { name: 'Data checks' });
+      const before = rowsOf('Sara Lindholm');
+      await assignSara(user);
+      expect(rowsOf('Sara Lindholm')).toBe(before + 1);
+
+      await user.click(await moreOf('Data checks'));
+      await user.click(screen.getByRole('button', { name: 'Add child item' }));
+      await user.type(await screen.findByRole('textbox', { name: 'Name' }), 'Checks{Enter}');
+      await screen.findByText('Added "Checks".');
+      // Data checks has a child, so it is not a leaf and has no people rows.
+      expect(rowsOf('Sara Lindholm')).toBe(before);
+
+      await user.click(await moreOf('Checks'));
+      await user.click(screen.getByRole('button', { name: 'Delete…' }));
+      await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Delete' }));
+      await screen.findByText(/^Deleted 1 item/);
+      // Data checks is a leaf again; the person was dropped when it stopped being one.
+      expect(rowsOf('Sara Lindholm')).toBe(before);
+    });
   });
 });

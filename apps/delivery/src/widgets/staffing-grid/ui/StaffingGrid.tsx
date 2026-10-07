@@ -2,7 +2,7 @@ import type { ProjectId } from '@baseline/delivery-contract';
 import type { DisplayUnit } from '@baseline/delivery-domain';
 import { InlineMessage, Spinner, StatusMessage } from '@baseline/ui';
 import { clsx } from 'clsx';
-import { useCallback, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { describeGridError } from '../lib/describeGridError';
 import { visibleRows } from '../lib/visibleRows';
 import { GridActionsProvider, useGridAssignments, useGridFeedback } from '../model/GridActions';
@@ -39,11 +39,14 @@ export interface StaffingGridProps {
  */
 export function StaffingGrid({ projectId, unit = 'personMonths' }: StaffingGridProps) {
   // People assigned to a leaf and not yet given a value: rows that exist only in this page (T6.7, D31).
-  const { assigned, assign } = useGridAssignments();
-  const { result, units, peopleLoading } = useGridView(projectId, unit, assigned);
+  const { assigned, assign, forget } = useGridAssignments();
+  const { result, units, peopleLoading, staleAssignments } = useGridView(projectId, unit, assigned);
+  useEffect(() => {
+    if (staleAssignments.length > 0) forget(staleAssignments);
+  }, [staleAssignments, forget]);
   // What the features in the slots report (D33): the status line, and a failed write's message.
   const { status, failure, report } = useGridFeedback();
-  const actions = useMemo(() => ({ report, assigned, assign }), [report, assigned, assign]);
+  const actions = useMemo(() => ({ report, assigned, assign, forget }), [report, assigned, assign, forget]);
   // Keys of the collapsed nodes: empty means everything is open, as on load. Local state (D31).
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set());
   // The row whose actions are open: one at a time, and closed again by choosing an action (D36).
