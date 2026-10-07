@@ -1,0 +1,22 @@
+.failed {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--bl-space-2) var(--bl-space-4);
+  align-items: center;
+  justify-content: space-between;
+}
+
+.text {
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-weight: var(--bl-weight-strong);
+}
+
+.detail {
+  margin: var(--bl-space-1) 0 0;
+  color: var(--bl-color-text-muted);
+  overflow-wrap: anywhere;
+}

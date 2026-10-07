@@ -1,24 +1,29 @@
 .nav {
   display: flex;
-  gap: var(--bl-space-2);
+  align-self: stretch;
+  gap: var(--bl-space-1);
 }
 
+/* The link is as tall as the bar, so the active underline sits on the bar's own bottom rule. */
 .link {
-  padding: var(--bl-space-1) var(--bl-space-3);
-  border-radius: var(--bl-radius);
-  color: var(--bl-color-text);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--bl-space-3);
+  border-bottom: 2px solid transparent;
+  color: var(--bl-color-text-muted);
+  font-weight: var(--bl-weight-medium);
   text-decoration: none;
+  transition:
+    color var(--bl-duration),
+    border-color var(--bl-duration);
 }
 
 .link:hover {
-  background: var(--bl-color-surface-muted);
+  color: var(--bl-color-text);
 }
 
-.active {
-  background: var(--bl-color-primary);
-  color: var(--bl-color-primary-contrast);
-}
-
+.active,
 .active:hover {
-  background: var(--bl-color-primary);
+  border-bottom-color: var(--bl-color-primary);
+  color: var(--bl-color-primary);
 }

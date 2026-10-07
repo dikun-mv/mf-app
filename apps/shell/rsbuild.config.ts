@@ -5,6 +5,7 @@ import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginTypedCSSModules } from '@rsbuild/plugin-typed-css-modules';
 
 const NAME = 'shell';
+const GATEWAY_ORIGIN = 'http://localhost:8080';
 
 // The installed version decides the range, so this can't drift from the pnpm catalog.
 const reactVersion = (createRequire(import.meta.url)('react/package.json') as { version: string }).version;
@@ -32,5 +33,11 @@ export default defineConfig({
   },
   html: { title: 'Baseline' },
   dev: { assetPrefix: '/' },
-  server: { port: 3000, strictPort: true },
+  server: {
+    port: 3000,
+    strictPort: true,
+    // In hosted dev the remotes load from :3010 and :3020 but run on this page's origin, so their PocketBase
+    // calls (`/api/people`, `/api/delivery`) land here; the gateway answers them, as it does in Docker (T5.0a, T6.0a).
+    proxy: { '/api': GATEWAY_ORIGIN },
+  },
 });

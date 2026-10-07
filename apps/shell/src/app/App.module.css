@@ -1,5 +1,15 @@
+/* The shell owns the page, so the browser's default body margin goes: the top bar runs edge to edge. */
+:global(body) {
+  margin: 0;
+}
+
 .root {
   box-sizing: border-box;
   min-height: 100vh;
   background: var(--bl-color-surface);
+}
+
+/* What shows before the shell is ready: the config is loading, or could not be read. */
+.boot {
+  padding: var(--bl-space-4);
 }

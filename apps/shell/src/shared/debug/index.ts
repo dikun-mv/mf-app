@@ -1,1 +1,1 @@
-export { probeRows, reportShellReact } from './reactProbe';
+export { probeRows, reportShellReact, summarizeProbes, type ProbeRow, type ReactProbe } from './reactProbe';

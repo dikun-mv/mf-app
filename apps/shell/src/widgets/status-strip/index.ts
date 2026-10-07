@@ -1,1 +1,1 @@
-export { ReactReadout } from './ui/ReactReadout';
+export { StatusStrip } from './ui/StatusStrip';

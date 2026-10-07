@@ -1,2 +1,10 @@
+export { displayUrl } from './displayUrl';
 export { useShellNavigate } from './navigation';
-export { ShellContext, useShell, type ShellState } from './ShellContext';
+export {
+  SelectionContext,
+  ShellContext,
+  useSelection,
+  useShell,
+  type SelectionState,
+  type ShellState,
+} from './ShellContext';

@@ -6,6 +6,7 @@ import { pluginTypedCSSModules } from '@rsbuild/plugin-typed-css-modules';
 
 const NAME = 'people';
 const DEV_PORT = 3010;
+const GATEWAY_ORIGIN = 'http://localhost:8080';
 
 // The installed version decides the range, so this can't drift from the pnpm catalog.
 const reactVersion = (createRequire(import.meta.url)('react/package.json') as { version: string }).version;
@@ -43,7 +44,14 @@ export default defineConfig(({ command }) => {
       tags: [{ tag: 'base', attrs: { href: isDev ? '/' : `/remotes/${NAME}/` }, head: true, append: false }],
     },
     dev: { assetPrefix: `http://localhost:${String(DEV_PORT)}/` },
-    // Only the shell's dev server may load this dev build cross-origin.
-    server: { port: DEV_PORT, strictPort: true, cors: { origin: 'http://localhost:3000' } },
+    server: {
+      port: DEV_PORT,
+      strictPort: true,
+      // Only the shell's dev server may load this dev build cross-origin.
+      cors: { origin: 'http://localhost:3000' },
+      // The app reads PocketBase at `/api/people` and `/api/delivery` on its own origin; in dev the gateway
+      // answers them, so dev talks to the same PocketBase as Docker (T5.0a).
+      proxy: { '/api': GATEWAY_ORIGIN },
+    },
   };
 });
