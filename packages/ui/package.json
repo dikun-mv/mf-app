@@ -21,6 +21,8 @@
   },
   "devDependencies": {
     "@types/react": "^18.3.28",
-    "react": "catalog:"
+    "@types/react-dom": "^18.3.7",
+    "react": "catalog:",
+    "react-dom": "catalog:"
   }
 }

@@ -58,5 +58,17 @@ export default defineConfig({
       exclude: [`apps/${app}/src/data/**`],
       setupFiles: [`apps/${app}/src/test-setup.ts`],
     })),
+    {
+      // `ui` may import nothing but React and clsx (the ui-deps rule covers its tests too), so its tests
+      // use Rstest's globals and a small DOM helper in `packages/ui/src/testing/` rather than Testing
+      // Library. It has no Rsbuild config of its own: it reuses the shell's, so its CSS Modules compile
+      // as in an app, with the shell's class-name prefix (tests never assert on class names).
+      name: 'components-ui',
+      extends: withRsbuildConfig({ cwd: 'apps/shell', modifyRsbuildConfig: withoutModuleFederation }),
+      testEnvironment: 'jsdom' as const,
+      globals: true,
+      include: ['packages/ui/src/components/**/*.test.tsx'],
+      setupFiles: ['packages/ui/src/testing/setup.ts'],
+    },
   ],
 });
