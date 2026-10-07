@@ -214,6 +214,32 @@ describe('Row actions', () => {
     expect(await screen.findAllByRole('rowheader', { name: 'Henrik Bauer' })).toHaveLength(before);
   });
 
+  it('keeps an assigned person’s row when the first value is saved with the real cell editor', async () => {
+    const { user, repository } = renderGrid();
+    await screen.findAllByRole('rowheader', { name: 'Adaeze Okafor' });
+    const before = screen.queryAllByRole('rowheader', { name: 'Sara Lindholm' }).length;
+    await user.click(await moreOf('Design'));
+    await user.click(screen.getByRole('button', { name: 'Assign person…' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Assign a person to "Design"' });
+    await user.selectOptions(await within(dialog).findByRole('combobox', { name: 'Employee' }), 'emp-060');
+    await user.click(within(dialog).getByRole('button', { name: 'Assign' }));
+
+    // The new row is the one whose March cell has no allocation.
+    const rows = screen.getAllByRole('rowheader', { name: 'Sara Lindholm' }).map((header) => header.closest('tr'));
+    expect(rows).toHaveLength(before + 1);
+    const empty = rows.find((row) =>
+      within(row as HTMLElement).queryByRole('button', { name: /Mar 2026.*no allocation/ }),
+    );
+    await user.click(within(empty as HTMLElement).getByRole('button', { name: /Mar 2026.*no allocation/ }));
+    await user.type(screen.getByRole('textbox', { name: /Edit Sara Lindholm, Mar 2026/ }), '0.25{Enter}');
+
+    expect(await screen.findByText('Saved 0.25 PM for Sara Lindholm, Design, Mar 2026.')).toBeInTheDocument();
+    expect(repository.written).toHaveLength(1);
+    // The row is still there, now holding the value: one row more than before, not two and not none.
+    expect(screen.getAllByRole('rowheader', { name: 'Sara Lindholm' })).toHaveLength(before + 1);
+    expect(screen.getByRole('button', { name: /Sara Lindholm, Mar 2026, person-months: 0.25/ })).toBeInTheDocument();
+  });
+
   describe('an assigned person with no value yet', () => {
     // Ledger migration › Data checks, a leaf at the second level with nothing on it.
     const leafData = () => {

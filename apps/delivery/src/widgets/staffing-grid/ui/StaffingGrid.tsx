@@ -23,7 +23,7 @@ const UNIT_NAMES: Record<DisplayUnit, string> = {
 
 export interface StaffingGridProps {
   projectId: ProjectId;
-  /** What the cells show. Person-months until the unit switcher exists (T6.5). */
+  /** What the cells show. Person-months unless given; the project page passes the unit from `?unit=` (T6.5). */
   unit?: DisplayUnit;
 }
 
@@ -44,8 +44,8 @@ export function StaffingGrid({ projectId, unit = 'personMonths' }: StaffingGridP
   useEffect(() => {
     if (staleAssignments.length > 0) forget(staleAssignments);
   }, [staleAssignments, forget]);
-  // What the features in the slots report (D33): the status line, and a failed write's message.
-  const { status, failure, report } = useGridFeedback();
+  // What the features in the slots report (D33): the status line.
+  const { status, report } = useGridFeedback();
   const actions = useMemo(() => ({ report, assigned, assign, forget }), [report, assigned, assign, forget]);
   // Keys of the collapsed nodes: empty means everything is open, as on load. Local state (D31).
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set());
@@ -71,8 +71,7 @@ export function StaffingGrid({ projectId, unit = 'personMonths' }: StaffingGridP
 
   // The toolbar is always there, so the unit can be changed out of a grid that can't be shown.
   const toolbar = Toolbar !== null && <Toolbar projectId={projectId} unit={unit} units={units} />;
-  // A failed write at the top of the widget, the last result in the status line under the toolbar (D33).
-  const failed = failure !== null && <InlineMessage tone={failure.tone}>{failure.text}</InlineMessage>;
+  // The last result, in the status line under the toolbar (D33). A failed write is the toolbar's message.
   const statusLine = <StatusMessage>{status}</StatusMessage>;
   if (!result.ok) {
     // Hours and cost wait for People's data (which never suspends, D32), unless it has failed.
@@ -80,7 +79,6 @@ export function StaffingGrid({ projectId, unit = 'personMonths' }: StaffingGridP
     return (
       <GridActionsProvider value={actions}>
         <div className={styles.widget}>
-          {failed}
           {toolbar}
           {statusLine}
           {waiting ? (
@@ -99,7 +97,6 @@ export function StaffingGrid({ projectId, unit = 'personMonths' }: StaffingGridP
   return (
     <GridActionsProvider value={actions}>
       <div className={styles.widget}>
-        {failed}
         {toolbar}
         {statusLine}
         <div className={styles.scroll} onFocus={onFocus}>

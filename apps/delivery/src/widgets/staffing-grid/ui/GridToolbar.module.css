@@ -1,6 +1,0 @@
-.toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--bl-space-2) var(--bl-space-4);
-}

@@ -80,9 +80,13 @@ describe('StaffingGrid', () => {
     const okafor = await rowOf('Adaeze Okafor');
     const { months, total } = valuesOf(okafor);
     expect(months[0]).toBe('0.50');
-    expect(months[1]).toBe('·0.00, no allocation');
+    expect(months[1]).toBe('·');
     expect(total).toBe('0.50');
     expect(within(okafor).getAllByText('·')[0]).toHaveAttribute('aria-hidden', 'true');
+    // The cell is a button whose name says what the dot stands for (T6.6, D36).
+    expect(
+      within(okafor).getByRole('button', { name: 'Adaeze Okafor, Apr 2026, person-months: no allocation' }),
+    ).toBeInTheDocument();
   });
 
   it('contains its visually hidden texts: the scrolling box is their positioning context', () => {
@@ -107,11 +111,16 @@ describe('StaffingGrid', () => {
     const before = valuesOf(discovery);
     expect(before.months[0]).toBe('0.50');
     expect(before.total).toBe('9.69');
-    // The `⋯` buttons are disclosures too, and start closed: only the expand/collapse toggles are open.
-    const grid = screen.getByRole('table');
-    for (const toggle of within(grid).getAllByRole('button', { name: (name) => !name.startsWith('Actions for') })) {
-      expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    }
+    // The row labels' toggles (the cells' buttons are the editors, T6.6). The `⋯` buttons are disclosures
+    // too, and start closed.
+    const toggles = screen
+      .getAllByRole('button')
+      .filter(
+        (button) =>
+          button.closest('th[scope="row"]') !== null && !button.getAttribute('aria-label')?.startsWith('Actions for'),
+      );
+    expect(toggles.length).toBeGreaterThan(0);
+    for (const toggle of toggles) expect(toggle).toHaveAttribute('aria-expanded', 'true');
     expect(countOf('Design')).toBe(2);
     // People's employees load apart from Delivery's data, so names appear a moment after the rows.
     expect(await screen.findAllByRole('rowheader', { name: 'Adaeze Okafor' })).toHaveLength(2);
@@ -165,10 +174,11 @@ describe('StaffingGrid', () => {
     const reached: string[] = [];
     for (let step = 0; step < 40; step += 1) {
       await user.tab();
-      if (document.activeElement === document.body) break;
-      // The toolbar's button comes before the table; the table is what this test is about.
-      if (!screen.getByRole('table').contains(document.activeElement)) continue;
-      reached.push(document.activeElement?.getAttribute('aria-expanded') ?? 'not a toggle');
+      const stop = document.activeElement;
+      if (stop === document.body) break;
+      // The unit switcher above the table and the editable person cells are other tasks' stops.
+      if (stop === null || stop.closest('tr') === null || stop.closest('td[data-row-key]') !== null) continue;
+      reached.push(stop.getAttribute('aria-expanded') ?? 'not a toggle');
     }
     expect(reached.length).toBeGreaterThan(0);
     expect(reached.every((state) => state === 'true' || state === 'false')).toBe(true);

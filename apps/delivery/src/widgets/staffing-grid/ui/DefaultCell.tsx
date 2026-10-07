@@ -3,7 +3,7 @@ import type { CellSlotProps } from './slots/types';
 
 /**
  * A person's cell as plain text: the displayed value, or `·` where nothing is stored for the month, which
- * a screen reader hears as the value with "no allocation" (screens 3.2). The editor replaces this (T6.6).
+ * a screen reader hears as the value with "no allocation" (screens 3.2). The grid's cell slot holds the editor instead (T6.6, `features/edit-cell`); this is the read-only version.
  *
  * It is also the model for a renderer: the `adornment` (the markers) goes right after the value, and
  * `describedById` goes on the element that takes focus. This text isn't focusable, so the id sits on the

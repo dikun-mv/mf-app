@@ -1,0 +1,4 @@
+/* "+ Add top-level item" keeps its own size in the widget's column. */
+.add {
+  display: flex;
+}
