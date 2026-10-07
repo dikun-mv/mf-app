@@ -138,22 +138,37 @@ describe('RealtimeProvider', () => {
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['people'] });
   });
 
-  it('refetches at the first connect only the queries that have already loaded', () => {
+  it('refetches at the first connect too, which closes the startup gap', () => {
     const app = renderProvider();
     const invalidate = rs.spyOn(app.queryClient, 'invalidateQueries');
     act(() => {
       app.repository.connect('people');
     });
-
     expect(invalidate).toHaveBeenCalledTimes(1);
-    const [filters] = invalidate.mock.calls[0] ?? [];
-    const loaded = app.queryClient.getQueryCache().find({ queryKey: employeeKeys.all });
-    const loading = app.queryClient
-      .getQueryCache()
-      .build(app.queryClient, { queryKey: ['people', 'not-yet'] as readonly unknown[] });
-    expect(filters?.queryKey).toEqual(['people']);
-    expect(loaded && filters?.predicate?.(loaded)).toBe(true);
-    expect(filters?.predicate?.(loading)).toBe(false);
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['people'] });
+  });
+
+  it('refetches a query whose first fetch is still in flight, so it cannot keep what the server read earlier', async () => {
+    const repository = createFakeRepository();
+    const release = repository.holdReads();
+    renderWithApp(
+      <RealtimeProvider instance="people">
+        <Adaeze />
+      </RealtimeProvider>,
+      { repository },
+    );
+    // The first fetch has read the old rates and waits to answer. An edit lands, then the subscription goes live.
+    await rs.waitFor(() => {
+      expect(screen.queryByText(/earns/)).not.toBeInTheDocument();
+    });
+    repository.setRateRecordsSilently(RATE_RECORDS.map((r) => ({ ...r, hourlyCost: r.hourlyCost + 1 })));
+    act(() => {
+      repository.connect('people');
+    });
+    release();
+
+    expect(await screen.findByText('Adaeze Okafor earns 121 an hour')).toBeInTheDocument();
+    expect(screen.queryByText('Adaeze Okafor earns 120 an hour')).not.toBeInTheDocument();
   });
 
   it('picks up an edit made between the first load and the subscription going live', async () => {
