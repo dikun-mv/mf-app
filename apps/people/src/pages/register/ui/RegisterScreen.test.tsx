@@ -39,11 +39,6 @@ describe('the register', () => {
     expect(screen.getByRole('columnheader', { name: 'Rate today' })).toBeInTheDocument();
   });
 
-  it('has no capacity column yet (T5.4 adds it)', async () => {
-    await renderRegister();
-    expect(screen.queryByRole('columnheader', { name: /capacity/i })).not.toBeInTheDocument();
-  });
-
   it('shows the rate in effect today, not one that starts in the future, and says when there is none', async () => {
     await renderRegister();
     // Adaeze has €80 from 2025, €95 from 12 Mar 2026 and a €120 rate that starts in 2099.

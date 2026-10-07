@@ -107,3 +107,21 @@ export function describeError(error: unknown): string {
       return `the ${service} service refused the data`;
   }
 }
+
+/** The server refused a write because the data changed under it (a rate starting the same day was added elsewhere). */
+export const isConflictError = (error: unknown): boolean => error instanceof ApiError && error.code === 'conflict';
+
+/** What a conflict says (screens 4): the affected collections have been refetched, so the user can look again. */
+export const CONFLICT_MESSAGE = 'This data was changed elsewhere and has been reloaded. Check it and try again.';
+
+/**
+ * What a failed write says (screens 4, D33): the change was not saved and has been undone. A conflict says the
+ * data changed instead. Only a failure to reach the service suggests trying again, because only then can the
+ * same change succeed later.
+ */
+export function describeWriteFailure(error: unknown): string {
+  if (isConflictError(error)) return CONFLICT_MESSAGE;
+  const retry =
+    error instanceof ApiError && error.code === 'unavailable' ? ' Try again when the connection is back.' : '';
+  return `Your change wasn't saved: ${describeError(error)}. It has been undone.${retry}`;
+}

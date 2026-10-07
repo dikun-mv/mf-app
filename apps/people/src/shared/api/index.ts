@@ -1,4 +1,13 @@
-export { ApiError, describeError, toApiError, type ApiErrorCode, type ServiceName } from './errors';
+export {
+  ApiError,
+  CONFLICT_MESSAGE,
+  describeError,
+  describeWriteFailure,
+  isConflictError,
+  toApiError,
+  type ApiErrorCode,
+  type ServiceName,
+} from './errors';
 export { RealtimeStatusContext, RepositoryContext, useRealtimeStatus, useRepository } from './context';
 export type { RealtimeStatuses } from './context';
 export { loadKey, patchCollection, patchList } from './patch';
@@ -18,3 +27,4 @@ export {
   type RecordEvent,
 } from './repository';
 export { applyChangeSetOptions, useApplyChangeSet } from './useApplyChangeSet';
+export { afterWrites } from './writes';

@@ -37,7 +37,11 @@ export default function App({ ctx, repository }: AppProps) {
       <HostContextProvider ctx={ctx}>
         <QueryClientProvider client={queryClient}>
           <RepositoryContext.Provider value={data}>
-            <RealtimeProvider instance="people">{router ? <RouterProvider router={router} /> : null}</RealtimeProvider>
+            <RealtimeProvider instance="people">
+              <RealtimeProvider instance="delivery">
+                {router ? <RouterProvider router={router} /> : null}
+              </RealtimeProvider>
+            </RealtimeProvider>
           </RepositoryContext.Provider>
         </QueryClientProvider>
       </HostContextProvider>
