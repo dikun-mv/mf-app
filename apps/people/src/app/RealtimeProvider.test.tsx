@@ -161,6 +161,48 @@ describe('RealtimeProvider', () => {
     expect(await screen.findByText('People is live')).toBeInTheDocument();
   });
 
+  it('does not go live on a refetch that started before a drop, when the reconnect waits for a write', async () => {
+    const repository = createFakeRepository();
+    const app = renderWithApp(
+      <RealtimeProvider instance="people">
+        <Status />
+        <Adaeze />
+      </RealtimeProvider>,
+      { repository },
+    );
+    expect(await screen.findByText('Adaeze Okafor earns 120 an hour')).toBeInTheDocument();
+
+    // The first connect starts a refetch whose read is slow.
+    const releaseReads = repository.holdReads();
+    act(() => {
+      repository.connect('people');
+    });
+    // The connection drops and returns while a rate write is in flight, so the new refetch has to wait for it.
+    act(() => {
+      repository.disconnect('people');
+    });
+    const releaseWrites = repository.holdWrites();
+    const write = app.queryClient
+      .getMutationCache()
+      .build(app.queryClient, applyChangeSetOptions(app.queryClient, repository))
+      .execute({ ...EMPTY_RATE_CHANGE_SET, create: [newRate] });
+    await rs.waitFor(() => {
+      expect(cachedRates(app)).toContainEqual(newRate);
+    });
+    act(() => {
+      repository.connect('people');
+    });
+
+    // The first refetch answers now, from before the outage: that must not say the cache is current.
+    releaseReads();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.getByText('People is down')).toBeInTheDocument();
+
+    releaseWrites();
+    await write;
+    expect(await screen.findByText('People is live')).toBeInTheDocument();
+  });
+
   it('refetches everything after a reconnect, because missed events are not replayed', () => {
     const app = renderProvider();
     act(() => {

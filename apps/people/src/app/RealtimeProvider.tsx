@@ -82,6 +82,8 @@ export function RealtimeProvider({ instance, children }: { instance: Instance; c
       onDisconnect: () => {
         connected = false;
         lost = true;
+        // A refetch already running started before the drop and may have read pre-outage data: it no longer counts.
+        latest += 1;
         setStatus('down');
       },
     });
