@@ -1,8 +1,8 @@
-import { UnitSwitcher } from '../../../../features/switch-unit';
+import { Toolbar } from '../Toolbar';
 import type { ToolbarSlot } from './types';
 
 /**
- * The strip above the grid, for T6.5 (the unit switcher), the status line (D33) and T6.3's Add top-level
- * item. Wiring line: replace the component with the one that places them.
+ * The strip above the grid, for T6.5 (the unit switcher), T6.6's write-failed message, the status line (D33)
+ * and T6.3's Add top-level item. Wiring line: the component that places them is `ui/Toolbar.tsx`.
  */
-export const toolbarSlot: ToolbarSlot | null = UnitSwitcher;
+export const toolbarSlot: ToolbarSlot | null = Toolbar;

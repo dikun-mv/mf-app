@@ -1,0 +1,96 @@
+/*
+ * A person's cell is the one place the grid takes input, so it is drawn as a quiet button that answers
+ * the pointer, and as a ruled field while it is being edited. The field's outline is the primary colour
+ * (the cell "being edited"); a draft that can't be saved turns it to the danger colour, and the words
+ * beside it say why.
+ */
+.cell {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: var(--bl-space-1);
+}
+
+.value {
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: flex-end;
+  gap: var(--bl-space-1);
+  min-width: 3rem;
+  padding: 0 var(--bl-space-1);
+  border: 0;
+  border-radius: var(--bl-radius);
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-variant-numeric: inherit;
+  text-align: end;
+  cursor: text;
+  transition: background-color var(--bl-duration);
+}
+
+.value:hover {
+  background: color-mix(in srgb, var(--bl-color-primary) 10%, transparent);
+}
+
+.empty {
+  color: var(--bl-color-text-muted);
+}
+
+/* ---- Editing ---- */
+
+.editor {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--bl-space-1);
+}
+
+.field {
+  --field-edge: var(--bl-color-primary);
+
+  display: inline-flex;
+  border-radius: var(--bl-radius);
+  background: var(--bl-color-surface);
+  outline: 2px solid var(--field-edge);
+}
+
+.field[data-invalid] {
+  --field-edge: var(--bl-color-danger);
+}
+
+.input {
+  box-sizing: border-box;
+  width: 5.5rem;
+  padding: 0 var(--bl-space-2);
+  border: 0;
+  background: transparent;
+  color: var(--bl-color-text);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: end;
+}
+
+/* The field's outline is the focus indicator, so the input itself draws none. */
+.input:focus-visible {
+  outline: none;
+}
+
+/* The reason beside the cell reads as text, not a table cell: wrapped, left-aligned and capped in width. */
+.hint,
+.problem {
+  max-inline-size: 16rem;
+  font-size: var(--bl-text-xs);
+  line-height: var(--bl-leading-tight);
+  text-align: start;
+  white-space: normal;
+}
+
+.hint {
+  color: var(--bl-color-text-muted);
+}
+
+.problem {
+  color: var(--bl-color-danger);
+  font-weight: var(--bl-weight-medium);
+}
