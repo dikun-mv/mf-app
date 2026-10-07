@@ -29,6 +29,25 @@ describe('ProjectScreen', () => {
     expect(await screen.findAllByRole('rowheader', { name: 'Adaeze Okafor' })).not.toHaveLength(0);
   });
 
+  it('starts each project’s grid fresh: a node collapsed in one is open again on coming back', async () => {
+    const { router } = renderWithApp(<ProjectScreen />, {
+      repository: createFakeRepository(seedData()),
+      route: '/prj-1',
+      path: ':projectId',
+    });
+    const user = userEvent.setup();
+    const toggle = async () => (await screen.findAllByRole('button', { name: 'Discovery' }))[0] as HTMLElement;
+
+    await user.click(await toggle());
+    expect(await toggle()).toHaveAttribute('aria-expanded', 'false');
+
+    await act(() => router.navigate('/prj-2'));
+    expect(await screen.findByRole('heading', { name: 'Reporting Platform' })).toBeInTheDocument();
+    await act(() => router.navigate('/prj-1'));
+    expect(await screen.findByRole('heading', { name: 'Ledger Consolidation' })).toBeInTheDocument();
+    expect(await toggle()).toHaveAttribute('aria-expanded', 'true');
+  });
+
   it('keeps the header while the grid’s allocations load', async () => {
     const repository = createFakeRepository(seedData());
     const release = repository.holdReads('allocations');

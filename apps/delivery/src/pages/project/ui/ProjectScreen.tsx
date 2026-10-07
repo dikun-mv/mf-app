@@ -39,7 +39,8 @@ function ProjectPage({ id }: { id: ProjectId }) {
         subtitle={`${formatDate(project.startDate)} – ${formatDate(project.endDate)}`}
       />
       <PageBoundary subject="Staffing grid">
-        <StaffingGrid projectId={id} />
+        {/* Keyed by project: its collapsed nodes, open actions and focused cell are not carried to the next one. */}
+        <StaffingGrid key={id} projectId={id} />
       </PageBoundary>
     </>
   );
