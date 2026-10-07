@@ -1,9 +1,12 @@
 /*
  * The dialog sits inside the grid's label cell, so it inherits that cell's nowrap, weight and alignment.
- * Resetting them here keeps the text readable; the dialog itself is drawn by `ui`.
+ * Resetting them here keeps the text readable; the dialog itself is drawn by `ui`. The element in the
+ * selector makes this win over `ui`'s own rule whatever order the stylesheets load in.
  */
-.dialog {
+dialog.dialog {
+  font-size: var(--bl-text-base);
   font-weight: normal;
+  font-variant-numeric: normal;
   text-align: start;
   white-space: normal;
 }
