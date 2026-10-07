@@ -1,11 +1,7 @@
+/* The page's blocks, one under the other: the header, the capacity message, the rate history. */
 .screen {
   display: flex;
   flex-direction: column;
-  gap: var(--bl-space-2);
-  align-items: flex-start;
-}
-
-.links {
-  margin: 0;
-  padding-left: var(--bl-space-3);
+  gap: var(--bl-space-4);
+  align-items: stretch;
 }

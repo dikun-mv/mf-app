@@ -44,7 +44,7 @@ describe('People hosted under /people', () => {
     await screen.findByRole('heading', { name: 'Employees' });
 
     goTo('/people/emp-003', { notify: true });
-    expect(await screen.findByRole('heading', { name: /Employee emp-003/ })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Milan Brandt' })).toBeInTheDocument();
 
     goTo('/people', { notify: true });
     expect(await screen.findByRole('heading', { name: 'Employees' })).toBeInTheDocument();
