@@ -16,6 +16,7 @@ export * from './projectGrid';
 export * from './rates';
 export * from './result';
 export * from './rounding';
+export * from './rowActions';
 export * from './roundGrid';
 export * from './tree';
 export * from './units';
