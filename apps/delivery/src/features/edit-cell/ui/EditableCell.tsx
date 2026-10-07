@@ -12,14 +12,17 @@ import { UNIT_NAMES } from './unitNames';
  * beside the value, inside the button, so the button's `aria-describedby` points at the details panel
  * where the markers' full text is (T6.9, T6.12).
  *
- * The editor remembers the unit it was opened in, so a unit change closes it instead of leaving a draft
- * typed in one unit under numbers shown in another.
+ * The editor remembers the unit it was opened in, and a unit change closes it for good instead of leaving a
+ * draft typed in one unit under numbers shown in another.
  */
 export function EditableCell(props: EditableCellProps) {
   const { row, cell, month, unit, adornment, describedById } = props;
   const [editingIn, setEditingIn] = useState<DisplayUnit | null>(null);
   const button = useRef<HTMLButtonElement>(null);
   const returnFocus = useRef(false);
+  // A unit change ends the edit for good: the draft was typed in the old unit, and the editor must not come
+  // back, taking focus, when the user returns to it. (Adjusting state while rendering, not in an effect.)
+  if (editingIn !== null && editingIn !== unit) setEditingIn(null);
   const editing = editingIn === unit;
   const hasAdornment = adornment !== null;
 

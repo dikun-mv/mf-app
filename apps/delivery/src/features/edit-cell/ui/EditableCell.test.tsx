@@ -3,7 +3,7 @@ import { gridView, type DisplayUnit } from '@baseline/delivery-domain';
 import { describe, expect, it } from '@rstest/core';
 import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { Suspense, type ReactNode } from 'react';
+import { Suspense, useState, type ReactNode } from 'react';
 import { useAllocations } from '../../../entities/allocation';
 import { useBreakdownItems } from '../../../entities/breakdown-item';
 import { useEmployees } from '../../../entities/employee';
@@ -275,6 +275,46 @@ describe('EditableCell', () => {
     expect(screen.getByRole('textbox')).toHaveValue('0.3');
     await user.keyboard('{Enter}');
     await cellButton('Anja Keller, Apr 2026, person-months: 0.30');
+  });
+
+  it('closes an open editor when the unit changes, and does not bring it back with the unit', async () => {
+    const repository = createFakeRepository(seedData());
+    function Switch() {
+      const [unit, setUnit] = useState<DisplayUnit>('personMonths');
+      return (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              setUnit(unit === 'personMonths' ? 'hours' : 'personMonths');
+            }}
+          >
+            Switch unit
+          </button>
+          <OneCell unit={unit} {...ANJA_APRIL} />
+        </>
+      );
+    }
+    const user = userEvent.setup();
+    renderWithApp(
+      <Suspense fallback={null}>
+        <Switch />
+      </Suspense>,
+      { repository },
+    );
+    await user.click(await cellButton('Anja Keller, Apr 2026, person-months: 0.20'));
+    await user.clear(screen.getByRole('textbox'));
+    await user.type(screen.getByRole('textbox'), 'abc');
+    // The refused draft keeps the editor open through blur.
+    await user.click(screen.getByRole('button', { name: 'Switch unit' }));
+    expect(await screen.findByRole('button', { name: /Apr 2026, hours/ })).toBeInTheDocument();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Switch unit' }));
+    await cellButton('Anja Keller, Apr 2026, person-months: 0.20');
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Switch unit' })).toHaveFocus();
+    expect(repository.written).toHaveLength(0);
   });
 
   it('points the button at the details panel when markers sit beside the value', async () => {
