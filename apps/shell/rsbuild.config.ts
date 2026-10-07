@@ -21,7 +21,7 @@ export default defineConfig({
       dts: false,
     }),
   ],
-  source: { entry: { index: './src/index.ts' } },
+  source: { entry: { index: './src/app/index.ts' } },
   output: {
     // Absolute asset URLs, so a reload on a deep link such as /people/emp-003 still finds its scripts and CSS.
     assetPrefix: '/',

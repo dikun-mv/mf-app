@@ -33,7 +33,7 @@ export default defineConfig({
     {
       name: 'domain',
       testEnvironment: 'node',
-      include: ['packages/*/src/**/*.test.ts', 'apps/*/src/data/**/*.test.ts'],
+      include: ['packages/*/src/**/*.test.ts', 'apps/*/src/shared/api/**/*.test.ts'],
     },
     {
       // PocketBase services (ADR 033): `pb_hooks/lib` on its own. Integration tests need the running
@@ -49,13 +49,13 @@ export default defineConfig({
       include: ['.dependency-cruiser.test.ts'],
     },
     // One jsdom project per app, each reusing that app's Rsbuild config, so the React plugin and that
-    // app's CSS Modules settings apply (ADR 014). Tests next to the code; `src/data/` adapters run in `domain`.
+    // app's CSS Modules settings apply (ADR 014). Tests next to the code; `src/shared/api/` adapters run in `domain`.
     ...COMPONENT_APPS.map((app) => ({
       name: `components-${app}`,
       extends: withRsbuildConfig({ cwd: `apps/${app}`, modifyRsbuildConfig: withoutModuleFederation }),
       testEnvironment: 'jsdom' as const,
       include: [`apps/${app}/src/**/*.test.{ts,tsx}`],
-      exclude: [`apps/${app}/src/data/**`],
+      exclude: [`apps/${app}/src/shared/api/**`],
       setupFiles: [`apps/${app}/src/test-setup.ts`],
     })),
     {

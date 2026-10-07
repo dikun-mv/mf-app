@@ -33,6 +33,38 @@ const workspacePackages: Record<string, string> = {
 
 const npmPackages = ['zod', 'react', 'react-dom', 'clsx', 'date-fns', 'pocketbase', 'lodash', '@rstest/core'];
 
+/**
+ * An app's Feature-Sliced Design layout (D28) that obeys the three FSD rules: every import goes down
+ * a layer, through the slice's `index.ts`; slices reach inside their own folders freely; a shared
+ * segment imports another shared segment through its `index.ts`.
+ */
+function fsdLayout(app: string): Files {
+  const src = `apps/${app}/src`;
+  return {
+    [`${src}/app/main.ts`]: `import { Register } from '../pages/register';\nimport { api } from '../shared/api';\nexport const main = [Register, api];`,
+    [`${src}/pages/register/index.ts`]: `export { Register } from './ui/Register';`,
+    [`${src}/pages/register/ui/Register.ts`]: [
+      `import { Table } from '../../../widgets/table';`,
+      `import { Search } from '../../../features/search';`,
+      `import { format } from '../model/format';`,
+      `export const Register = [Table, Search, format];`,
+    ].join('\n'),
+    [`${src}/pages/register/model/format.ts`]: `export const format = 1;`,
+    [`${src}/widgets/table/index.ts`]: `export { Table } from './ui/Table';`,
+    [`${src}/widgets/table/ui/Table.ts`]: `import { Employee } from '../../../entities/employee';\nimport { util } from '../../../shared/lib';\nexport const Table = [Employee, util];`,
+    [`${src}/widgets/chart/index.ts`]: `export const Chart = 1;`,
+    [`${src}/features/search/index.ts`]: `export { Search } from './ui/Search';`,
+    [`${src}/features/search/ui/Search.ts`]: `import { Employee } from '../../../entities/employee';\nexport const Search = Employee;`,
+    [`${src}/features/filter/index.ts`]: `export const Filter = 1;`,
+    [`${src}/entities/employee/index.ts`]: `export { Employee } from './model/employee';`,
+    [`${src}/entities/employee/model/employee.ts`]: `import { api } from '../../../shared/api';\nexport const Employee = api;`,
+    [`${src}/entities/rate/index.ts`]: `export const Rate = 1;`,
+    [`${src}/shared/api/index.ts`]: `export { api } from './client';`,
+    [`${src}/shared/api/client.ts`]: `export const api = 1;`,
+    [`${src}/shared/lib/index.ts`]: `import { api } from '../api';\nexport const util = api;`,
+  };
+}
+
 /** A layout that obeys every rule, including the imports that are allowed to cross teams. */
 const clean: Files = {
   'packages/host-contract/src/index.ts': `import { z } from 'zod';\nexport const IsoDate = z;`,
@@ -58,6 +90,8 @@ const clean: Files = {
     `export const view = [Button, pricing, EmployeeId];`,
   ].join('\n'),
   'apps/shell/src/index.ts': `import { Button } from '@baseline/ui';\nimport { IsoDate } from '@baseline/host-contract';\nexport const shell = [Button, IsoDate];`,
+  ...fsdLayout('people'),
+  ...fsdLayout('shell'),
 };
 
 const tempDirs: string[] = [];
@@ -223,6 +257,104 @@ describe('dependency boundary rules', () => {
       rule: 'ui-deps',
       description: 'ui imports a workspace package',
       files: { 'packages/ui/src/leak.ts': `import '@baseline/host-contract';` },
+    },
+    // Feature-Sliced Design (D28). The fixtures import through index.ts wherever the rule under test
+    // isn't the public-API one, so only the named rule can be the one that fires.
+    {
+      rule: 'fsd-layers-import-down',
+      description: 'shared imports a widget',
+      files: { 'apps/people/src/shared/lib/leak.ts': `import '../../widgets/table';` },
+    },
+    {
+      rule: 'fsd-layers-import-down',
+      description: 'an entity imports a feature',
+      files: { 'apps/people/src/entities/employee/model/leak.ts': `import '../../../features/search';` },
+    },
+    {
+      rule: 'fsd-layers-import-down',
+      description: 'a feature imports a page',
+      files: { 'apps/people/src/features/search/ui/leak.ts': `import '../../../pages/register';` },
+    },
+    {
+      rule: 'fsd-layers-import-down',
+      description: 'a widget imports the app layer',
+      files: { 'apps/people/src/widgets/table/ui/leak.ts': `import '../../../app/main';` },
+    },
+    {
+      rule: 'fsd-layers-import-down',
+      description: 'shared imports an entity, type-only',
+      files: {
+        'apps/people/src/shared/lib/leak.ts': `import type { Employee } from '../../entities/employee';\nexport type { Employee };`,
+      },
+    },
+    {
+      rule: 'fsd-layers-import-down',
+      description: 'shared imports a widget in the shell too',
+      files: { 'apps/shell/src/shared/lib/leak.ts': `import '../../widgets/table';` },
+    },
+    {
+      rule: 'fsd-no-cross-slice',
+      description: 'a widget imports another widget, through its index.ts',
+      files: { 'apps/people/src/widgets/table/ui/leak.ts': `import '../../chart';` },
+    },
+    {
+      rule: 'fsd-no-cross-slice',
+      description: 'a feature imports another feature',
+      files: { 'apps/people/src/features/search/ui/leak.ts': `import '../../filter';` },
+    },
+    {
+      rule: 'fsd-no-cross-slice',
+      description: 'an entity imports another entity (no @x cross-imports)',
+      files: { 'apps/people/src/entities/employee/model/leak.ts': `import '../../rate';` },
+    },
+    {
+      rule: 'fsd-no-cross-slice',
+      description: 'a page imports another page',
+      files: {
+        'apps/people/src/pages/other/index.ts': `export const Other = 1;`,
+        'apps/people/src/pages/register/ui/leak.ts': `import '../../other';`,
+      },
+    },
+    {
+      rule: 'fsd-no-cross-slice',
+      description: 'a widget imports another widget, type-only',
+      files: {
+        'apps/shell/src/widgets/chart/index.ts': `export type Chart = 1;`,
+        'apps/shell/src/widgets/table/ui/leak.ts': `import type { Chart } from '../../chart';\nexport type { Chart };`,
+      },
+    },
+    {
+      rule: 'fsd-public-api',
+      description: 'a page reaches into a widget’s folders',
+      files: { 'apps/people/src/pages/register/ui/leak.ts': `import '../../../widgets/table/ui/Table';` },
+    },
+    {
+      rule: 'fsd-public-api',
+      description: 'a widget reaches into an entity’s model',
+      files: { 'apps/people/src/widgets/table/ui/leak.ts': `import '../../../entities/employee/model/employee';` },
+    },
+    {
+      rule: 'fsd-public-api',
+      description: 'the app layer reaches into a page',
+      files: { 'apps/people/src/app/leak.ts': `import '../pages/register/ui/Register';` },
+    },
+    {
+      rule: 'fsd-public-api',
+      description: 'the app layer reaches into a shared segment',
+      files: { 'apps/people/src/app/leak.ts': `import '../shared/api/client';` },
+    },
+    {
+      rule: 'fsd-public-api',
+      description: 'a shared segment reaches into another shared segment',
+      files: { 'apps/people/src/shared/lib/leak.ts': `import '../api/client';` },
+    },
+    {
+      rule: 'fsd-public-api',
+      description: 'a deep import, type-only',
+      files: {
+        'apps/shell/src/app/leak.ts': `import type { Table } from '../widgets/table/ui/Table';\nexport type { Table };`,
+        'apps/shell/src/widgets/table/ui/Table.ts': `export type Table = 1;`,
+      },
     },
     {
       rule: 'no-circular',

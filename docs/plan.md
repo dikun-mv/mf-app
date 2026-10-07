@@ -632,9 +632,9 @@ Phases 4, 5 and 6 run in parallel lanes, each one `builder` in its own worktree,
 
 ### Phase 4 — Shell
 
-- [ ] **T4.0a** **ADRs 036–047** for D26–D37, in brief (lane PL). Add them to the README's decision summary when T9.1 writes it.
-- [ ] **T4.0b** **FSD rules in `.dependency-cruiser.cjs`** (lane PL): `fsd-layers-import-down`, `fsd-no-cross-slice` and `fsd-public-api`, each scoped to `^apps/([^/]+)/src/`, each proved to fail in `.dependency-cruiser.test.ts` like the T0.2 rules. In the same change, move the root `rstest.config.ts` globs for the adapters from `apps/*/src/data/` to `apps/*/src/shared/api/` (the `domain` project includes them, each `components-<app>` project excludes them), since all three apps share that file. The same builder writes them right after T4.0c, once all three apps are restructured. If dependency-cruiser can't express one (see the assumptions table), stop and report it.
-- [ ] **T4.0c** **Restructure each app into FSD layers (D28)**, moving code without changing behaviour. One builder does all three apps (one commit per app), together with T4.0b, before the app lanes start:
+- [x] **T4.0a** **ADRs 036–047** for D26–D37, in brief (lane PL). Add them to the README's decision summary when T9.1 writes it.
+- [x] **T4.0b** **FSD rules in `.dependency-cruiser.cjs`** (lane PL): `fsd-layers-import-down`, `fsd-no-cross-slice` and `fsd-public-api`, each scoped to `^apps/([^/]+)/src/`, each proved to fail in `.dependency-cruiser.test.ts` like the T0.2 rules. In the same change, move the root `rstest.config.ts` globs for the adapters from `apps/*/src/data/` to `apps/*/src/shared/api/` (the `domain` project includes them, each `components-<app>` project excludes them), since all three apps share that file. The same builder writes them right after T4.0c, once all three apps are restructured. If dependency-cruiser can't express one (see the assumptions table), stop and report it.
+- [x] **T4.0c** **Restructure each app into FSD layers (D28)**, moving code without changing behaviour. One builder does all three apps (one commit per app), together with T4.0b, before the app lanes start:
   - `App.tsx`, `mount.tsx`, `bootstrap.ts(x)`, `index.ts`, `standalone.ts`, `routing/`, `host/` and the shell's `ShellContext.tsx` → `app/`
   - `screens/*Screen.tsx` → one `pages/<name>/` slice each; `RouteError` and `NotFoundScreen` → `shared/ui` (one slice can't import another, and every page uses them)
   - the shell's `layout/Nav` → `widgets/top-bar`, `remotes/RemotePanel` and `RemoteRoute` → `widgets/remote-panel`, `debug/ReactReadout` → `widgets/status-strip`, `remotes/remoteLoader` and `federation` → `shared/federation`, `config/` → `shared/config`
@@ -670,7 +670,7 @@ Phases 4, 5 and 6 run in parallel lanes, each one `builder` in its own worktree,
 
 Build the screens in [screens.md](screens.md) §2 from `ui` primitives (`PageHeader`, `Table`, `TextField`, `Button`, `Dialog`, `StatusMessage`, `InlineMessage`). Add a primitive to `ui` only when a second app needs it; until then it stays in People (`CapacityBadge` does).
 
-- [ ] **T5.0** **People domain additions** (lane PD), pure and tested, so the People screens only wire them up:
+- [x] **T5.0** **People domain additions** (lane PD), pure and tested, so the People screens only wire them up:
   - `rateOn(rates, date)`: the rate in effect on a date, or none (the register's *Rate today*, screens 2.1; "today" is passed in, never read inside)
   - `parseAmount(text)` (D34)
   - `formatDate` (`12 Mar 2026`, `en-GB`, D34)
@@ -690,7 +690,7 @@ Build the screens in [screens.md](screens.md) §2 from `ui` primitives (`PageHea
 - [ ] **T5.3** ([screens.md](screens.md) §2.3–§2.5, §4) Build the rate editor: add, correct (inline, in the row) and remove, including retroactively, with inline validation errors from `people-domain`. Removal asks in a `Dialog` and lists the months `pricingImpact` (T1.13, extended in T5.0) flags, but is never blocked. Results go to the `StatusMessage`; a failed write rolls back and shows the screens 4 message. A react-hook-form form with the three validation layers of D27; amounts parsed by `people-domain`'s `parseAmount` (D34); writes through `useApplyChangeSet` (D26). Costs are entered in the display currency and stored in EUR as `amount ÷ perEur` (D11); the `> 0` check runs on the converted value, and a correction whose displayed value is unchanged causes no write, so a round trip through another currency never nudges a stored rate.
 - [ ] **T5.4** ([screens.md](screens.md) §2.1, §2.3, §2.6) Add an oversubscription badge in the register and the detail view, driven by the `delivery-contract` load feed through T5.0's `capacitySummary`. List the affected months. The detail view also says *Within capacity* when no month is over, and gives each month's percent and PM when one is.
 - [ ] **T5.5** ([screens.md](screens.md) §2.2) Show a degraded state when the Delivery API is unreachable: "capacity unknown", never a crash. The load feed is the other team's data, so it never suspends or throws (D32); the state comes from the query and the realtime status (D29).
-- [ ] **T5.6** (lane PD, with T5.0) Format money (rates) in the host currency: convert with `HostContext.currency.perEur` and format with `Intl.NumberFormat`, in a small helper inside `people-domain`. The same module converts entered amounts back to EUR (T5.3). People can't use `delivery-domain`'s `formatUnit` (T0.2 rule 2).
+- [x] **T5.6** (lane PD, with T5.0) Format money (rates) in the host currency: convert with `HostContext.currency.perEur` and format with `Intl.NumberFormat`, in a small helper inside `people-domain`. The same module converts entered amounts back to EUR (T5.3). People can't use `delivery-domain`'s `formatUnit` (T0.2 rule 2).
 
 **Exit check:** every state in [screens.md](screens.md) §2 works hosted, the main ones also standalone, and a rate added, corrected or removed survives a reload and a restart of `people-pb`. The exact steps are in [phases-4-6.md](phases-4-6.md) §6.
 
