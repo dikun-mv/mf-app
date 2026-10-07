@@ -18,6 +18,7 @@ Each phase ends with an **exit check**. Don't start the next phase until it pass
 - **References:** a bare `§n` (e.g. §3.4, §3.7) means a section of **the brief**. Sections of this plan are written as "plan §n".
 
 **How to use this plan**
+- **The data layer changed on 2026-10-07, after Phase 2 and before any Phase 3 work:** the Hono + lowdb services became one stock PocketBase instance per team (ADR 032). D4, D5, D6, D8 and D25 were rewritten, D9, D16, D18 and D21 got PocketBase notes, and Phase 3 was re-planned. The new rows are as settled as the rest.
 - **Decisions D1–D25 are settled.** Implement them; don't re-open them. If one turns out to be unworkable (e.g. a library doesn't support an assumed feature), stop and report it rather than switching approach silently. Rows marked *Future option* are deliberately **not** built now.
 - Work phase by phase. Don't start a phase until the previous exit check passes. Phase 1's reference test (T1.7) gates everything.
 - **Dev tooling runs on the host; Docker only runs the suite.** Run every install, build, lint and test command directly with `pnpm` (Node 24 LTS plus Corepack on the host, set up in T0.0). There is no tooling container and no dev container. `docker compose up` must still work with no Node on the host, because Node runs inside the suite's own images.
@@ -33,12 +34,15 @@ Each phase ends with an **exit check**. Don't start the next phase until it pass
 | Exposed remote modules bring their extracted CSS with them when hosted | T2.8 |
 | An async bootstrap (`index.ts → import('./bootstrap')`) is still needed with MF 2.0 | T2.2 |
 | `@rsbuild/plugin-typed-css-modules` generates `.d.ts` files for `*.module.css` | D13, T2.8 |
-| lowdb writes atomically (temp file + rename) and provides `JSONFilePreset` and a `Memory` adapter | D5, T3.4, T3.9 |
-| Hono provides `streamSSE` and `app.request()`, and `@hono/zod-validator` exists and supports zod v4 | D6, D21, T3.4, T3.9 |
+| PocketBase (pin the current release; v0.40.x when this was planned) lets a migration set the system `id` field's `pattern` and `max`, so seed ids (`emp-001`) and client ids (`alloc-<uuid>`, 42 characters) are stored as record ids. Fallback: keep PocketBase ids and store the entity id in a unique `key` field | D4, T3.1, T3.4 |
+| The batch API (`POST /api/batch`, `pb.createBatch()` in the SDK) runs in one transaction, and a migration can enable it and raise `maxRequests` and the timeout through `app.settings()` | D5, D9, T3.4 |
+| `onRecordCreateRequest` and `onRecordUpdateRequest` fire for every item of a batch (documented), and model hooks (`onRecordCreate`, `onRecordUpdate`, `onRecordDelete`, after `e.next()`) run inside the write's transaction through `e.app` | D8, D18, T3.6 |
+| A JS migration can read the seed file with `$os.readFile`. Fallback: generate a CommonJS seed module from `docs/data.json` when the image is built | D5, T3.4 |
+| PocketBase's JS engine (goja) loads a plain CommonJS file with ``require(`${__hooks}/lib/load.js`)`` inside a handler, and Rstest can import the same file in Node | D8, T3.6, T3.9 |
+| The `pocketbase` JS SDK works with a base URL that has a path (`/api/people`), and its realtime `subscribe` reconnects and resubscribes on its own, through nginx with buffering off | D6, T3.4, T3.7 |
 | `date-fns` v4 works with `@date-fns/utc`'s `UTCDate`, so the calendar functions run in UTC | D20, T1.2 |
 | dependency-cruiser supports group matching (`$1`) in `to.pathNot`, detects type-only imports (`dependencyTypes: ['type-only']`), and resolves pnpm workspace symlinks to real `packages/…` paths with `tsConfig` set | D23, T0.2 |
 | Rslint runs type-aware `@typescript-eslint` rules across pnpm workspace packages, and its built-in `react-hooks`, `rstest` and `jsx-a11y` plugins behave like the ESLint originals | D24, T0.2 |
-| Rslib can build a Node **application** (not only a library) as one ESM bundle with `output.target: 'node'` and `autoExternal: false`, inlining workspace packages and `hono`, `lowdb` and `zod` | D25, T2.9 |
 | React Router v7: several `createBrowserRouter` instances from **separate bundled copies** can live on one page without the nested-router error, `basename` can be set at runtime, and a dispatched `popstate` makes a router re-read the URL | D22, T2.3a |
 
 **Left to the implementer** (not discussed; choose the simplest option and record it in an ADR)
@@ -94,28 +98,28 @@ Record each decision in `docs/adr/NNN-*.md` and summarise it in the README. Each
 | D1 | Bundler + MF | **Rsbuild/Rspack + `@module-federation/rsbuild-plugin`**, with `@rsbuild/plugin-react` and the MF 2.0 runtime API from `@module-federation/enhanced/runtime` (`init`, `registerRemotes`, `loadRemote`) | Vite + `@module-federation/vite` | MF is native to Rspack. Rsbuild bundles in dev too, so dev serves a real `remoteEntry.js` with the same sharing rules as production. That lowers the risk to the React-singleton requirement. CSS Modules and typed CSS Modules are first-party. Rstest (D14) reuses the Rsbuild config, so the app and its tests share one pipeline. Cost: less familiar than Vite. |
 | D2 | Monorepo | pnpm workspaces. `apps/*` for the three builds, `packages/*` for per-team domain and contract packages plus the platform-owned `ui`, `services/*` for data APIs | Separate repos | One clone and one `docker compose up`. Ownership boundaries are enforced with dependency-cruiser (D23). |
 | D3 | Canonical allocation unit | **Person-months** (unrounded `number`) | Hours | The seed and the reference input are already in PM, so import is lossless. Capacity becomes "Σ PM per person-month > 1". The other three units are pure functions of (PM, employee, month, rates). |
-| D4 | Data layer | **One small Hono service per team** (`people-api`, `delivery-api`) running in Docker, each seeded from its slice of `data.json`. **Requests are validated with the team's contract schemas, and every rule comes from the team's own domain package**, which the team's app also uses | Browser-only stores (IndexedDB per app); json-server; PocketBase | Ownership is visible and real: each team owns its service. Standalone and hosted see the same data. Each domain rule exists once in TypeScript and runs on the client (instant feedback) and the server (enforcement). The suite needs no host Node, because Node runs in containers. |
-| D5 | Persistence | **lowdb**: one JSON file per service on a Docker volume, written atomically (temp file + rename). Seed on first boot only. Logical transactions come from the in-memory change-set pattern in plan §3 (Service design) | `better-sqlite3`; `node-persist` | Pure JS with no native build, the same JSON shape as the fixtures, and atomic writes built in. Survives reload and container restart. Reset with `docker compose down -v` or a reset script. |
-| D6 | Transport between remotes | **Server-Sent Events** from each service through Hono's `streamSSE` (`/api/people/v1/events`), plus REST reads. Events carry a version and an entity id. Consumers refetch or patch their read model | In-page typed event bus provided by the shell, plus `BroadcastChannel`; polling | Works hosted, standalone and across tabs. No remote depends on the other remote's JS being loaded. |
+| D4 | Data layer | **One stock PocketBase instance per team** (`people-pb`, `delivery-pb`), each in its own container, configured only by the team's `pb_migrations/` (schema, API rules, seed) and a few `pb_hooks/`. **The schema enforces what it can** (field shapes, bounds, unique indexes, relations, locked API rules), and **the rest of the rules run in the team's app through its domain package** before a write. Apps read and write through the official `pocketbase` JS SDK behind their own adapter, and parse every record with the contract schemas (plan §3, Service design) | One small Hono + lowdb service per team, re-running every domain rule on the server (the first plan: a hand-written validate → decide → apply → persist → emit pipeline, write queue, SSE broadcaster and error mapping per team, each with its own tests); one shared PocketBase; json-server; browser-only stores | Almost no server code to write or test: REST, realtime, transactions, validation and persistence come with PocketBase. Ownership stays visible: each team has its own instance, data volume and migrations, and one can fail without the other. Standalone and hosted see the same data, and the suite still needs no host Node. Cost: the server doesn't re-check tree and rate-history rules, so a hand-made API call could break one; the invariant checker (T1.12b) shows any such state in the app, so nothing breaks silently. |
+| D5 | Persistence | **PocketBase's embedded SQLite** in `/pb_data` on one named volume per instance (`people-data`, `delivery-data`). A JS migration seeds the team's slice of `data.json` on the first start only. **Logical transactions are batch requests**: the client sends a domain change set (T1.12) as one `POST /api/batch`, which commits or rolls back as a whole | lowdb JSON files behind a hand-written write queue (the first plan); `better-sqlite3` in a Node service | Transactions, serialised writes and crash safety come from SQLite, with no code of ours. Survives reload and container restart. Reset with `docker compose down -v` or a reset script that empties the volumes (T3.8). |
+| D6 | Transport between remotes | **PocketBase realtime** (Server-Sent Events on `/api/realtime`), through the SDK's `subscribe('<collection>/*')`, plus REST reads. Each event carries the action (`create`, `update`, `delete`) and the whole record. Consumers patch their read model by id, and refetch after a reconnect, because missed events aren't replayed | Hand-written SSE endpoints with versioned events (the first plan); an in-page typed event bus provided by the shell, plus `BroadcastChannel`; polling | Works hosted, standalone and across tabs. No remote depends on the other remote's JS being loaded. Subscriptions follow the collections' list rules, so a team publishes an event stream just by publishing a collection. |
 | D7 | Delivery pricing (the assessed question, §4) | **Delivery reads People's published rate records and computes cost itself** | Delivery asks People for computed cost | Pricing a plan is Delivery's job. A grid of about 720 cells reprices on every keystroke and on € edits that need the blended rate, so it must be local and synchronous. Delivery keeps pricing when the People remote is down. People's contract stays data-only and stable. Cost: Delivery must honour the effective-dating rule. Mitigate with a contract conformance fixture that People publishes and Delivery tests against. |
-| D8 | Capacity flow | Delivery owns allocations, so **`delivery-api` publishes a load contract** at `GET /api/delivery/v1/load`, built with the same `delivery-domain` capacity aggregation the grid uses. Per `(employeeId, month)` it sends `allocatedPersonMonths`, **`overCapacity`** (computed by the T1.11 rule, so the threshold and ε live only in `delivery-domain`) and `causingAllocationId`, and it emits `load.changed` over SSE. People shows oversubscription wherever `overCapacity` is true | People fetches raw allocations | Allocations stay private. People needs no calendar logic, because PM is already capacity-normalised. The aggregation exists only once. |
-| D9 | Leaf gains a child | **Move the leaf's allocations onto the new child** as one change set applied atomically, and tell the user ("3 allocations moved to …") | Refuse with a message | Keeps the user's work. The domain function is easy to test, and the server applies its change set as a single unit. |
+| D8 | Capacity flow | Delivery owns allocations, so **`delivery-pb` publishes an `employee_month_loads` collection**: per `(employeeId, month)`, `allocatedPersonMonths`, **`overCapacity`** (the T1.11 rule) and `causingAllocationId`. Anyone may read it and subscribe to it; nobody may write it through the API. A model hook rewrites the affected row inside every allocation write's transaction, using `pb_hooks/lib/load.js`, a plain-JS copy of `delivery-domain`'s rule for one group. **A property test holds the copy equal to `delivery-domain`** (T3.9). People shows oversubscription wherever `overCapacity` is true | People fetches raw allocations; a SQL view collection (no realtime events); bundling `delivery-domain` into the hooks (a build step for the JS engine, for about 20 lines) | Allocations stay private. People needs no calendar logic, because PM is already capacity-normalised. The rule is defined once in TypeScript, and its single JS mirror can't drift unnoticed. The load row changes in the same transaction as the allocation, so People never sees a stale flag after a committed edit. |
+| D9 | Leaf gains a child | **Move the leaf's allocations onto the new child** as one change set applied atomically (one batch request, D5), and tell the user ("3 allocations moved to …") | Refuse with a message | Keeps the user's work. The domain function is easy to test, and the server applies its change set as a single unit. |
 | D10 | Remote interface | Each remote exposes `./App` (a React component taking a `HostContext` prop) **and** `./mount` (`mount(el, ctx) → { update, unmount }`) | Component only | `mount` gives a framework-agnostic seam and is used by standalone bootstrap. The component path uses the shared React singleton. |
 | D11 | Display currency | Rates are stored in EUR. The shell owns `{ code, perEur }` from a static FX table in runtime config and pushes it through `HostContext`. Cost edits convert the displayed-currency amount back to EUR before dividing by the blended rate. Only PM is stored | EUR only | Meets "shell owns display currency" with no hidden state in the remotes. |
 | D12 | Shared UI primitives | **`packages/ui`** owned by the platform team: a workspace dependency that **each app bundles at build time**, with React as a `peerDependency` and compiled from source by each app's Rsbuild | Shell exposes `shell/ui` through MF; `@baseline/ui` in MF `shared` as non-singleton | Standalone keeps working, and the shell can't push a breaking UI change into a running remote, because changes arrive only when a team rebuilds. The duplicated copy costs a few KB. Runtime MF dedupe can come later if needed. |
 | D13 | Styling | **CSS Modules** (built into Rsbuild), with **`clsx`** for conditional classes. Design tokens are CSS custom properties | Linaria; vanilla-extract; runtime CSS-in-JS | Static CSS with no runtime style injection, no extra MF singleton and no Babel transform. Plain CSS is easy to edit in the live walkthrough, and Rstest uses the same CSS settings through the shared Rsbuild config. Costs: token names aren't typed. Class names are typed with `@rsbuild/plugin-typed-css-modules`, and state-to-class maps are typed against the domain unions. |
 | D14 | Test stack | **Rstest** (`@rstest/core`) for the domain, contracts, services, client adapters and components. Plus `fast-check` (property tests), `expect-type` and `@ts-expect-error` (type-level tests), `@testing-library/react`, `user-event` and `jest-dom` (components, jsdom), and **Playwright** (E2E, in its Docker image) | Vitest | Rstest reuses each app's Rsbuild config, so components are tested through the same CSS Modules and React transforms as the app. Its API is Jest-compatible (`describe`, `expect`, `rs.fn()`, fake timers). Cost: Rstest is younger than Vitest, so confirm multi-project config, jsdom, coverage, `jest-dom` matchers and reuse of the Rsbuild config on the pinned version in T0.3. The domain tests use only the core runner API, so moving them to Vitest would only mean changing the import. |
 | D15 | Moving a WBS node across projects | **Forbidden.** The domain returns a `crossProjectMove` error, and the parent picker offers only nodes in the same project | Allow and move the allocations | Allocations, the project span and the grid months belong to a project. A cross-project move would silently re-date or orphan work. |
-| D16 | Deleting an employee | **Forbidden.** `people-api` has no delete endpoint and People's UI has no delete action | People emits an event and Delivery marks the orphaned allocations | The brief doesn't require it, and forbidding it removes a whole class of cross-team orphan states. The invariant checker (T1.12b) still reports unknown employees, in case data is changed by hand. |
+| D16 | Deleting an employee | **Forbidden.** The `employees` collection's create and delete API rules stay locked (superusers only), and People's UI has no delete action | People emits an event and Delivery marks the orphaned allocations | The brief doesn't require it, and forbidding it removes a whole class of cross-team orphan states. The invariant checker (T1.12b) still reports unknown employees, in case data is changed by hand. |
 | D17 | Partially unpriced month (first rate starts mid-month) | **Days before the first rate cost 0; € edits are refused in that month.** Slicing treats the days before `validFrom` as an unpriced slice, just like a rate change. The cell is marked `partiallyPriced`, with a tooltip such as "8 of 22 working days are before the first rate (12 Mar) and aren't costed". It stays editable in hours, PM and %; a € edit is refused with that reason, as in fully unpriced months. The displayed rate is the blended rate over priced days only | **Future option: allow € edits too.** Costs are the same. A € edit divides by the *effective* rate over **all** working days, with unpriced days counting as 0 (e.g. €60.45/h instead of €95/h), so it round-trips exactly. The UI keeps showing the priced-days rate ("€95.00/h · 14 of 22 days costed") and the effective rate stays internal | Correct costs with no confusing diluted rate, and consistent with fully unpriced months, which must refuse € edits anyway. Cost: those cells can't be edited in €, which is a narrow exception to "every leaf cell editable" in all four units. The rule lives in one function, `euroEditRate(month, rates) → Result<Rate, 'unpriced' \| 'partiallyPriced'>`, so switching to the future option changes only that function and its tests. |
-| D18 | "Most recently edited" (capacity causer, §3.9) | **`Allocation.editedAt: IsoDateTime`, never null.** Seeding gives every seed row the same `seededAt`. Each effort edit sets `editedAt = now` on the server, in the apply step, as `toISOString()` (UTC, millisecond precision, fixed length, so string comparison sorts by time). Moves and D9 re-pointing **don't** change it. **The causer is the contributing allocation with the latest `editedAt`, ties broken by the highest `id`**, one ordering for every comparison. The seed causers are therefore the higher id in each pair (alloc-293, -073, -043, -101, -613, -421). Optional guard: `editedAt = max(now, lastIssued)`, so a clock jump can't reorder edits. No `editedBy` | **Future option: add `editedBy: UserId`**, stamped from the shell's active user carried on the request. It doesn't change the causer rule. It only enriches the tooltip ("… edited by A. Smith") and gives the active user a visible use in the remotes. Strictly increasing timestamps, or a revision counter, were considered and rejected: they need invented seed timestamps or an extra counter | Meets the brief's rule with one truthful field. All seed rows really were created together, there's no nullable special case, and the tiebreak is a general rule rather than seed-specific code. The brief doesn't require recording *who* edited. Residual risk: two user edits to the same person-month within one millisecond are ordered by id. That's practically unreachable, because edits are separate HTTP requests handled one at a time; it's deterministic anyway and documented. |
+| D18 | "Most recently edited" (capacity causer, §3.9) | **`Allocation.editedAt: IsoDateTime`, never null.** Seeding gives every seed row the same `seededAt`. Each effort edit sets `editedAt = now` on the server, in a `delivery-pb` request hook (create, or a change of `amount`), as `toISOString()` (UTC, millisecond precision, fixed length, so string comparison sorts by time). Moves and D9 re-pointing **don't** change it. **The causer is the contributing allocation with the latest `editedAt`, ties broken by the highest `id`**, one ordering for every comparison. The seed causers are therefore the higher id in each pair (alloc-293, -073, -043, -101, -613, -421). Optional guard: `editedAt = max(now, lastIssued)`, so a clock jump can't reorder edits. No `editedBy` | **Future option: add `editedBy: UserId`**, stamped from the shell's active user carried on the request. It doesn't change the causer rule. It only enriches the tooltip ("… edited by A. Smith") and gives the active user a visible use in the remotes. Strictly increasing timestamps, or a revision counter, were considered and rejected: they need invented seed timestamps or an extra counter | Meets the brief's rule with one truthful field. All seed rows really were created together, there's no nullable special case, and the tiebreak is a general rule rather than seed-specific code. The brief doesn't require recording *who* edited. Residual risk: two user edits to the same person-month within one millisecond are ordered by id. That's practically unreachable, because edits are separate HTTP requests handled one at a time; it's deterministic anyway and documented. |
 | D19 | Rounding scheme (§3.7) | **Controlled rounding across the whole grid**: `roundGrid(tree, months, exact, unit) → displayed`. Each leaf cell is rounded either down or up to the display step, chosen **jointly**, so that every displayed number is within one step of its exact value: leaf cells, parent cells, every row Total and the project row. Everything adds up **in both directions** (row Total = Σ month cells; parent cell = Σ displayed children). Solved as a **min-cost flow**: the two kinds of sum (each month down the tree, each row's Total up the tree) each form a tree of nested sums, which guarantees a solution always exists. The cost of rounding a cell up is `1 − 2·remainder`, so large remainders round up first; in a single row this reduces exactly to largest-remainder rounding | B, top-down largest remainder (round the project total, split it to child totals, split each row total across months; parent cells = Σ displayed children). Simpler (about 40 lines). Rejected: in a stress test (±10% edits, 20 runs, all projects and units) about **8% of parent cells** were off their exact value by more than one step, up to 0.05. Row-only largest remainder failed the down sums in about 22% of parent cells. (Method: every seed amount × a random factor in [0.9, 1.1], 20 seeds, all 4 projects and 4 units; repeat it as a property test in T1.14.) | The only option that meets §3.7 everywhere: 0 violations in about 224,000 checked cells in the same stress test. It's still largest-remainder rounding, generalised to both directions, so it matches the brief's wording. Cost: about 150–200 lines of pure TS in `delivery-domain`, harder to explain live than B. The graphs are tiny (a few hundred nodes per project), so recomputing per edit is cheap. Known effect: editing one cell can move a neighbour by one display step (neighbour jitter), which is inherent to largest-remainder rounding. |
 | D20 | Date library | **`date-fns`** (v4) with **`@date-fns/utc`** (`UTCDate`) for all calendar maths: `parseISO`, `eachDayOfInterval`, `isWeekend`, `startOfMonth`, `endOfMonth`, `addMonths`, `format`. Dates cross the boundaries as strings (`IsoDate` `YYYY-MM-DD`, `Month` `YYYY-MM`) and become `UTCDate` only inside the domain package's calendar module | Native `Date` only; Temporal | Small, tree-shakeable pure functions that suit a framework-free domain package and run the same in Node and the browser. Doing the maths in UTC makes working-day counts independent of the browser's or container's time zone, so 12 Mar 2026 can't become 11 Mar. Keeping `date-fns` inside `delivery-domain`'s calendar module (and `people-domain` only if it needs date parsing) means the rest of the code never handles `Date` objects. |
-| D21 | Schema validation | **`zod` v4** (`zod@^4`, imported from `'zod'`), pinned to **one version across the workspace** with a pnpm catalog (`catalog:` in each `package.json`). The `*-contract` packages declare `zod` as a `peerDependency`, and each consuming app and service provides it. Types are inferred from schemas (`z.infer`) and never written twice | zod v3; Valibot | v4 is the current major, faster and smaller than v3, and it's what new Hono middleware targets. One pinned version means a schema built in a contract package is checked by the same zod that the consumer runs. Making it a peer dependency avoids two copies of zod inside one bundle. zod is not shared through MF: each app bundles its own copy, like `ui` (D12). |
+| D21 | Schema validation | **`zod` v4** (`zod@^4`, imported from `'zod'`), pinned to **one version across the workspace** with a pnpm catalog (`catalog:` in each `package.json`). The `*-contract` packages declare `zod` as a `peerDependency`, and each consuming app and service provides it. Types are inferred from schemas (`z.infer`) and never written twice | zod v3; Valibot | v4 is the current major, faster and smaller than v3. PocketBase doesn't run zod: the apps parse every record with the contract schemas at the boundary. One pinned version means a schema built in a contract package is checked by the same zod that the consumer runs. Making it a peer dependency avoids two copies of zod inside one bundle. zod is not shared through MF: each app bundles its own copy, like `ui` (D12). |
 | D22 | Routing | **React Router v7 (`react-router`), one router per app, never shared through MF.** The shell's router matches only the first path segment (`/people/*`, `/delivery/*`, and `/` redirects to `/people`). Each remote creates its **own** router with `createBrowserRouter(routes, { basename: ctx.basePath })` and `RouterProvider`, over the same `window.history`. Routes: People `index` (register) and `':employeeId'`; Delivery `index` (project picker) and `':projectId'`. `react-router` is **left out of MF `shared`**, so each app bundles its own copy. That keeps router contexts from crossing the boundary, and React Router refuses to render a router inside another router from the same module instance. A remote never navigates outside its own `basePath`. **Cross-app links** go through `HostContext.navigate(to)`. The shell implements it, and after any shell-initiated URL change it dispatches a `popstate` event, so a mounted remote's router re-reads the URL. Standalone, `navigate` opens the other app's standalone URL, or the link is hidden | A hand-written router per app (about 40 lines, no dependency; rejected in favour of a familiar, tested library); shell-only routing with remote state in React (no deep links or back button inside remotes); one router shared as an MF singleton (couples all three builds to one router version); the shell owns the whole URL and passes `path` into remotes (more plumbing, and standalone needs an adapter) | Deep links, reload and the back button work in both modes with the same code; standalone just uses a different `basename`. A well-known library is easy to discuss in the walkthrough, and `useParams`, `Navigate` and `createMemoryRouter` for tests come for free. Not sharing it through MF means no router version or state crosses the boundary, and each team can upgrade React Router on its own schedule. Costs: up to three copies of `react-router` on the page. Several routers listen to the same history, so the shell must never depend on more than the first segment, and must dispatch `popstate` after its own navigations. Deep links also need an SPA fallback in nginx and asset paths that don't depend on the current URL (T2.4, T2.9). |
 | D23 | Boundary enforcement | **dependency-cruiser**, run as `pnpm lint:deps` inside `pnpm lint`, configured in `.dependency-cruiser.cjs` at the repo root. It enforces the T0.2 rules over the whole import graph, including type-only imports and cycles, and generates the dependency diagram for the README (T9.1). Rslint handles code-level rules (`no-explicit-any` and so on; D24) | `eslint-plugin-boundaries` (editor feedback as you type, but per-file only: cycles need `import/no-cycle`, type-only handling depends on version, and pnpm workspace resolution needs `eslint-import-resolver-typescript` set up in flat config) | The brief scores whether the remotes are "genuinely independent or quietly coupled" (Architecture, 35%). Whole-graph rules plus a generated diagram show that independence directly: Delivery reaches People only through `people-contract`. Type-only detection (`dependencyTypes: ['type-only']`) and `no-circular` are built in. Cost: no squiggles in the editor; violations show up when `pnpm lint` runs. |
 | D24 | Code linter | **Rslint**, completing the Rstack toolchain (Rsbuild, Rstest, Rslint). Run as `pnpm lint:code` inside `pnpm lint`, with **built-in plugins only** (array form): `@typescript-eslint` (strict type-checked set, including `no-explicit-any` and the `no-unsafe-*` family), `react-hooks` (`rules-of-hooks`, `exhaustive-deps`), `rstest` (test files) and `jsx-a11y` (hand-written components and `ui` primitives). No `import` rules: dependency-cruiser owns the boundaries (D23). Formatting stays with **Prettier**; no formatting rules are enabled in Rslint | ESLint with flat config, typescript-eslint, `eslint-plugin-react-hooks` and `eslint-config-prettier`: the fallback. Switching means rewriting the `plugins` entry from Rslint's array form into ESLint's object form and installing the plugin packages; the rule selections stay the same | One toolchain family across build, test and lint. Every rule the plan needs is implemented natively: all typescript-eslint rules, all `@eslint/js` rules, and `react-hooks`, `rstest` and `jsx-a11y` built in, per the official docs. Type-aware linting is built in through the Go TypeScript compiler, so there's no `projectService` tuning, and it's fast. Cost: younger than ESLint and less familiar to interviewers, but its config follows ESLint's, so it's easy to explain. |
-| D25 | Service build | **Rslib** (`@rslib/core`) builds `people-api` and `delivery-api`: `rslib.config.ts` with one ESM lib entry, `output.target: 'node'`, and **`autoExternal: false`**, so the service **and its workspace packages** (domain, contracts) are bundled into `dist/`. The runtime image then needs only `dist/` plus the seed file, with no `node_modules` install. Dev loop: `rslib build --watch` alongside `node --watch dist/index.js` | `tsup`; running TypeScript directly (Node type stripping or `tsx`) with no build | Completes the Rstack toolchain (Rsbuild, Rstest, Rslint, Rslib), as chosen for D24. Bundling the workspace packages gives a small, self-contained runtime image, and the image doesn't depend on pnpm's symlinked layout. Cost: one more config per service, and less common than `tsup` for Node services. |
+| D25 | Service build | **No service build.** One platform-owned `infra/docker/pocketbase.Dockerfile` downloads the pinned PocketBase release for the target architecture, checks its checksum, and copies one team's `pb_migrations/`, `pb_hooks/` and `docs/data.json` (build arg `SERVICE`). Hooks and migrations are plain JS that PocketBase loads at start. Logic sits in CommonJS files under `pb_hooks/lib/` with no PocketBase globals, so Rstest tests them in Node | Rslib bundles of Node services (the first plan); bundling TypeScript for PocketBase's JS engine | Nothing to compile, so nothing to keep in sync between a build and the runtime. Each team still owns its folder; the platform owns only the runtime image. Cost: hook code is untyped JS, so it's kept to a few small files, each with its own tests. |
 
 ---
 
@@ -127,8 +131,8 @@ browser ── localhost:8080 ── gateway (nginx)
                                ├── /config.json         → generated at container start from env
                                ├── /remotes/people/     → people     (static: remoteEntry + standalone index.html)
                                ├── /remotes/delivery/   → delivery   (static: remoteEntry + standalone index.html)
-                               ├── /api/people/v1/*     → people-api   (REST + SSE, owns employees & rates)
-                               └── /api/delivery/v1/*   → delivery-api (REST + SSE, owns projects, WBS, allocations)
+                               ├── /api/people/*        → people-pb    (PocketBase: REST + realtime, owns employees & rates)
+                               └── /api/delivery/*      → delivery-pb  (PocketBase: REST + realtime, owns projects, WBS, allocations, loads)
 ```
 
 ### Ownership and published contracts
@@ -136,10 +140,10 @@ browser ── localhost:8080 ── gateway (nginx)
 | Owner | Owns | Publishes (versioned) | Consumes |
 | --- | --- | --- | --- |
 | Shell (platform) | navigation, currency, active user, remote config, shared UI primitives | `host-contract`: `HostContext { currency, activeUser, basePath, navigate }` and the remote `mount` signature. `ui`: presentational primitives and design tokens | — |
-| People team | employees, rate records | `people-contract` v1: `Employee`, `RateRecord`, REST + `rates.changed` / `employees.changed` events, effective-dating semantics, conformance fixture | `delivery-contract` load feed, `host-contract` |
-| Delivery team | projects, breakdown tree, allocations, calendar, pricing | `delivery-contract` v1: `EmployeeMonthLoad[]` + `load.changed` event | `people-contract`, `host-contract` |
+| People team | employees, rate records | `people-contract` v1: `Employee`, `RateRecord`, the `employees` and `rate_records` collections (names, record schemas, realtime topics) under `/api/people`, effective-dating semantics, conformance fixture | `delivery-contract` load feed, `host-contract` |
+| Delivery team | projects, breakdown tree, allocations, calendar, pricing | `delivery-contract` v1: `EmployeeMonthLoad` as the `employee_month_loads` collection (record schema, realtime topic) under `/api/delivery` | `people-contract`, `host-contract` |
 
-Contract packages hold only **types, runtime schemas (zod, D21) and fixtures**. They contain no behaviour. Consumers validate payloads at the boundary.
+Contract packages hold only **types, runtime schemas (zod, D21), constants (base paths, collection names) and fixtures**. They contain no behaviour. Consumers validate payloads at the boundary.
 
 ### Shared UI (`packages/ui`)
 
@@ -196,27 +200,54 @@ Contract packages hold only **types, runtime schemas (zod, D21) and fixtures**. 
   - **No global resets or element selectors,** apart from the scoped token block.
 - **Versioning:** consumed as `workspace:^`. Changes must be backward compatible: add props and components, don't remove them. The README notes that in a multi-repo setup this would be a semver-published package each team upgrades on its own schedule.
 
-### Service design (Hono + lowdb)
+### Service design (PocketBase)
 
-Each service is a thin layer: HTTP, persistence and events. Business rules live in the domain packages.
+Each team runs its own stock PocketBase, `people-pb` and `delivery-pb` (D4). Nothing is compiled. A team's service is a folder that PocketBase loads at start:
+
+- `pb_migrations/`: the schema (collections, fields, indexes, API rules), the batch settings and the seed. Each migration runs once, in a transaction, on the first `serve`; PocketBase records which ones ran, so a restart keeps edits.
+- `pb_hooks/`: the few server rules the schema can't express. The logic lives in plain CommonJS files under `pb_hooks/lib/` that use no PocketBase globals, so Rstest imports them in Node; the `*.pb.js` files only wire them to hooks.
+
+**What the server enforces, and where**
+
+| Rule | Where |
+| --- | --- |
+| Required fields, string shapes (`IsoDate`, `Month`, ids), numeric bounds (`amount ≥ 0`, `hourlyCost` above 0) | collection fields |
+| One allocation per `(breakdownItemId, employeeId, month)`, one rate per `(employeeId, validFrom)` | unique indexes |
+| `projectId`, `parentId` and `breakdownItemId` point at existing records | relation fields, with no cascade: a change set deletes children first |
+| No employee create or delete (D16); no API writes to `employee_month_loads` | API rules left locked (superusers only) |
+| Records that change together (D9, tree operations, rate corrections) | one batch request: one transaction |
+| `editedAt` is stamped on effort edits only (D18) | `delivery-pb` request hook on `allocations` |
+| `employee_month_loads` follows the allocations (D8) | `delivery-pb` model hook, inside the same transaction |
+
+**What stays in the apps.** Tree rules (depth ≤ 3, no cycles, allocations on leaves only, D9, D15), the allocation validator (T1.12a: month within the project span) and rate-history rules (T1.13) run in the team's app through its domain package, which returns `Result<ChangeSet, DomainError>`. A refusal is shown inline and never reaches the server. The server doesn't re-check these rules, so a hand-made API call could break one. The invariant checker (T1.12b) runs on every load and marks such rows, so nothing is lost silently.
 
 Request flow for a write:
 
-1. **Validate** the body with the contract's zod schema (`@hono/zod-validator`).
-2. **Decide**: the pure domain function returns `Result<ChangeSet, DomainError>`. It never mutates anything.
-3. **Apply** the change set to in-memory state **synchronously**, with no `await` in between. Single-threaded JS makes this step atomic, which gives logical transactions.
-4. **Persist** through a **serial write queue**: one `db.write()` at a time, so writes never interleave. lowdb writes atomically (temp file + rename), so a crash can't leave a corrupt file.
-5. **Emit** the SSE event after the write succeeds.
+1. **Decide:** the domain function returns `Result<ChangeSet, DomainError>`, and the app applies the change set optimistically.
+2. **Send:** the adapter sends the change set as one batch: creates parent-first, deletes children-first.
+3. **Commit:** PocketBase validates the fields, indexes and relations, runs the hooks, then commits or rolls back the whole batch.
+4. **On failure:** the adapter rolls back the optimistic update and maps the PocketBase error to `DomainError` codes in one place: 400 validation, 404 missing, and a unique-index failure (`validation_not_unique`, including a duplicate client-generated id) to `conflict`.
+5. **Notify:** after the commit, PocketBase pushes a realtime event for every changed record, load rows included.
 
-Reads are served from memory.
+**Records**
 
-Other rules:
-- **On a persistence failure,** restore the in-memory snapshot from before the change and return 500. The client rolls back its optimistic update.
-- **Startup:** if `db.json` is missing, seed it from the service's slice of `data.json` (validated with the fixture schemas). Then run the invariant checker and fail loudly if it finds anything.
-- **Storage stays behind a repository interface** per service, so lowdb could be swapped for SQLite by changing one file.
-- **`DomainError` maps to HTTP status in one place** (400 validation, 404 missing, 409 conflict). The client uses an exhaustive `switch` over the same error codes.
-- **Same-team typed client:** People's UI may use Hono's typed RPC client (`hc<AppType>`) against `people-api`. Cross-team consumers use **only the `*-contract` packages**, never another team's service types.
-- **Pricing stays client-only (D7).** `delivery-api` stores person-months and never reads rates, so it has no server-side dependency on `people-api`.
+- **Record ids are the entity ids** (`emp-001`, `alloc-<uuid>`): a migration widens the system `id` field's pattern and maximum length. Client-generated ids (T1.1) are sent as `id` on create.
+- **Fields are named like the contracts** (`employeeId`, `validFrom`, `hourlyCost`, …). Dates and months are text fields with the contracts' patterns, not PocketBase `date` fields, which store `YYYY-MM-DD HH:MM:SS.sssZ`.
+- **PocketBase has no null:** an empty relation is `""`. Each contract's record schema maps `parentId: ""` to `null` and drops PocketBase's system fields (`collectionId`, `collectionName`, `created`, `updated`), so the rest of the code sees only the T1.1 entities.
+- **Seeds:** a migration reads `SEED_FILE` (`/pb/seed/data.json`, copied into the image) and inserts the team's slice. Seed allocations all get the same `seededAt` as `editedAt` (D18), and `delivery-pb` fills `employee_month_loads` from the same `load.js`.
+
+**Capacity load (D8).** `employee_month_loads` has a unique `(employeeId, month)` index, public list and view rules, and locked write rules. After every allocation create, update or delete, a model hook recomputes that pair's row with `pb_hooks/lib/load.js`: the sum in id order, `overCapacity = sum > 1 + 1e-9`, and the causer by `(editedAt, id)`. It upserts the row, or deletes it when no effort is left. A move (D9 re-pointing) changes neither the sum nor `editedAt`. People reads and subscribes to the collection and never sees allocations.
+
+**Access.** Auth isn't scored, so there is no login. The collections a team writes from its app have public API rules; everything else stays locked. Each team's app is the only code that writes to its instance, and the other team reads only the collections its contract publishes.
+
+**Runtime.**
+
+- **Image:** `infra/docker/pocketbase.Dockerfile` (D25) runs `pocketbase serve --http=0.0.0.0:8090 --dir=/pb_data --automigrate=false`, with the healthcheck `wget` against `/api/health`.
+- **Gateway:** it routes `/api/people/` to `people-pb:8090` and `/api/delivery/` to `delivery-pb:8090`, cutting the prefix with `rewrite … break` the same way it does for the remotes. The two `…/api/realtime` locations turn buffering off and use a long read timeout.
+- **Clients:** the SDK base URLs are `/api/people` and `/api/delivery` on the page's origin, standalone and hosted alike.
+- **Dev:** the Rsbuild dev servers proxy `/api` to the gateway on 8080, so dev runs PocketBase in Docker too (`docker compose up -d gateway people-pb delivery-pb`). PocketBase's admin dashboard isn't routed.
+
+**Pricing stays client-only (D7).** `delivery-pb` stores person-months and never reads rates. Delivery's app reads `rate_records` and `employees` from `people-pb` and subscribes to `rate_records`.
 
 ### Repository map (target)
 
@@ -224,7 +255,7 @@ Other rules:
 apps/
   shell/            # host: nav, currency, user, runtime remote loader, error boundaries, first-segment routing
                     # every app has its own src/routing/ (its own React Router instance, D22)
-                    # and its own src/data/ (client adapters built from contracts, T3.7)
+                    # and its own src/data/ (client adapters over the pocketbase SDK, built from contracts, T3.7)
   people/           # remote: register, employee detail, rate history editor
   delivery/         # remote: WBS tree, staffing grid
 packages/
@@ -235,11 +266,13 @@ packages/
   people-domain/    # pure TS: rate-history validation, search
   ui/               # platform-owned presentational primitives + tokens.css, CSS Modules (bundled into each app)
 services/
-  people-api/       # Hono + lowdb: employees, rate records, SSE; built with Rslib (D25)
-  delivery-api/     # Hono + lowdb: projects, WBS, allocations, /load, SSE; built with Rslib (D25)
+  people-pb/        # PocketBase config: pb_migrations (employees, rate_records, seed), pb_hooks, tests
+  delivery-pb/      # PocketBase config: pb_migrations (projects, breakdown_items, allocations,
+                    # employee_month_loads, seed), pb_hooks (editedAt, load), tests
 infra/
   nginx/            # gateway config
-  docker/           # Dockerfiles, entrypoint that writes config.json
+  docker/           # Dockerfiles (three apps, one shared PocketBase image), entrypoints (config.json, <base href>)
+  scripts/          # reset.sh (T3.8)
 docker-compose.yml  # apps, services, gateway (T2.9)
 package.json, pnpm-workspace.yaml (catalog), tsconfig.base.json
 rslint config (D24), .prettierrc, .nvmrc, .dependency-cruiser.cjs (D23) and its test
@@ -254,7 +287,7 @@ docs/               # brief, plan, ADRs
 
 - [x] **T0.0** **Host tooling, before anything else.** Node 24 LTS on the host (pinned by `.nvmrc`, so `nvm use` picks it), with pnpm through Corepack (`corepack enable`; the pnpm version comes from `packageManager`, T0.1). No tooling container and no dev container: Docker is only for running the suite (T2.9), which adds `docker-compose.yml`.
 - [x] **T0.1** Pin versions: `"packageManager": "pnpm@<current stable, exact version>"` and `"engines": { "node": ">=24" }` in the root `package.json`, and `node:24` base images in every Dockerfile. Initialise the pnpm workspace with root `tsconfig.base.json`: `strict`, `noUncheckedIndexedAccess`, `exactOptionalPropertyTypes`, `noImplicitOverride`. Define a pnpm catalog in `pnpm-workspace.yaml` for the versions every package must share: `zod` (D21), `react`, `react-dom` and `date-fns`.
-  - **Workspace packages ship TypeScript source, with no build of their own:** each `packages/*` `package.json` has `"exports": { ".": "./src/index.ts" }`. Rsbuild compiles them inside each app (T2.8a), Rslib inside each service (D25), and Rstest in tests.
+  - **Workspace packages ship TypeScript source, with no build of their own:** each `packages/*` `package.json` has `"exports": { ".": "./src/index.ts" }`. Rsbuild compiles them inside each app (T2.8a), and Rstest in tests. PocketBase services don't use them (D25).
   - **`pnpm typecheck`** = `pnpm -r typecheck`. Every package and app has `"typecheck": "tsc --noEmit"`, with a `tsconfig.json` that extends `tsconfig.base.json`.
 - [x] **T0.2** Set up **Rslint** (D24), **Prettier** and **dependency-cruiser** (D23). `pnpm lint` runs `lint:code` (Rslint), `format:check` (Prettier) and `lint:deps` (dependency-cruiser).
   - **Rslint config:** the built-in plugins `@typescript-eslint`, `react-hooks`, `rstest` and `jsx-a11y`, in array form.
@@ -271,14 +304,14 @@ docs/               # brief, plan, ADRs
     If one fails and can't be fixed in config, switch to the ESLint fallback (D24) and record why in the ADR.
   - **dependency-cruiser** for the boundary rules:
     - **Who owns what**, by path:
-      - **People team:** `apps/people`, `services/people-api`, `packages/people-domain`, `packages/people-contract`
-      - **Delivery team:** `apps/delivery`, `services/delivery-api`, `packages/delivery-domain`, `packages/delivery-contract`
+      - **People team:** `apps/people`, `services/people-pb` (`services/people-api` before ADR 032), `packages/people-domain`, `packages/people-contract`
+      - **Delivery team:** `apps/delivery`, `services/delivery-pb` (`services/delivery-api` before ADR 032), `packages/delivery-domain`, `packages/delivery-contract`
       - **Platform:** `apps/shell`, `packages/ui`, `packages/host-contract`
     - **The rules**, each a `forbidden` rule with severity `error` and a name that explains itself in the failure message:
       1. **`no-cross-app`:** an app never imports another app. Use group matching, e.g. `from: { path: '^apps/([^/]+)/' }`, `to: { path: '^apps/', pathNot: '^apps/$1/' }`.
-      2. **`no-cross-team-internals`:** People's paths never import `packages/delivery-domain`, `services/delivery-api` or `apps/delivery`, and Delivery's paths never import People's equivalents. Only `*-contract` packages and `ui` cross team lines.
+      2. **`no-cross-team-internals`:** People's paths never import `packages/delivery-domain`, `services/delivery-pb` or `apps/delivery`, and Delivery's paths never import People's equivalents. Only `*-contract` packages and `ui` cross team lines.
       3. **`shell-no-team-internals`:** `apps/shell` imports no team's domain package, service or app. It loads remotes only at runtime through MF.
-      4. **`app-to-own-service-types-only`:** `apps/people` → `services/people-api` (and the Delivery equivalent) is allowed only as a type-only import, for Hono's typed client: forbid it with `dependencyTypesNot: ['type-only']`.
+      4. **`app-to-own-service-types-only`:** `apps/people` → `services/people-api` (and the Delivery equivalent) is allowed only as a type-only import, for Hono's typed client: forbid it with `dependencyTypesNot: ['type-only']`. *Dropped by ADR 032: PocketBase services have no TypeScript types to import, so apps never import `services/` at all. T3.4 replaces it with a plain `apps-no-services` rule.*
       5. **`contracts-are-leaves`:** `packages/*-contract` import only `zod` and other contract packages. For example, `delivery-contract`'s `EmployeeMonthLoad` uses `EmployeeId` from `people-contract`, and every contract may use `host-contract`'s primitives. Never a domain package, service, app or `ui`. `no-circular` keeps the contracts acyclic.
       6. **`domain-is-framework-free`:** `packages/*-domain` never import `react`, `apps/` or `services/`.
       7. **`services-no-ui`:** `services/` never import `apps/` or `packages/ui`.
@@ -370,14 +403,14 @@ This phase delivers the reference calculation first. Domain logic goes in `packa
 - [x] **T1.11** **Capacity.**
   - Σ PM per `(employee, month)` across **all projects**.
   - `overCapacity = sum > 1 + ε`, with ε = 1e-9 PM. It's a floating-point allowance only, as the brief says of its 0.01 tolerance.
-  - `causingAllocation` is the contributing allocation with the latest `editedAt`, ties broken by the highest `id` (D18). One comparator, used by the grid and by `delivery-api`'s `/load`.
+  - `causingAllocation` is the contributing allocation with the latest `editedAt`, ties broken by the highest `id` (D18). One comparator, used by the grid and mirrored once by `delivery-pb`'s load hook (D8).
 - [x] **T1.12** **Tree operations** as pure functions returning `Result<ChangeSet, DomainError>`. A `ChangeSet` lists the records to create, update and delete, so the server applies it atomically and the client applies the same set optimistically. Add `applyChangeSet(state, changeSet)`.
   - create, rename, move (with cycle and depth ≤ 3 checks), delete.
   - A move to another project returns a `crossProjectMove` error (D15).
   - Delete reports how many allocations it removes.
   - Add-child-to-leaf moves the allocations (D9).
   - Moving onto a leaf that has allocations follows the same rule.
-- [x] **T1.12a** **Allocation rules** as a pure validator, shared by the grid and `delivery-api`: leaf only, month within the project span, `amount ≥ 0`, one per `(item, employee, month)`.
+- [x] **T1.12a** **Allocation rules** as a pure validator, run by the grid before every allocation write (the unique index and `amount ≥ 0` are also enforced by `delivery-pb`): leaf only, month within the project span, `amount ≥ 0`, one per `(item, employee, month)`.
 - [x] **T1.12b** **Invariant checker**: report allocations on non-leaf or missing items, references to unknown employees, and depth or cycle violations. The service runs it at startup and the UI uses it to show "orphaned" rows.
 - [x] **T1.13** **People domain.** Rate-history validation:
   - unique `validFrom` per employee
@@ -399,7 +432,7 @@ This phase delivers the reference calculation first. Domain logic goes in `packa
 
 This proves the micro-frontend mechanics before any features are built.
 
-> **Runtime interface.** The values the apps, the containers and the data services share (names, ports, routes, volumes, `config.json`) are fixed up front in ADR 029. T3.7 (client adapters) moves to Phases 4–6, where the screens that use them are built. T2.9 has no stub services: the gateway answers every `/api/…` path with a JSON 404 until Phase 3 adds the services.
+> **Runtime interface.** The values the apps, the containers and the data services share (names, ports, routes, volumes, `config.json`) are fixed up front in ADR 029; its service rows were replaced by ADR 032 when Phase 3 was re-planned on PocketBase. T3.3 was finished with the skeleton, which needed it. T3.7 (client adapters) moves to Phases 4–6, where the screens that use them are built. T2.9 has no stub services: the gateway answers every `/api/…` path with a JSON 404 until T3.4 adds the PocketBase routes.
 
 - [x] **T2.1** Scaffold `apps/shell`, `apps/people` and `apps/delivery` with Rsbuild, React 18, `@rsbuild/plugin-react` and `@module-federation/rsbuild-plugin`. Remove all template boilerplate.
 - [x] **T2.2** Configure MF in the remotes:
@@ -466,70 +499,57 @@ This proves the micro-frontend mechanics before any features are built.
     4. No styles leak between apps.
 - [x] **T2.9** **Docker.**
   - Multi-stage Dockerfiles for the apps: a `node:24` build stage, then `nginx` serving the static output. The build context is the repo root, because the apps compile workspace packages from source.
-  - Dockerfiles for the services: a `node:24` build stage runs `pnpm --filter <service> build` (**Rslib**, D25). It bundles the service and its workspace packages into `dist/`. A `node:24-slim` runtime stage copies only `dist/` and the seed file. **The build context is the repo root**, so the build stage can see the workspace packages.
-  - One named volume per service for its `db.json`.
-  - Gateway nginx on 8080 with the routes from the plan §3 diagram. For SSE routes, set `proxy_buffering off` and a long `proxy_read_timeout`.
+  - The data services' image, volumes and routes come with them in T3.4 (ADR 032).
+  - Gateway nginx on 8080 with the app routes from the plan §3 diagram.
   - **SPA fallback (D22):** `/`, `/people/*` and `/delivery/*` fall back to the shell's `index.html`; `/remotes/people/*` and `/remotes/delivery/*` fall back to that remote's own `index.html` (`try_files $uri /…/index.html`). `remoteEntry.js`, chunks, `config.json` and `/api/*` must never fall back.
-  - `docker-compose.yml` with healthchecks (`GET /health` on each service).
+  - `docker-compose.yml` with healthchecks.
   - No Node on the host.
-  - Stub services in this phase: `/health` and one seeded read, enough to prove the wiring.
 
 **Exit check:** from a clean clone, `docker compose up` serves the shell at `localhost:8080` with both remotes mounted, and each remote opens standalone. Stopping one remote leaves the shell alive with an in-place error.
 
 ### Phase 3 — Data services, contracts and transport
 
-- [ ] **T3.1** Write `people-contract` v1: types, zod schemas, REST paths, event names, and the effective-dating rule in prose. Add a conformance fixture (A. Okafor's records and expected slices).
-- [ ] **T3.2** Write `delivery-contract` v1: `EmployeeMonthLoad` (`employeeId`, `month`, `allocatedPersonMonths`, `overCapacity`, `causingAllocationId`), `load.changed`.
+- [ ] **T3.1** Write `people-contract` v1:
+  - the base path (`/api/people`), collection names (`employees`, `rate_records`) and realtime topics
+  - record schemas that parse a PocketBase record into `Employee` and `RateRecord` (dropping system fields) and the matching write payloads
+  - the effective-dating rule in prose, and a conformance fixture: A. Okafor's records and the expected slices
+- [ ] **T3.2** Write `delivery-contract` v1: the base path (`/api/delivery`), the `employee_month_loads` collection and topic, and a record schema that parses into `EmployeeMonthLoad` (`employeeId`, `month`, `allocatedPersonMonths`, `overCapacity`, `causingAllocationId`). Delivery's own collections (`projects`, `breakdown_items`, `allocations`) get record schemas too, in the same package, mapping `parentId: ""` to `null`; only `employee_month_loads` is published to People.
 - [x] **T3.3** Finalise `host-contract` (started in T1.1 and T2.3): `HostContext` (`currency`, `activeUser`, `basePath`, `navigate(to)`), `RemoteModule` (`mount`, `update`, `unmount`), `RemoteAppProps` (`{ ctx: HostContext }`), `Currency`, `ActiveUser`. The contract has **no React dependency** (T0.2 rule 5): the shell types the loaded `./App` as `ComponentType<RemoteAppProps>`, and each remote types its own `App` the same way. Document that a remote's own navigation stays under `basePath`, and that anything outside it goes through `navigate` (D22).
-- [ ] **T3.4** Build the **service skeleton**, shared by both services but copied rather than imported, so each team owns its own:
-  - a Hono app with `/health`
-  - a lowdb `JSONFilePreset` at `DATA_DIR/db.json` (from env), seeded from `SEED_FILE` (from env). The Dockerfile copies `docs/data.json` into the image, so the seed never depends on a host mount
-  - a serial write queue
-  - the apply → persist → emit pipeline from plan §3 (Service design), with in-memory snapshot rollback
-  - an SSE broadcaster using `streamSSE`, with a heartbeat
-  - `DomainError` → HTTP mapping
-  - an injected clock (`now: () => IsoDateTime`), so tests can create exact `editedAt` ties (D18)
-- [ ] **T3.5** Build **`people-api`**:
-  - Seed on first boot from `data.json`, employees and rateRecords only.
-  - Endpoints:
-    - `GET /v1/employees?query=`
-    - `GET /v1/employees/:id`
-    - `PATCH /v1/employees/:id`
-    - `GET /v1/rate-records?employeeId=`
-    - `POST/PATCH/DELETE /v1/rate-records/:id`
-    - No `DELETE /v1/employees/:id`: deleting employees is forbidden (D16).
-  - Validate every write with `people-contract` schemas plus `people-domain` rules. Client-generated ids (T1.1) that already exist → 409.
-  - Events: `rates.changed` and `employees.changed`, each with `{ employeeId, version }`.
-- [ ] **T3.6** Build **`delivery-api`**:
-  - Seed on first boot with projects, breakdownItems and allocations.
-  - Endpoints:
-    - `GET /v1/projects`
-    - `GET /v1/projects/:id/tree` (items and allocations)
-    - `POST /v1/breakdown-items`
-    - `PATCH /v1/breakdown-items/:id` (rename and move)
-    - `DELETE /v1/breakdown-items/:id`
-    - `PUT /v1/allocations` (upsert by `(item, employee, month)`)
-    - `DELETE /v1/allocations/:id`
-    - `GET /v1/load`
-  - Every tree write goes through a T1.12 change set, and every allocation write through the T1.12a validator. Client-generated ids (T1.1) that already exist → 409.
-  - Stamp `editedAt` on effort edits only, using the injected clock and `toISOString()`. Seed rows all get the same `seededAt`. Moves and D9 re-pointing don't change `editedAt`. There's no `editedBy` (D18; a possible future addition).
-  - Events: `tree.changed`, `allocations.changed` and `load.changed`, each with a `version` and the affected entity ids (for allocations and load, the `(employeeId, month)` pairs), as D6 requires.
-- [ ] **T3.7** Add **client adapters in each consuming app** (`apps/<app>/src/data/`). Contracts hold no behaviour, so each app writes its own adapter from the contract's paths, schemas and event names.
-  - Each adapter implements that app's repository interface: a typed fetch, plus an SSE subscriber with reconnect and backoff. Every response and event is validated with the contract schemas.
-  - The SSE helper is **copied** into each app that needs it, like the service skeleton (T3.4), so no behaviour crosses team lines.
-  - People's adapter for its own `people-api` may use Hono's typed client (type-only import, T0.2 rule 4). Adapters for the other team's service use only that team's contract.
+- [ ] **T3.4** Add the **PocketBase runtime** (platform, D25):
+  - `infra/docker/pocketbase.Dockerfile`: the pinned release for `TARGETARCH`, checksum checked, build arg `SERVICE`, `docs/data.json` copied to `/pb/seed/data.json`, `serve --http=0.0.0.0:8090 --dir=/pb_data --automigrate=false`
+  - compose services `people-pb` and `delivery-pb` with volumes `people-data` and `delivery-data` at `/pb_data`, and a healthcheck on `/api/health`. Nothing is published except the gateway
+  - gateway routes `/api/people/` and `/api/delivery/` with the prefix cut, and the realtime locations with buffering off and a 1 h read timeout; ADR 029's service rows and ADR 031's `/api` note are updated to match
+  - each team's first migration: enable the batch API with room for the largest change set (a subtree delete), and widen the `id` field (plan §3, Service design)
+  - `services/people-pb` and `services/delivery-pb` as private workspace packages, for their tests only. Update `.dependency-cruiser.cjs`: the new paths in the ownership groups, rule 4 replaced by `apps-no-services`, and `services-no-ui` kept. Update the `services` Rstest project to `services/*/test/**/*.test.ts`
+  - Rsbuild dev servers proxy `/api` to `http://localhost:8080`
+- [ ] **T3.5** Build **`people-pb`**:
+  - Collections `employees` (`name`, `role`, `weeklyHours`; create and delete locked, D16) and `rate_records` (`employeeId` relation, `validFrom`, `hourlyCost`; unique `(employeeId, validFrom)`).
+  - Seed from `data.json`: employees and rateRecords only.
+  - No hooks: every People rule is a field, an index or a `people-domain` check in the app.
+- [ ] **T3.6** Build **`delivery-pb`**:
+  - Collections `projects` (read-only through the API), `breakdown_items` (`projectId`, `parentId` relations, `name`), `allocations` (`breakdownItemId` relation, `employeeId` text, `month`, `amount ≥ 0`, `editedAt`; unique `(breakdownItemId, employeeId, month)`) and `employee_month_loads` (D8).
+  - Seed from `data.json`: projects, breakdownItems and allocations with `editedAt = seededAt`, then the load rows.
+  - Hook `editedAt` (D18): on create, and on an update that changes `amount`, set it to the server's `new Date().toISOString()`. Otherwise keep the stored value, whatever the client sent. Moves and D9 re-pointing don't change it.
+  - Hook load (D8): recompute the `(employeeId, month)` row after each allocation write, inside the transaction, with `pb_hooks/lib/load.js`. Update the header comment of `delivery-domain`'s `capacity.ts`, which still names `delivery-api`'s /load.
+  - Every tree and allocation write is a domain change set sent as one batch (plan §3, Service design).
+- [ ] **T3.7** Add **client adapters in each consuming app** (`apps/<app>/src/data/`). Contracts hold no behaviour, so each app writes its own adapter from the contract's base path, collection names and schemas.
+  - Each adapter implements that app's repository interface on the `pocketbase` SDK (one client per instance it talks to): typed reads, change sets as batches, error mapping to `DomainError` codes, and realtime subscriptions that refetch after a reconnect. Every record and event is parsed with the contract schemas.
+  - The SDK is an ordinary dependency of each app, bundled by each app like `react-router` and kept out of MF `shared`.
+  - Adapters for the other team's instance use only that team's contract.
   - Components get an in-memory fake of the same interface in tests (T8.2).
-- [ ] **T3.8** Add **reset to seed**: `docker compose down -v`, plus a `pnpm reset`-style script run inside the container. Document both.
-- [ ] **T3.9** Write **service tests** (Rstest, Hono `app.request()`, lowdb `Memory` adapter for speed, a temp-dir `JSONFile` for the restart test, `eventsource-parser` to read SSE):
-  - seed counts match the brief's Fixtures section
-  - validation errors map to 400 or 409
-  - adding a child under a leaf moves its allocations in one change set
-  - edits survive a restart (reopen the db)
-  - writes never interleave under concurrent requests
-  - each write emits the right event
-  - the causer rule with a frozen clock: a user edit beats seed rows, equal timestamps fall back to the highest id, and a move doesn't change the causer (D18)
+- [ ] **T3.8** Add **reset to seed**: `docker compose down -v`, plus `infra/scripts/reset.sh`. The script stops `people-pb` and `delivery-pb`, empties each `/pb_data` volume with `docker compose run --rm --no-deps --entrypoint sh <service> -c 'rm -rf /pb_data/*'`, and starts them again from an `EXIT` trap, so a failed reset doesn't leave them down. The migrations re-seed on that start. Document both in ADR 031.
+- [ ] **T3.9** Write **service tests**:
+  - **Unit (Rstest `services` project, Node):** `pb_hooks/lib/*` on its own. The key one is a fast-check property test, over random allocations with ties in `editedAt`, that `load.js` gives the same rows as `delivery-domain`'s `loadsOf` (D8, D18).
+  - **Integration (`pnpm test:integration`, a separate Rstest project against the compose stack through the gateway, using the SDK):**
+    - seed counts match the brief's Fixtures section
+    - a duplicate client id and a unique-index clash map to `conflict`, and a field violation to `validation`
+    - a batch with one failing operation leaves nothing behind
+    - adding a child under a leaf moves its allocations in one batch
+    - edits survive `docker compose restart`
+    - each write emits the right realtime event to a subscriber
+    - `editedAt` changes on an effort edit and not on a move, and a user edit beats the seed rows as causer in `employee_month_loads` (D18)
 
-**Exit check:** editing a rate through the API emits an event that a test subscriber receives, and the data survives `docker compose restart`.
+**Exit check:** editing a rate through the PocketBase API (via the gateway) emits a realtime event that a test subscriber receives, an allocation edit updates `employee_month_loads` in the same transaction, and the data survives `docker compose restart`.
 
 ### Phase 4 — Shell
 
@@ -556,7 +576,7 @@ Build screens from `ui` primitives (`TextField`, `NumberField`, `Button`, `Confi
 
 The grid, cells, tree and unit switcher are Delivery's own components. They compose `ui` primitives where useful (e.g. `NumberField` inside `GridCell`, and `ConfirmDialog` for delete), but `ui` never knows about the domain.
 
-- [ ] **T6.1** Build the read model: projects, tree and allocations from `delivery-api`, plus a People read model (employees and rates) from `people-contract`, subscribed to events.
+- [ ] **T6.1** Build the read model: projects, tree and allocations from `delivery-pb`, plus a People read model (employees and rates) from `people-pb` through `people-contract`, subscribed to realtime events.
 - [ ] **T6.2** Add a project selector that navigates to `<basePath>/:projectId`; reload keeps the project and an unknown id shows an inline message (D22). Grid months derive from the project span (see plan §1).
 - [ ] **T6.3** Build the WBS tree UI: create, rename, move (with a parent picker or keyboard shortcut, no DnD library needed) and delete. Show messages for refused or moved allocations so nothing is lost silently.
   - The parent picker offers only nodes in the same project (D15).
@@ -580,7 +600,7 @@ The grid, cells, tree and unit switcher are Delivery's own components. They comp
 
 ### Phase 7 — Cross-app behaviour
 
-- [ ] **T7.1** A rate edited in People must update open Delivery cost cells live: SSE, then the read-model update, then re-render. Verify it hosted (same page), standalone, and across two tabs.
+- [ ] **T7.1** A rate edited in People must update open Delivery cost cells live: a PocketBase realtime event, then the read-model update, then re-render. Verify it hosted (same page), standalone, and across two tabs.
 - [ ] **T7.2** A Delivery allocation edit that tips someone over capacity must flag them in People live.
 - [ ] **T7.3** A currency change in the shell must update both remotes immediately, and € editing must use the displayed currency.
 - [ ] **T7.4** Kill one service or remote at a time and confirm the other keeps working with a clear degraded state.

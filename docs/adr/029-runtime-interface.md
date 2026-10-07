@@ -2,6 +2,8 @@
 
 Status: accepted (agreed before Phase 2; not one of D1-D25)
 
+> **Partly superseded by [ADR 032](032-pocketbase-data-layer.md) (2026-10-07).** The data services became PocketBase instances before Phase 3 was built. Items 1–8, 11 and 13 changed for the services, as listed there; the frontend values (items 1–3 for the apps, 9, 10, 12) stand.
+
 These values are fixed before Phase 2, so the three apps, their containers and the data services fit together without each part waiting on the others. Changing any of them needs the user's agreement.
 
 ## Decisions

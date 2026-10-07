@@ -1,6 +1,6 @@
 # ADR 006: Transport between remotes (D6)
 
-Status: accepted
+Status: superseded by [ADR 032](032-pocketbase-data-layer.md) (2026-10-07), before Phase 3 was built
 
 ## Decision
 
