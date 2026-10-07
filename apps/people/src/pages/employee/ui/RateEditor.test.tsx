@@ -288,6 +288,30 @@ describe('removing a rate', () => {
     expect(listedRates()).toEqual(['1 Jan 2099 €120.00/h', '12 Mar 2026 €95.00/hcurrent']);
   });
 
+  it('says so, and cannot confirm, when the rate is removed elsewhere while the dialog is open', async () => {
+    const { user, repository, queryClient } = await openEmployee();
+    await user.click(screen.getByRole('button', { name: 'Remove the rate from 1 Jan 2025' }));
+    const dialog = within(await screen.findByRole('dialog'));
+    expect(dialog.getByRole('button', { name: 'Remove rate' })).toBeEnabled();
+
+    act(() => {
+      queryClient.setQueryData(
+        rateRecordKeys.all,
+        RATE_RECORDS.filter(({ id }) => id !== ADAEZE_FIRST_RATE.id),
+      );
+    });
+
+    expect(
+      await dialog.findByText('This rate was removed elsewhere, so there is nothing left to remove.'),
+    ).toBeInTheDocument();
+    expect(dialog.getByRole('button', { name: 'Remove rate' })).toBeDisabled();
+    expect(dialog.queryByText(/will be removed/)).not.toBeInTheDocument();
+    await user.click(dialog.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(repository.writes).toHaveLength(0);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
   it('has no warning when the removal leaves every allocated month fully priced', async () => {
     const { user } = await openEmployee();
     await user.click(screen.getByRole('button', { name: 'Remove the rate from 1 Jan 2099' }));

@@ -47,11 +47,13 @@ export function RemoveRateDialog({
   const write = useApplyChangeSet();
   const impacts = useRemovalImpact(employee, history, rate);
   const next = rate === null ? undefined : history.find(({ validFrom }) => validFrom > rate.validFrom);
+  // Someone else may remove the rate while the dialog is open (D37): the dialog says so and cannot confirm.
+  const gone = rate !== null && !history.some(({ id }) => id === rate.id);
 
   // `mutateAsync`, not `mutate` with callbacks: TanStack runs a call's callbacks only for the latest call of
   // a hook, so with two removals overlapping the first one's failure would be rolled back without a word.
   const confirm = async () => {
-    if (rate === null) return;
+    if (rate === null || gone) return;
     onClose();
     onStart();
     try {
@@ -73,6 +75,7 @@ export function RemoveRateDialog({
           <Button onClick={onClose}>Cancel</Button>
           <Button
             variant="danger"
+            disabled={gone}
             onClick={() => {
               void confirm();
             }}
@@ -84,25 +87,34 @@ export function RemoveRateDialog({
     >
       {rate === null ? null : (
         <div className={styles.body}>
-          <p className={styles.lead}>
-            {formatHourlyRate(rate.hourlyCost, currency)} from {formatDate(rate.validFrom)} will be removed.
-            {next === undefined ? '' : ` The next rate starts on ${formatDate(next.validFrom)}.`}
-          </p>
-          {impacts === null ? (
-            <InlineMessage tone="info">
-              Months this leaves without a full rate can&apos;t be listed: Delivery&apos;s data isn&apos;t available.
-            </InlineMessage>
-          ) : impacts.length > 0 ? (
+          {gone ? (
             <InlineMessage tone="warning">
-              {employee.name} has allocations in months this leaves without a full rate:
-              <ul className={styles.months}>
-                {impacts.map((impact) => (
-                  <li key={impact.month}>{describeImpact(impact)}</li>
-                ))}
-              </ul>
-              Delivery costs those days at 0.
+              This rate was removed elsewhere, so there is nothing left to remove.
             </InlineMessage>
-          ) : null}
+          ) : (
+            <>
+              <p className={styles.lead}>
+                {formatHourlyRate(rate.hourlyCost, currency)} from {formatDate(rate.validFrom)} will be removed.
+                {next === undefined ? '' : ` The next rate starts on ${formatDate(next.validFrom)}.`}
+              </p>
+              {impacts === null ? (
+                <InlineMessage tone="info">
+                  Months this leaves without a full rate can&apos;t be listed: Delivery&apos;s data isn&apos;t
+                  available.
+                </InlineMessage>
+              ) : impacts.length > 0 ? (
+                <InlineMessage tone="warning">
+                  {employee.name} has allocations in months this leaves without a full rate:
+                  <ul className={styles.months}>
+                    {impacts.map((impact) => (
+                      <li key={impact.month}>{describeImpact(impact)}</li>
+                    ))}
+                  </ul>
+                  Delivery costs those days at 0.
+                </InlineMessage>
+              ) : null}
+            </>
+          )}
         </div>
       )}
     </Dialog>
