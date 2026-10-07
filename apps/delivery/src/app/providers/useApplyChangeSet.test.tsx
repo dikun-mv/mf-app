@@ -17,6 +17,11 @@ const root = item('wbs-1', 'prj-1', null);
 const leaf = item('wbs-2', 'prj-1', 'wbs-1');
 const effort = allocation('alloc-1', 'wbs-2', 'emp-001', '2026-03', 0.5);
 const remove = { ...EMPTY_CHANGE_SET, delete: { itemIds: [leaf.id], allocationIds: [] } };
+// Made against another state: it updates an allocation the cache doesn't have.
+const stale = {
+  ...EMPTY_CHANGE_SET,
+  update: { items: [], allocations: [allocation('alloc-9', 'wbs-2', 'emp-001', '2026-04', 1)] },
+};
 const edit = { ...EMPTY_CHANGE_SET, update: { items: [], allocations: [{ ...effort, amount: 0.75 }] } };
 
 function Editor() {
@@ -51,6 +56,14 @@ function Editor() {
         }}
       >
         Remove
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          write.mutate(stale);
+        }}
+      >
+        Stale
       </button>
       {write.error ? <p role="alert">{describeError(write.error)}</p> : null}
     </>
@@ -155,5 +168,23 @@ describe('useApplyChangeSet', () => {
     expect(screen.getByText('alloc-1: 0.5')).toBeInTheDocument();
     expect(await screen.findByText(leaf.name)).toBeInTheDocument();
     expect(repository.written).toEqual([]);
+  });
+
+  it('forgets a write whose change set the cache cannot take, so a later failure still refetches', async () => {
+    const { repository } = setup();
+    const user = userEvent.setup();
+    await screen.findByText('alloc-1: 0.5');
+
+    await user.click(screen.getByRole('button', { name: 'Stale' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent('something went wrong');
+    expect(repository.written).toEqual([]);
+
+    repository.failWrites(new RepositoryError('unavailable', 'delivery'), 1);
+    const list = rs.spyOn(repository, 'list');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => {
+      expect(list.mock.calls.map(([key]) => key).sort()).toEqual(['allocations', 'breakdownItems']);
+    });
+    expect(screen.getByText('alloc-1: 0.5')).toBeInTheDocument();
   });
 });
