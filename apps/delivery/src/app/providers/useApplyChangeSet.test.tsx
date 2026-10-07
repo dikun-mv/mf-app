@@ -227,4 +227,30 @@ describe('useApplyChangeSet', () => {
     expect(await screen.findByText('alloc-1: 0.75')).toBeInTheDocument();
     expect(repository.stored('allocations')[0]?.amount).toBe(0.75);
   });
+
+  it('refetches once its writes are done when a write cancelled a read in flight', async () => {
+    const { repository, queryClient } = setup();
+    const user = userEvent.setup();
+    await screen.findByText('alloc-1: 0.5');
+    const list = rs.spyOn(repository, 'list');
+    // A read of the allocations is on its way, and the write cancels it.
+    const releaseRead = repository.holdReads('allocations');
+    void queryClient.invalidateQueries({ queryKey: collectionKey('allocations') });
+    await waitFor(() => {
+      expect(list).toHaveBeenCalledTimes(1);
+    });
+
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await waitFor(() => {
+      expect(repository.written).toEqual([edit]);
+    });
+    act(() => {
+      releaseRead();
+    });
+    // The cancelled read is not retried by itself: the refetch comes from the write ending.
+    await waitFor(() => {
+      expect(list.mock.calls.filter(([key]) => key === 'allocations')).toHaveLength(2);
+    });
+    expect(await screen.findByText('alloc-1: 0.75')).toBeInTheDocument();
+  });
 });
