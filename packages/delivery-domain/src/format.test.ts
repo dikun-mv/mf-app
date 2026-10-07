@@ -1,6 +1,6 @@
 import { CurrencyCode, IsoDate, Month } from '@baseline/host-contract';
 import { describe, expect, it } from '@rstest/core';
-import { LOCALE, formatDate, formatMonth, formatMonthShort, formatRate, formatUnit } from './format';
+import { LOCALE, formatDate, formatDayMonth, formatMonth, formatMonthShort, formatRate, formatUnit } from './format';
 
 const code = (value: string) => CurrencyCode.parse(value);
 
@@ -40,6 +40,11 @@ describe('dates', () => {
     expect(formatDate(IsoDate.parse('2026-03-12'))).toBe('12 Mar 2026');
     expect(formatDate(IsoDate.parse('2026-09-01'))).toBe('1 Sep 2026');
     expect(formatDate(IsoDate.parse('2027-02-28'))).toBe('28 Feb 2027');
+  });
+
+  it('writes a day and month alone as 12 Mar', () => {
+    expect(formatDayMonth(IsoDate.parse('2026-03-12'))).toBe('12 Mar');
+    expect(formatDayMonth(IsoDate.parse('2026-11-01'))).toBe('1 Nov');
   });
 
   it('writes a month in full and short forms', () => {

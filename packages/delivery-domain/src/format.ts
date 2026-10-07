@@ -73,6 +73,10 @@ const monthName = (monthNumber: string): string => at(MONTH_NAMES, Number(monthN
 export const formatDate = (date: IsoDate): string =>
   `${String(Number(date.slice(8, 10)))} ${monthName(date.slice(5, 7))} ${date.slice(0, 4)}`;
 
+/** `2026-03-12` as `12 Mar`, for a date whose year is clear from its surroundings. */
+export const formatDayMonth = (date: IsoDate): string =>
+  `${String(Number(date.slice(8, 10)))} ${monthName(date.slice(5, 7))}`;
+
 /** `2026-03` as `Mar 2026`. */
 export const formatMonth = (month: Month): string => `${monthName(month.slice(5, 7))} ${month.slice(0, 4)}`;
 

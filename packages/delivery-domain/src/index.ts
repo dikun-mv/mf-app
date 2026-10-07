@@ -7,6 +7,8 @@ export * from './changeSet';
 export * from './errors';
 export * from './format';
 export * from './grid';
+export * from './gridView';
+export * from './gridViewTypes';
 export * from './ids';
 export * from './invariants';
 export * from './itemPath';
