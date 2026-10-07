@@ -1,7 +1,5 @@
 .container {
-  padding: var(--bl-space-3);
-  border: 1px solid var(--bl-color-border);
-  border-radius: var(--bl-radius);
+  min-width: 0;
 }
 
 /* The shell re-theming a panel: remotes read these through their own tokens (ui/tokens.css). */

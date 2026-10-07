@@ -16,7 +16,7 @@ const BASE_PATHS: Record<RemoteName, BasePath> = {
  * or user gives the panel new props, not a new key, so the remote re-renders in place (T4.2).
  */
 export function RemoteRoute({ name }: { name: RemoteName }) {
-  const { loader, theme } = useShell();
+  const { loader, remotes, theme } = useShell();
   const { currency, activeUser } = useSelection();
   const navigate = useShellNavigate();
   const ctx = useMemo<HostContext>(
@@ -26,7 +26,7 @@ export function RemoteRoute({ name }: { name: RemoteName }) {
   return (
     // The panel container is where the shell may override design tokens (`--bl-theme-*`).
     <div className={clsx(styles.container, { [styles.contrast]: theme === 'contrast' })}>
-      <RemotePanel key={name} name={name} ctx={ctx} loader={loader} />
+      <RemotePanel key={name} name={name} ctx={ctx} loader={loader} entry={remotes[name]} />
     </div>
   );
 }
