@@ -44,7 +44,9 @@ async function setup() {
     listed,
     statuses,
     connect,
-    stopObserving: () => stopObserving.forEach((stop) => stop()),
+    stopObserving: () => {
+      for (const stop of stopObserving) stop();
+    },
   };
 }
 
