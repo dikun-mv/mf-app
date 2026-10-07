@@ -3,8 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@baseline/people-contract": "workspace:^"
+  },
   "devDependencies": {
     "eventsource": "catalog:",
-    "pocketbase": "catalog:"
+    "pocketbase": "catalog:",
+    "zod": "catalog:"
   }
 }
