@@ -66,7 +66,7 @@ export function useGridView(
     [plan, pendingKeys, people, projectId, unit, currency],
   );
   const result = useSharedStructure(fresh);
-  const units = useMemo(() => availableUnits(people), [people]);
+  const units = availableUnits(people);
   const peopleLoading = employeesQuery.isPending || ratesQuery.isPending;
   return { result, units, peopleLoading, staleAssignments: stale };
 }

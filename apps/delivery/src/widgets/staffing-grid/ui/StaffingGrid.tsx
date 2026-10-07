@@ -72,7 +72,7 @@ export function StaffingGrid({ projectId, unit = 'personMonths' }: StaffingGridP
   }, []);
 
   const rows = result.ok ? result.value.rows : null;
-  const shown = useMemo(() => (rows === null ? [] : visibleRows(rows, collapsed)), [rows, collapsed]);
+  const shown = rows === null ? [] : visibleRows(rows, collapsed);
 
   // The toolbar is always there, so the unit can be changed out of a grid that can't be shown.
   const toolbar = Toolbar !== null && <Toolbar projectId={projectId} unit={unit} units={units} />;
