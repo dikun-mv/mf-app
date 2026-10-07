@@ -187,4 +187,4 @@ The checks answered every open assumption on the pinned release without a fallba
 
 - **The pin is one binary for both teams.** A PocketBase upgrade is a platform change: both services, both checksums, and the checks above repeated.
 - **Behaviour that is PocketBase's, not ours:** optional relations are cleared on delete (g), batch errors nest the operation's body under `data.requests.<index>.response`, and a hook's failing save shows up as an error on the request's own record.
-- **The dashboard** (`/_/`) is not routed by its own path, but the gateway's `/api/people/` prefix also forwards `/api/people/_/` to it. There is no superuser and no login (plan §1).
+- **The dashboard** (`/_/`) is not routed: the gateway answers `/api/people/_/` and `/api/delivery/_/` with a JSON 404. PocketBase's superuser API paths are forwarded like the rest but need a token, and there is no superuser or login (plan §1).
