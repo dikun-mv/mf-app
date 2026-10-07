@@ -86,6 +86,9 @@
 .problem {
   position: absolute;
   z-index: 3;
+  /* It covers the cells below it. A mouse down on it would blur the editor, the message would go, and the
+     click would land on nothing, so the pointer goes through it to the cell. */
+  pointer-events: none;
   inset-block-start: calc(100% + var(--bl-space-1));
   inset-inline-end: 0;
   box-sizing: border-box;

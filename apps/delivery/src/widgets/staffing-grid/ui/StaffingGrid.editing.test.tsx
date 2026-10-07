@@ -2,6 +2,7 @@ import { ProjectId } from '@baseline/delivery-contract';
 import { describe, expect, it } from '@rstest/core';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { readFileSync } from 'node:fs';
 import { Suspense } from 'react';
 import { useUnit } from '../../../features/switch-unit';
 import { RepositoryError } from '../../../shared/api';
@@ -30,6 +31,21 @@ async function rowOf(name: string, nth = 0): Promise<HTMLElement> {
 }
 
 describe('StaffingGrid with units and editing', () => {
+  it('leaves room under the table for a cell editor’s reason, which the scrolling box would clip', () => {
+    // jsdom lays nothing out, so read the rule and the attribute it is keyed on.
+    const css = readFileSync(new URL('./StaffingGrid.module.css', import.meta.url), 'utf8');
+    expect(/\.scroll:has\(\[data-edit-reason\]\)\s*\{[^}]*padding-block-end:\s*\d/.test(css)).toBe(true);
+  });
+
+  it('marks a cell editor’s reason so the box makes room for it', async () => {
+    const user = userEvent.setup();
+    renderPage(createFakeRepository(seedData()));
+    await user.click(await screen.findByRole('button', { name: 'Anja Keller, Apr 2026, person-months: 0.20' }));
+    await user.clear(screen.getByRole('textbox'));
+    await user.type(screen.getByRole('textbox'), 'abc{Enter}');
+    expect(await screen.findByRole('alert')).toHaveAttribute('data-edit-reason');
+  });
+
   it('reads the reference cell in all four units as the switcher changes ?unit=', async () => {
     const user = userEvent.setup();
     renderPage();

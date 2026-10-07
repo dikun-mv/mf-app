@@ -169,6 +169,7 @@ export function CellEditor({ row, cell, month, unit, describedById, report, hasA
       {message !== null && (
         <span
           id={messageId}
+          data-edit-reason=""
           className={problem === null ? styles.hint : styles.problem}
           role={problem === null ? undefined : 'alert'}
         >

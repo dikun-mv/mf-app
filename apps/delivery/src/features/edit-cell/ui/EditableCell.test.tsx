@@ -390,6 +390,8 @@ describe('EditableCell', () => {
       new RegExp(`^${selector.replaceAll('.', '\\.')} \\{([^}]*)\\}`, 'm').exec(css)?.[1] ?? '';
     expect(rule('.editor')).toMatch(/position:\s*relative/);
     expect(rule('.hint,\n.problem')).toMatch(/position:\s*absolute/);
+    // It covers the cells below, and a mouse down on it would blur the editor and lose the click.
+    expect(rule('.hint,\n.problem')).toMatch(/pointer-events:\s*none/);
   });
 
   it('points the button at the details panel when markers sit beside the value', async () => {
