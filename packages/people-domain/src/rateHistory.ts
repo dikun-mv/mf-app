@@ -67,6 +67,19 @@ export function correctRate(
   return validated(history.map((record) => (record.id === id ? corrected : record)));
 }
 
+/**
+ * The rate in effect on a day: the record with the latest `validFrom` on or before it (a record runs
+ * until the next begins, and its own day is priced at its cost), or `null` before the first rate or
+ * with no rates. Order doesn't matter. "Today" is the caller's to pass, so this never reads a clock.
+ */
+export function rateOn<T extends Pick<RateRecord, 'validFrom'>>(rates: readonly T[], date: IsoDate): T | null {
+  let inEffect: T | null = null;
+  for (const rate of rates) {
+    if (rate.validFrom <= date && (inEffect === null || rate.validFrom > inEffect.validFrom)) inEffect = rate;
+  }
+  return inEffect;
+}
+
 /** Removes a record. Removing the last one is allowed: every month is then unpriced. */
 export function removeRate(history: readonly RateRecord[], id: RateRecordId): Result<RateRecord[], RateHistoryError> {
   if (!history.some((record) => record.id === id)) return err({ code: 'notFound', id });
