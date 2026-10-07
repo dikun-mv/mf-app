@@ -38,7 +38,9 @@ export function EmployeeScreen() {
   const id = useParams().employeeId ?? '';
   const parsed = EmployeeId.safeParse(id);
   return parsed.success ? (
-    <PageBoundary subject="employee">
+    // Keyed by the employee: going from one employee's URL straight to another's reuses this element, and the
+    // open forms, the status line and a failure message belong to the first employee.
+    <PageBoundary key={parsed.data} subject="employee">
       <EmployeeDetail id={parsed.data} />
     </PageBoundary>
   ) : (

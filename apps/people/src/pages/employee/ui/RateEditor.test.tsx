@@ -289,6 +289,29 @@ describe('removing a rate', () => {
   });
 });
 
+describe('going from one employee to another', () => {
+  it('leaves none of the first employee’s forms, drafts or messages on the second’s page', async () => {
+    const { user, router } = await openEmployee();
+    // Employee A: a result in the status line, an add draft, and a correction open on a rate.
+    await fillAdd(user, '2026-11-01', '98');
+    await user.click(addForm().getByRole('button', { name: 'Add rate' }));
+    expect(await screen.findByText('Rate from 1 Nov 2026 added.')).toBeInTheDocument();
+    await user.type(addForm().getByLabelText('Valid from'), '2027-01-01');
+    await user.click(screen.getByRole('button', { name: 'Correct the rate from 1 Jan 2025' }));
+    expect(screen.getByRole('button', { name: 'Save' })).toBeInTheDocument();
+
+    // A history jump or a host link: straight to employee B, with no register in between.
+    await act(() => router.navigate('/emp-002'));
+    expect(await screen.findByRole('heading', { level: 1, name: 'Lena Okafor' })).toBeInTheDocument();
+
+    expect(listedRates()).toEqual(['1 Jan 2024 €85.00/hcurrent']);
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/removed elsewhere/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Rate from 1 Nov 2026 added.')).not.toBeInTheDocument();
+    expect(addForm().getByLabelText('Valid from')).toHaveValue('');
+  });
+});
+
 describe('a write that fails', () => {
   it('undoes the change and says so at the top, keeping the draft for another try', async () => {
     const repository = createFakeRepository();
