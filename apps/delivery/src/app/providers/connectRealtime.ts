@@ -36,7 +36,6 @@ export function connectRealtime({
   retryDelay = defaultRetryDelay,
 }: RealtimeOptions): () => void {
   let stopped = false;
-  let missedEvents = false;
   let attempt = 0;
   let timer: ReturnType<typeof setTimeout> | undefined;
   let subscriptions: Unsubscribe[] = [];
@@ -44,20 +43,20 @@ export function connectRealtime({
   const onConnection = (event: ConnectionEvent): void => {
     if (stopped) return;
     if (event === 'disconnected') {
-      missedEvents = true;
       onStatus('down');
       return;
     }
-    // A connection after a drop, or after a failed first try, may have missed events, so every query is
-    // refetched. The first connect isn't live until after the first reads were sent: what was edited in
-    // between is in none of them, and nothing refetches by itself (`staleTime: Infinity`). So a collection
-    // that has already loaded is refetched too; one still loading is left to finish.
-    const everything = missedEvents;
-    void client.invalidateQueries({
-      queryKey: instanceKey(instance),
-      predicate: ({ state }) => everything || state.status === 'success',
-    });
-    missedEvents = false;
+    // The connection is live now, but the first reads were sent before it was: whatever was edited in between
+    // is in none of them, and nothing refetches by itself (`staleTime: Infinity`). So every query of the
+    // instance is refetched, on a reconnect too, where events were missed outright. A read still on its first
+    // fetch has no data, and an invalidation doesn't restart those, so they are cancelled first.
+    const filters = { queryKey: instanceKey(instance) };
+    void client
+      .cancelQueries({
+        ...filters,
+        predicate: ({ state }) => state.data === undefined && state.fetchStatus === 'fetching',
+      })
+      .then(() => client.invalidateQueries(filters));
     attempt = 0;
     onStatus('live');
   };
@@ -84,7 +83,6 @@ export function connectRealtime({
     if (stopped || results.some(({ status }) => status === 'rejected')) {
       await release();
       if (stopped) return;
-      missedEvents = true;
       onStatus('down');
       timer = setTimeout(() => {
         void open();

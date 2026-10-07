@@ -1,6 +1,6 @@
 import { ActiveUser, type RemoteHandle } from '@baseline/host-contract';
 import { afterEach, beforeEach, describe, expect, it, rs } from '@rstest/core';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import App from './App';
 import { mount } from './mount';
 import { createFakeRepository, seedProjects, testContext } from '../shared/testing';
@@ -57,18 +57,23 @@ describe('Delivery hosted under /delivery', () => {
     expect(screen.getByRole('heading', { name: 'Projects' })).toBeInTheDocument();
   });
 
-  it('loads each collection once while moving between pages, because one query client serves the app', async () => {
+  it('loads nothing more while moving between pages, because one query client serves the app', async () => {
     const repository = repositoryWithProjects();
     const list = rs.spyOn(repository, 'list');
+    const listed = () => list.mock.calls.filter(([key]) => key === 'projects').length;
     render(<App ctx={testContext()} repository={repository} />);
     await screen.findByRole('link', { name: 'Ledger Consolidation' });
+    // The first read, and the refetch when the realtime connection comes up.
+    await waitFor(() => {
+      expect(listed()).toBe(2);
+    });
 
     goTo('/delivery/prj-1', { notify: true });
     await screen.findByRole('heading', { name: 'Ledger Consolidation' });
     goTo('/delivery', { notify: true });
     await screen.findByRole('link', { name: 'Ledger Consolidation' });
 
-    expect(list.mock.calls.filter(([key]) => key === 'projects')).toHaveLength(1);
+    expect(listed()).toBe(2);
   });
 });
 
@@ -80,17 +85,21 @@ describe('Delivery mounted through ./mount', () => {
   it('renders, takes a new context without remounting, and unmounts', async () => {
     const repository = repositoryWithProjects();
     const list = rs.spyOn(repository, 'list');
+    const listed = () => list.mock.calls.filter(([key]) => key === 'projects').length;
     const el = document.createElement('div');
     document.body.append(el);
     const handle = mountInAct(el, repository);
     const link = await screen.findByRole('link', { name: 'Ledger Consolidation' });
+    await waitFor(() => {
+      expect(listed()).toBe(2);
+    });
 
     // The app is not remounted by `update`: the same element stays, and nothing is loaded again.
     act(() => {
       handle.update(testContext({ activeUser: ActiveUser.parse({ id: 'user-2', name: 'Demo Lead' }) }));
     });
     expect(await screen.findByRole('link', { name: 'Ledger Consolidation' })).toBe(link);
-    expect(list.mock.calls.filter(([key]) => key === 'projects')).toHaveLength(1);
+    expect(listed()).toBe(2);
 
     act(() => {
       handle.unmount();

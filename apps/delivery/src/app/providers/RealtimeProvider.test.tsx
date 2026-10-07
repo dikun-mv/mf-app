@@ -51,6 +51,10 @@ describe('RealtimeProvider patching', () => {
     const list = rs.spyOn(repository, 'list');
     renderProbe(repository);
     expect(await screen.findByText('alloc-1: 0.5')).toBeInTheDocument();
+    // The first read, and the refetch when the connection comes up.
+    await waitFor(() => {
+      expect(list).toHaveBeenCalledTimes(2);
+    });
 
     const added = allocation('alloc-2', 'wbs-2', 'emp-002', '2026-03', 1);
     act(() => {
@@ -70,7 +74,7 @@ describe('RealtimeProvider patching', () => {
     await waitFor(() => {
       expect(screen.queryByText('alloc-2: 1')).not.toBeInTheDocument();
     });
-    expect(list).toHaveBeenCalledTimes(1);
+    expect(list).toHaveBeenCalledTimes(2);
   });
 
   it('keeps a collection of the other instance out of this provider’s subscriptions', async () => {
@@ -100,7 +104,9 @@ describe('RealtimeProvider connection', () => {
     await waitFor(() => {
       expect(status()).toBe('live');
     });
-    expect(list).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(list).toHaveBeenCalledTimes(2);
+    });
 
     // Missed while down: the server's record changed and no event arrived.
     act(() => {
@@ -114,7 +120,7 @@ describe('RealtimeProvider connection', () => {
     });
     expect(await screen.findByText('alloc-1: 0.9')).toBeInTheDocument();
     expect(status()).toBe('live');
-    expect(list).toHaveBeenCalledTimes(2);
+    expect(list).toHaveBeenCalledTimes(3);
   });
 
   it('reports one instance down without touching the other', async () => {

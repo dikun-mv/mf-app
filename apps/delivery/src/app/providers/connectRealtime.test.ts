@@ -51,7 +51,7 @@ async function setup() {
 }
 
 describe('connectRealtime', () => {
-  it('refetches what has loaded on the first connect: edits made before it was live are in no read', async () => {
+  it('refetches everything on the first connect, a read still in flight included: edits made before it was live are in no read', async () => {
     const { repository, listed, statuses, connect, stopObserving } = await setup();
     expect(listed('allocations')).toBe(1);
     // Edited after the read was sent and before the subscription was live: no event will come for it.
@@ -64,8 +64,10 @@ describe('connectRealtime', () => {
     await waitFor(() => {
       expect(listed('allocations')).toBe(2);
     });
-    // The tree is still on its first read, which is left to finish.
-    expect(listed('breakdownItems')).toBe(1);
+    // The tree is still on its first read, which may predate the subscription: it is restarted.
+    await waitFor(() => {
+      expect(listed('breakdownItems')).toBe(2);
+    });
     stop();
     stopObserving();
   });
@@ -85,8 +87,34 @@ describe('connectRealtime', () => {
     await waitFor(() => {
       expect(listed('allocations')).toBe(2);
     });
-    expect(listed('breakdownItems')).toBe(1);
+    await waitFor(() => {
+      expect(listed('breakdownItems')).toBe(2);
+    });
     stop();
+    stopObserving();
+  });
+
+  it('cancels the retry of a first connect that failed when stopped', async () => {
+    const { repository, statuses, stopObserving } = await setup();
+    repository.failSubscribe('delivery', new RepositoryError('unavailable', 'delivery'));
+    const subscribe = rs.spyOn(repository, 'subscribe');
+    const stop = connectRealtime({
+      repository,
+      client: createQueryClient(),
+      instance: 'delivery',
+      onStatus: (status) => statuses.push(status),
+      retryDelay: () => 50,
+    });
+    await waitFor(() => {
+      expect(statuses).toContain('down');
+    });
+    const tries = subscribe.mock.calls.length;
+
+    stop();
+    repository.failSubscribe('delivery', null);
+    await new Promise((resolve) => setTimeout(resolve, 150));
+    expect(subscribe).toHaveBeenCalledTimes(tries);
+    expect(statuses).not.toContain('live');
     stopObserving();
   });
 
