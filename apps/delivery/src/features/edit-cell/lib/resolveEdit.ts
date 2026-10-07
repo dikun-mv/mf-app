@@ -51,20 +51,26 @@ const AMOUNT_PROBLEMS: Record<AmountError, string> = {
   negative: "The amount can't be negative.",
 };
 
+/** Relative size below which two values in a unit are the same number. */
+const NOISE = 1e-9;
+
 const COST_REFUSED = "Can't edit the cost here. Switch to Hours, Person-months or % to edit this cell.";
 const NEEDS_PEOPLE = "Hours and cost need People's data, which can't be reached. Switch to Person-months or %.";
 
 /**
- * Decides what to do with a finished draft. A draft is unchanged when it is numerically what the editor
- * opened with (`0.5` for `0.50`), so a cell shown rounded isn't rewritten with its rounding; otherwise it is
- * compared with the stored amount at this moment, which is what D37 means by comparing at save time.
+ * Decides what to do with a finished draft. A draft that is the text the editor opened with was never
+ * touched, so it is unchanged: a cell shown rounded isn't rewritten with its rounding, and a value that
+ * changed elsewhere meanwhile isn't overwritten by a draft nobody edited. Any other draft is compared only
+ * with what is stored at this moment, which is what D37 means by comparing at save time.
  * A € edit in a partly priced or unpriced month is refused with the cell's own reason (D17).
  */
 export function resolveEdit({ draft, opened, unit, cell, employee, perEur }: EditInput): EditOutcome {
   if (draft.trim() === opened.trim()) return { kind: 'unchanged' };
   const parsed = parseAmount(draft);
   if (!parsed.ok) return { kind: 'rejected', message: AMOUNT_PROBLEMS[parsed.error] };
-  if (opened !== '' && parsed.value === Number(opened)) return { kind: 'unchanged' };
+  // A touched draft is compared with what is stored now, in the unit it was typed in: the exact value
+  // `cell.exact`, to within float noise (7880 typed back over a cost of 7880.0000000001 is no edit).
+  if (Math.abs(parsed.value - cell.exact) <= NOISE * Math.max(1, Math.abs(cell.exact))) return { kind: 'unchanged' };
 
   let amount: PersonMonths;
   if (unit === 'personMonths') amount = personMonths(parsed.value);

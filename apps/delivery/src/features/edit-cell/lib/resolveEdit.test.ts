@@ -52,10 +52,27 @@ describe('resolveEdit', () => {
     expect(edit('9504', { unit: 'cost', opened: '7603.20', perEur: 1.08 })).toEqual({ kind: 'save', amount: 0.5 });
   });
 
-  it('is unchanged when the draft is what the editor opened with, however it is written', () => {
+  it('is unchanged when the draft is the text the editor opened with, or equals what is stored', () => {
     expect(edit('0.40')).toEqual({ kind: 'unchanged' });
-    expect(edit('0.4')).toEqual({ kind: 'unchanged' });
     expect(edit('  0.40 ')).toEqual({ kind: 'unchanged' });
+    expect(edit('0.4')).toEqual({ kind: 'unchanged' });
+  });
+
+  it('ignores float noise between a typed value and the stored one', () => {
+    const cell = { ...stored, personMonths: 0.5, exact: 7880.000000000001 };
+    expect(edit('7880', { unit: 'cost', opened: '7880.00', cell })).toEqual({ kind: 'unchanged' });
+  });
+
+  it('writes a touched draft that restores the opening value after the cell changed elsewhere (D37)', () => {
+    const elsewhere = { ...stored, personMonths: 0.75, exact: 0.75 };
+    expect(edit('0.5', { opened: '0.50', cell: elsewhere })).toEqual({ kind: 'save', amount: 0.5 });
+    const hours = { ...stored, personMonths: 0.75, exact: 132 };
+    expect(edit('80', { unit: 'hours', opened: '80.00', cell: hours })).toEqual({ kind: 'save', amount: 80 / 176 });
+  });
+
+  it('leaves an untouched draft alone even when the cell changed elsewhere meanwhile', () => {
+    const elsewhere = { ...stored, personMonths: 0.75, exact: 0.75 };
+    expect(edit('0.50', { opened: '0.50', cell: elsewhere })).toEqual({ kind: 'unchanged' });
   });
 
   it('leaves a cell shown rounded alone: its opening text is not a new value', () => {
