@@ -1,4 +1,5 @@
 import { IsoDate, Month } from '@baseline/host-contract';
+import { OKAFOR_MARCH_2026_SLICES, OKAFOR_RATE_RECORDS, RateRecord } from '@baseline/people-contract';
 import { describe, expect, it } from '@rstest/core';
 import { type RateInput, sliceMonth } from './rates';
 import { seedRatesOf } from './testing/seed';
@@ -79,5 +80,14 @@ describe('sliceMonth', () => {
       [8, 80],
       [14, 95],
     ]);
+  });
+
+  it("matches People's conformance fixture: A. Okafor's March 2026 slices (D7)", () => {
+    // The records and the expected slices come from people-contract, so what People publishes is what is pinned.
+    const records = RateRecord.array().parse(OKAFOR_RATE_RECORDS);
+    const slices = sliceMonth(month('2026-03'), records);
+    expect(
+      slices.map(({ from, toExclusive, workingDays, hourlyCost }) => ({ from, toExclusive, workingDays, hourlyCost })),
+    ).toEqual(OKAFOR_MARCH_2026_SLICES);
   });
 });
