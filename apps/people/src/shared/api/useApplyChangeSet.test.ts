@@ -386,6 +386,30 @@ describe('useApplyChangeSet and realtime events for a record a write has changed
   });
 });
 
+describe('useApplyChangeSet and a read of the rate records that is running', () => {
+  it('reads the collection again once the writes are done, because starting the write cancelled that read', async () => {
+    const { client, run } = setup(() => Promise.resolve([]));
+    const refetch = rs.spyOn(client, 'invalidateQueries');
+    const read = deferred();
+    const reading = client
+      .query({ queryKey: rateRecordKeys.all, queryFn: () => read.promise, staleTime: 0 })
+      .catch(() => undefined);
+    expect(client.isFetching({ queryKey: rateRecordKeys.all })).toBe(1);
+
+    await run({ ...EMPTY_RATE_CHANGE_SET, create: [rate(3, '2026-11-01', 98)] });
+    await reading;
+    expect(refetch).toHaveBeenCalledTimes(1);
+    expect(refetch).toHaveBeenCalledWith({ queryKey: rateRecordKeys.all });
+  });
+
+  it('owes no read when nothing was being read', async () => {
+    const { client, run } = setup(() => Promise.resolve([]));
+    const refetch = rs.spyOn(client, 'invalidateQueries');
+    await run({ ...EMPTY_RATE_CHANGE_SET, create: [rate(3, '2026-11-01', 98)] });
+    expect(refetch).not.toHaveBeenCalled();
+  });
+});
+
 describe('afterWrites', () => {
   it('runs at once when no write is in flight', () => {
     const { client } = setup(() => Promise.resolve([]));

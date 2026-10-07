@@ -4,6 +4,7 @@ import { describe, expect, it, rs } from '@rstest/core';
 import { act, screen } from '@testing-library/react';
 import { useQuery } from '@tanstack/react-query';
 import {
+  ApiError,
   EMPTY_RATE_CHANGE_SET,
   applyChangeSetOptions,
   employeeKeys,
@@ -209,6 +210,74 @@ describe('RealtimeProvider', () => {
     releaseWrites();
     await write;
     expect(await screen.findByText('People is live')).toBeInTheDocument();
+  });
+
+  describe('a reconnect read that did not bring new data', () => {
+    /** Reconnects the instance at the moment it matters: the rates are loaded, the connection has dropped. */
+    async function droppedConnection() {
+      const repository = createFakeRepository();
+      const app = renderWithApp(
+        <RealtimeProvider instance="people">
+          <Status />
+          <Adaeze />
+        </RealtimeProvider>,
+        { repository },
+      );
+      expect(await screen.findByText('Adaeze Okafor earns 120 an hour')).toBeInTheDocument();
+      act(() => {
+        repository.connect('people');
+      });
+      expect(await screen.findByText('People is live')).toBeInTheDocument();
+      act(() => {
+        repository.disconnect('people');
+      });
+      return { repository, app };
+    }
+    const settle = () => new Promise((resolve) => setTimeout(resolve, 50));
+    const bumpRates = (repository: ReturnType<typeof createFakeRepository>) => {
+      repository.setRateRecordsSilently(RATE_RECORDS.map((r) => ({ ...r, hourlyCost: r.hourlyCost + 1 })));
+    };
+
+    it('stays down when a write cancelled the read, and goes live once the read it owed has run', async () => {
+      const { repository, app } = await droppedConnection();
+      const release = repository.holdReads();
+      act(() => {
+        repository.connect('people');
+      });
+      // A write starts while the reconnect read is running: its first step cancels that read.
+      const write = app.queryClient
+        .getMutationCache()
+        .build(app.queryClient, applyChangeSetOptions(app.queryClient, repository))
+        .execute({ ...EMPTY_RATE_CHANGE_SET, create: [newRate] });
+      await settle();
+      expect(screen.getByText('People is down')).toBeInTheDocument();
+
+      // The write has committed; the read it owes then sees the server as it is now.
+      bumpRates(repository);
+      release();
+      await write;
+      expect(await screen.findByText('People is live')).toBeInTheDocument();
+      expect(await screen.findByText('Adaeze Okafor earns 121 an hour')).toBeInTheDocument();
+    });
+
+    it('stays down when the read failed, and goes live at the next reconnect that succeeds', async () => {
+      const { repository } = await droppedConnection();
+      repository.failReads(new ApiError('unavailable', 'people'));
+      act(() => {
+        repository.connect('people');
+      });
+      await settle();
+      expect(screen.getByText('People is down')).toBeInTheDocument();
+
+      repository.failReads(null);
+      bumpRates(repository);
+      act(() => {
+        repository.disconnect('people');
+        repository.connect('people');
+      });
+      expect(await screen.findByText('People is live')).toBeInTheDocument();
+      expect(await screen.findByText('Adaeze Okafor earns 121 an hour')).toBeInTheDocument();
+    });
   });
 
   it('refetches everything after a reconnect, because missed events are not replayed', () => {

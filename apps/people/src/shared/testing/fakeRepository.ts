@@ -65,10 +65,11 @@ export function createFakeRepository(data: FakeRepositoryData = {}): FakeReposit
   let writeGate: Promise<void> = Promise.resolve();
   let loadGate: Promise<void> = Promise.resolve();
 
-  const read = async <T>(records: readonly T[]): Promise<T[]> => {
+  // The records are read when the server answers, after any hold: a read held while the data changes sees the change.
+  const read = async <T>(records: () => readonly T[]): Promise<T[]> => {
     await gate;
     if (readError) throw readError;
-    return [...records];
+    return [...records()];
   };
 
   const emit = (event: RecordEvent): void => {
@@ -80,12 +81,12 @@ export function createFakeRepository(data: FakeRepositoryData = {}): FakeReposit
     get writes() {
       return writes;
     },
-    listEmployees: () => read(employees),
-    listRateRecords: () => read(rateRecords),
+    listEmployees: () => read(() => employees),
+    listRateRecords: () => read(() => rateRecords),
     listEmployeeMonthLoads: async () => {
       await loadGate;
       if (loadError) throw loadError;
-      return read(employeeMonthLoads);
+      return read(() => employeeMonthLoads);
     },
     applyRateChanges: async (changes) => {
       await writeGate;

@@ -9,6 +9,7 @@ import {
   type Instance,
   type RealtimeStatus,
 } from '../shared/api';
+import { watchReads } from './watchReads';
 
 /**
  * Refetches what the instance's queries hold. A first fetch still in flight can't be restarted (TanStack
@@ -34,7 +35,9 @@ function refetchInstance(queryClient: QueryClient, instance: Instance): Promise<
  * the subscription going live, and later ones cover events missed while disconnected, which aren't replayed
  * (D6). On unmount it unsubscribes and cancels the instance's queries, so an unmounted remote leaves no open
  * connection. The status (`connecting`, `live`, `down`) is available to the widgets below through
- * `useRealtimeStatus`.
+ * `useRealtimeStatus`. After a drop it returns to `live` only when every active query of the instance has
+ * succeeded again (`watchReads`), not when the refetch merely resolved: a read cancelled by a write, failed or
+ * paused offline resolves it too.
  *
  * An app mounts one per instance it reads: `people`, and `delivery` for the load feed (T5.4).
  */
@@ -51,12 +54,17 @@ export function RealtimeProvider({ instance, children }: { instance: Instance; c
     let lost = false;
     // Names the latest refetch, so only the last of several (a drop in the middle of one) says the cache is current.
     let latest = 0;
+    // `live` after a drop needs more than a refetch that resolved: every active query must have succeeded again.
+    const reads = watchReads(queryClient, instance, () => {
+      if (!connected) return;
+      lost = false;
+      setStatus('live');
+    });
     const refetch = (): void => {
       const mine = ++latest;
+      reads.begin();
       void refetchInstance(queryClient, instance).then(() => {
-        if (mine !== latest || !connected) return;
-        lost = false;
-        setStatus('live');
+        if (mine === latest) reads.check();
       });
     };
     const stop = repository.subscribe(instance, {
@@ -84,12 +92,14 @@ export function RealtimeProvider({ instance, children }: { instance: Instance; c
         lost = true;
         // A refetch already running started before the drop and may have read pre-outage data: it no longer counts.
         latest += 1;
+        reads.drop();
         setStatus('down');
       },
     });
     return () => {
       connected = false;
       waiting?.();
+      reads.stop();
       stop();
       void queryClient.cancelQueries({ queryKey: instanceKey(instance) });
     };

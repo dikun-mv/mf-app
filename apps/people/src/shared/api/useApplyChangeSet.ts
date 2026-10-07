@@ -53,6 +53,8 @@ export function applyChangeSetOptions(
       // goes into the cache and is part of what is read.
       const previous = new Map<RateRecordId, RateRecord | undefined>();
       writes.inFlight.set(token, { touched: new Set(touched), previous });
+      // A read of the rate records still running is cancelled below, and nothing would read them again: owe one.
+      if (queryClient.isFetching({ queryKey: rateRecordKeys.all }) > 0) writes.refetchOwed = true;
       try {
         await queryClient.cancelQueries({ queryKey: rateRecordKeys.all });
         const cached = queryClient.getQueryData<readonly RateRecord[]>(rateRecordKeys.all);
