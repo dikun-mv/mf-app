@@ -1,6 +1,7 @@
 import type { BreakdownItemId } from '@baseline/delivery-contract';
 import type { RowActionId } from '@baseline/delivery-domain';
 import { AddChildItem } from '../../../features/add-item';
+import { DeleteItem } from '../../../features/delete-item';
 import { MoveItem } from '../../../features/move-item';
 import { RenameItem } from '../../../features/rename-item';
 import { useGridActions } from '../model/GridActions';
@@ -29,6 +30,7 @@ export function ChosenAction({ action, itemId, onClose }: ChosenActionProps) {
     case 'move':
       return <MoveItem {...props} />;
     case 'delete':
+      return <DeleteItem {...props} />;
     case 'assignPerson':
       return null;
   }

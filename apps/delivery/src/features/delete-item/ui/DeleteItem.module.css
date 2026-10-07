@@ -1,0 +1,13 @@
+/*
+ * The dialog sits inside the grid's label cell, so it inherits that cell's nowrap, weight and alignment.
+ * Resetting them here keeps the text readable; the dialog itself is drawn by `ui`.
+ */
+.dialog {
+  font-weight: normal;
+  text-align: start;
+  white-space: normal;
+}
+
+.counts {
+  margin: 0 0 var(--bl-space-2);
+}

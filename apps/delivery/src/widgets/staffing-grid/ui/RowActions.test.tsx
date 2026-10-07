@@ -151,4 +151,20 @@ describe('Row actions', () => {
     if (migration === null || migration === undefined) throw new Error('No Migration row');
     expect(within(migration).getAllByRole('cell').at(-1)).toHaveTextContent('13.35');
   });
+
+  it('deletes an item from its row after counting, and the grid and totals follow', async () => {
+    const { user, repository } = renderGrid();
+    await user.click(await moreOf('Discovery'));
+    await user.click(screen.getByRole('button', { name: 'Delete…' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Delete "Discovery"?' });
+    expect(dialog).toHaveTextContent('This deletes 3 items (Discovery, Design, Rework) and their 24 allocations.');
+    await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
+
+    expect(await screen.findByText('Deleted 3 items and 24 allocations.')).toBeInTheDocument();
+    expect(repository.written).toHaveLength(1);
+    // The project total loses Discovery's 9.69.
+    const project = (await screen.findByRole('rowheader', { name: 'Ledger Consolidation' })).closest('tr');
+    if (project === null) throw new Error('No project row');
+    expect(within(project).getAllByRole('cell').at(-1)).toHaveTextContent('47.37');
+  });
 });
