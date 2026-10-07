@@ -632,7 +632,7 @@ Phases 4, 5 and 6 run in parallel lanes, each one `builder` in its own worktree,
 
 ### Phase 4 — Shell
 
-- [ ] **T4.0a** **ADRs 036–047** for D26–D37, in brief (lane PL). Add them to the README's decision summary when T9.1 writes it.
+- [x] **T4.0a** **ADRs 036–047** for D26–D37, in brief (lane PL). Add them to the README's decision summary when T9.1 writes it.
 - [ ] **T4.0b** **FSD rules in `.dependency-cruiser.cjs`** (lane PL): `fsd-layers-import-down`, `fsd-no-cross-slice` and `fsd-public-api`, each scoped to `^apps/([^/]+)/src/`, each proved to fail in `.dependency-cruiser.test.ts` like the T0.2 rules. In the same change, move the root `rstest.config.ts` globs for the adapters from `apps/*/src/data/` to `apps/*/src/shared/api/` (the `domain` project includes them, each `components-<app>` project excludes them), since all three apps share that file. The same builder writes them right after T4.0c, once all three apps are restructured. If dependency-cruiser can't express one (see the assumptions table), stop and report it.
 - [ ] **T4.0c** **Restructure each app into FSD layers (D28)**, moving code without changing behaviour. One builder does all three apps (one commit per app), together with T4.0b, before the app lanes start:
   - `App.tsx`, `mount.tsx`, `bootstrap.ts(x)`, `index.ts`, `standalone.ts`, `routing/`, `host/` and the shell's `ShellContext.tsx` → `app/`
