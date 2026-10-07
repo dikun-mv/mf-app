@@ -1,4 +1,4 @@
-# ADR 044: The grid view model is a pure function (D35)
+# ADR 045: The grid view model is a pure function (D35)
 
 Status: accepted (2026-10-07, after Phase 3 and before Phase 4). Builds on [ADR 019](019-rounding-scheme.md) and [ADR 036](036-server-state.md).
 

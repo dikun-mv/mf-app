@@ -21,7 +21,7 @@ PocketBase realtime sends the action and the whole record for each change ([ADR 
 
 ## Consequences
 
-- Patching is cheap and keeps unchanged references stable ([ADR 044](044-grid-view-model.md)).
+- Patching is cheap and keeps unchanged references stable ([ADR 045](045-grid-view-model.md)).
 - One subscription per collection per app, owned by the app root, ties its lifetime to `mount` and `unmount`.
 - Realtime patches and the optimistic updates of ADR 036 meet in one cache. Serial writes and "the server's record wins" keep it consistent.
 - The SDK's `PB_CONNECT` event fires on the first connect and after every reconnect, which is what triggers the refetch; T5.4 checks it.

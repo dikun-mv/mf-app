@@ -1,4 +1,4 @@
-# ADR 046: One place for each kind of error (D33)
+# ADR 043: One place for each kind of error (D33)
 
 Status: accepted (2026-10-07, after Phase 3 and before Phase 4). Builds on [ADR 036](036-server-state.md) and [ADR 042](042-loading.md).
 

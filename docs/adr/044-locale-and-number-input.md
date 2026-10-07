@@ -1,4 +1,4 @@
-# ADR 043: One display locale and one number parser (D34)
+# ADR 044: One display locale and one number parser (D34)
 
 Status: accepted (2026-10-07, after Phase 3 and before Phase 4)
 

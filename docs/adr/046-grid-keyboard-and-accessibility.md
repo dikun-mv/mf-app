@@ -1,4 +1,4 @@
-# ADR 045: A plain table, Tab order and a minimal row disclosure (D36)
+# ADR 046: A plain table, Tab order and a minimal row disclosure (D36)
 
 Status: accepted (2026-10-07, after Phase 3 and before Phase 4). The row disclosure was decided with [screens.md](../screens.md) §3.4 and §6.
 
