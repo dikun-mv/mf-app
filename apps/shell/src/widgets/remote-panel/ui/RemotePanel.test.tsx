@@ -72,14 +72,22 @@ describe('RemotePanel', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
   });
 
-  it('gives the error text as the reason when the failure was not a timeout', async () => {
+  it('keeps a Federation runtime error out of the visible text, giving a short reason and the raw error as a tooltip', async () => {
     silenceConsoleError();
+    const raw =
+      '[ Federation Runtime ]: Failed to get remoteEntry exports. args: {"remoteInfo":{"name":"people","entry":"http://localhost:8080/__broken__/people/remoteEntry.js"}} See RUNTIME-008 in the docs.';
     const loader = fakeLoader(
-      () => Promise.reject(new Error('script 404')),
+      () => Promise.reject(new Error(raw)),
       () => 'failed',
     );
-    render(<RemotePanel name="delivery" ctx={testContext()} loader={loader} entry={ENTRY} />);
-    expect(await screen.findByRole('alert')).toHaveTextContent("didn't load (script 404).");
+    render(<RemotePanel name="people" ctx={testContext()} loader={loader} entry={ENTRY} />);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent("didn't load (not found or not reachable).");
+    expect(alert).not.toHaveTextContent('RUNTIME-008');
+    expect(alert).not.toHaveTextContent('Federation');
+    expect(alert).not.toHaveTextContent('{');
+    expect(screen.getByTitle(raw)).toBeInTheDocument();
   });
 
   it('says the remote stopped working, not that it failed to load, when it throws while rendering', async () => {
