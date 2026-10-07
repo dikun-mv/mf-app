@@ -1,6 +1,7 @@
 // Platform-owned presentational primitives (D12). Each app bundles its own copy, compiled from source.
 // `tokens.css` is imported by each app's root, through `@baseline/ui/tokens.css`.
 export { Button, type ButtonProps, type ButtonVariant } from './components/Button/Button';
+export { Dialog, type DialogProps } from './components/Dialog/Dialog';
 export {
   ErrorBoundary,
   type ErrorBoundaryFallbackProps,

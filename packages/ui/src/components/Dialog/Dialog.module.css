@@ -1,0 +1,81 @@
+.dialog {
+  box-sizing: border-box;
+  width: min(34rem, calc(100vw - 2 * var(--bl-space-3)));
+  max-height: calc(100vh - 2 * var(--bl-space-3));
+  padding: 0;
+  border: 1px solid var(--bl-color-border);
+  border-radius: var(--bl-radius-lg);
+  background: var(--bl-color-surface);
+  color: var(--bl-color-text);
+  box-shadow: var(--bl-shadow-raised);
+  font: inherit;
+}
+
+/* Only while open: a `display` on the closed dialog would override the browser hiding it. */
+.dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.dialog::backdrop {
+  background: var(--bl-backdrop, rgb(29 39 51 / 0.45));
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--bl-space-3);
+  padding: var(--bl-space-3) var(--bl-space-3) 0;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--bl-text-md);
+  font-weight: var(--bl-weight-strong);
+  line-height: var(--bl-leading-tight);
+  /* Quoted names in titles ("Rework") can be long and unbroken. */
+  overflow-wrap: anywhere;
+}
+
+.close {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: calc(-1 * var(--bl-space-1)) calc(-1 * var(--bl-space-1)) 0 0;
+  padding: 0;
+  border: 0;
+  border-radius: var(--bl-radius);
+  background: transparent;
+  color: var(--bl-color-text-muted);
+  font: inherit;
+  font-size: var(--bl-text-lg);
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color var(--bl-duration);
+}
+
+.close:hover {
+  background: var(--bl-color-surface-sunken);
+  color: var(--bl-color-text);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bl-space-3);
+  padding: var(--bl-space-3);
+  overflow-y: auto;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--bl-space-2);
+  padding: var(--bl-space-3);
+  border-top: 1px solid var(--bl-color-border);
+  background: var(--bl-color-surface-muted);
+  border-radius: 0 0 var(--bl-radius-lg) var(--bl-radius-lg);
+}
