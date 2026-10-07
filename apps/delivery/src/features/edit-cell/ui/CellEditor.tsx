@@ -6,7 +6,7 @@ import {
   type DomainError,
 } from '@baseline/delivery-domain';
 import { IsoDateTime } from '@baseline/host-contract';
-import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent } from 'react';
 import { useAllocations } from '../../../entities/allocation';
 import { useBreakdownItems } from '../../../entities/breakdown-item';
 import { useEmployees } from '../../../entities/employee';
@@ -146,6 +146,7 @@ export function CellEditor({ row, cell, month, unit, describedById, report, hasA
         <input
           ref={input}
           className={styles.input}
+          style={{ '--digits': Math.max(opened.length, 4) + 1 } as CSSProperties}
           type="text"
           inputMode="decimal"
           autoComplete="off"
@@ -168,6 +169,7 @@ export function CellEditor({ row, cell, month, unit, describedById, report, hasA
       {message !== null && (
         <span
           id={messageId}
+          data-edit-reason=""
           className={problem === null ? styles.hint : styles.problem}
           role={problem === null ? undefined : 'alert'}
         >

@@ -26,6 +26,14 @@
   border-radius: var(--bl-radius);
 }
 
+/*
+ * A cell editor's reason hangs under its cell, out of the flow (features/edit-cell). The scrolling box clips
+ * what hangs below its last row, so while a reason is showing the box gets room for it under the table.
+ */
+.scroll:has([data-edit-reason]) {
+  padding-block-end: 6rem;
+}
+
 .grid {
   /* Separate borders, so a sticky cell keeps its own rules while it moves over the others. */
   border-collapse: separate;

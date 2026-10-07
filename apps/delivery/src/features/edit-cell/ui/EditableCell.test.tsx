@@ -4,6 +4,7 @@ import { describe, expect, it, rs } from '@rstest/core';
 import type { QueryClient } from '@tanstack/react-query';
 import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { readFileSync } from 'node:fs';
 import { Suspense, useState, type ReactNode } from 'react';
 import { useAllocations } from '../../../entities/allocation';
 import { useBreakdownItems } from '../../../entities/breakdown-item';
@@ -379,6 +380,18 @@ describe('EditableCell', () => {
     await waitFor(() => {
       expect(repository.written).toHaveLength(1);
     });
+  });
+
+  it('keeps the reason out of the layout, so opening, refusing and closing an editor shift no cell', () => {
+    // jsdom lays nothing out, so read the rules. A reason in the flow made a tall row, and closing the editor
+    // on a click elsewhere moved the target between mouse down and up: the click opened nothing.
+    const css = readFileSync(new URL('./EditableCell.module.css', import.meta.url), 'utf8');
+    const rule = (selector: string) =>
+      new RegExp(`^${selector.replaceAll('.', '\\.')} \\{([^}]*)\\}`, 'm').exec(css)?.[1] ?? '';
+    expect(rule('.editor')).toMatch(/position:\s*relative/);
+    expect(rule('.hint,\n.problem')).toMatch(/position:\s*absolute/);
+    // It covers the cells below, and a mouse down on it would blur the editor and lose the click.
+    expect(rule('.hint,\n.problem')).toMatch(/pointer-events:\s*none/);
   });
 
   it('points the button at the details panel when markers sit beside the value', async () => {

@@ -40,10 +40,9 @@
 /* ---- Editing ---- */
 
 .editor {
+  /* The anchor of the message below, which hangs out of the flow (see `.hint`). */
+  position: relative;
   display: inline-flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: var(--bl-space-1);
 }
 
 .field {
@@ -61,8 +60,9 @@
 
 .input {
   box-sizing: border-box;
-  width: 5.5rem;
-  padding: 0 var(--bl-space-2);
+  /* As wide as the button it replaces, so opening and closing the editor shifts no column (`--digits` is set from the text). */
+  inline-size: max(3rem, calc(var(--digits, 5) * 1ch));
+  padding: 0 var(--bl-space-1);
   border: 0;
   background: transparent;
   color: var(--bl-color-text);
@@ -76,10 +76,27 @@
   outline: none;
 }
 
-/* The reason beside the cell reads as text, not a table cell: wrapped, left-aligned and capped in width. */
+/*
+ * The reason hangs under the field instead of sitting in the flow. In the flow, a message of three or four
+ * lines in a narrow column made its row tall, and closing the editor (a click elsewhere blurs it) moved
+ * the cells under the pointer between mouse down and mouse up, so the click landed on nothing. Out of the
+ * flow, opening, refusing and closing change no cell's size or place.
+ */
 .hint,
 .problem {
-  max-inline-size: 16rem;
+  position: absolute;
+  z-index: 3;
+  /* It covers the cells below it. A mouse down on it would blur the editor, the message would go, and the
+     click would land on nothing, so the pointer goes through it to the cell. */
+  pointer-events: none;
+  inset-block-start: calc(100% + var(--bl-space-1));
+  inset-inline-end: 0;
+  box-sizing: border-box;
+  inline-size: 16rem;
+  padding: var(--bl-space-1) var(--bl-space-2);
+  border: 1px solid var(--bl-color-border-strong);
+  border-radius: var(--bl-radius);
+  background: var(--bl-color-surface);
   font-size: var(--bl-text-xs);
   line-height: var(--bl-leading-tight);
   text-align: start;
@@ -91,6 +108,8 @@
 }
 
 .problem {
-  color: var(--bl-color-danger);
+  border-color: var(--bl-color-danger);
+  background: var(--bl-color-danger-surface);
+  color: var(--bl-color-text);
   font-weight: var(--bl-weight-medium);
 }
