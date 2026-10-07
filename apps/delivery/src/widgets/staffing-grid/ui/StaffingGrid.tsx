@@ -2,6 +2,7 @@ import type { ProjectId } from '@baseline/delivery-contract';
 import type { DisplayUnit } from '@baseline/delivery-domain';
 import { InlineMessage, Spinner, StatusMessage } from '@baseline/ui';
 import { clsx } from 'clsx';
+import { useIsMutating } from '@tanstack/react-query';
 import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { describeGridError } from '../lib/describeGridError';
 import { visibleRows } from '../lib/visibleRows';
@@ -41,9 +42,13 @@ export function StaffingGrid({ projectId, unit = 'personMonths' }: StaffingGridP
   // People assigned to a leaf and not yet given a value: rows that exist only in this page (T6.7, D31).
   const { assigned, assign, forget } = useGridAssignments();
   const { result, units, peopleLoading, staleAssignments } = useGridView(projectId, unit, assigned);
+  // An assignment is forgotten only once no write is in flight: the allocation that makes its row real may
+  // be an optimistic one, and if that save fails the row must be there again for a retry. A failed write is
+  // rolled back before it settles, so by then the assignment is no longer stale.
+  const writing = useIsMutating() > 0;
   useEffect(() => {
-    if (staleAssignments.length > 0) forget(staleAssignments);
-  }, [staleAssignments, forget]);
+    if (!writing && staleAssignments.length > 0) forget(staleAssignments);
+  }, [writing, staleAssignments, forget]);
   // What the features in the slots report (D33): the status line.
   const { status, report } = useGridFeedback();
   const actions = useMemo(() => ({ report, assigned, assign, forget }), [report, assigned, assign, forget]);

@@ -240,6 +240,48 @@ describe('Row actions', () => {
     expect(screen.getByRole('button', { name: /Sara Lindholm, Mar 2026, person-months: 0.25/ })).toBeInTheDocument();
   });
 
+  it('keeps an assigned person’s empty row when the first value fails to save, so it can be retried', async () => {
+    const { user, repository } = renderGrid();
+    await screen.findAllByRole('rowheader', { name: 'Adaeze Okafor' });
+    const before = screen.queryAllByRole('rowheader', { name: 'Sara Lindholm' }).length;
+    await user.click(await moreOf('Design'));
+    await user.click(screen.getByRole('button', { name: 'Assign person…' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Assign a person to "Design"' });
+    await user.selectOptions(await within(dialog).findByRole('combobox', { name: 'Employee' }), 'emp-060');
+    await user.click(within(dialog).getByRole('button', { name: 'Assign' }));
+
+    repository.failWrites(new RepositoryError('unavailable', 'delivery'));
+    const release = repository.holdWrites();
+    const empty = screen
+      .getAllByRole('rowheader', { name: 'Sara Lindholm' })
+      .map((header) => header.closest('tr') as HTMLElement)
+      .find((row) => within(row).queryByRole('button', { name: /Mar 2026.*no allocation/ }));
+    await user.click(within(empty as HTMLElement).getByRole('button', { name: /Mar 2026.*no allocation/ }));
+    await user.type(screen.getByRole('textbox', { name: /Edit Sara Lindholm, Mar 2026/ }), '0.25{Enter}');
+
+    // While the write is in flight the cell shows the value (optimistic); then the server refuses it.
+    expect(await screen.findByRole('button', { name: /Sara Lindholm, Mar 2026, person-months: 0.25/ })).toBeVisible();
+    act(() => {
+      release();
+    });
+    // The write failed and was undone: the message is up, and the row is back to empty cells, not gone.
+    expect(await screen.findByRole('alert')).toHaveTextContent("Your change wasn't saved");
+    await waitFor(() => {
+      expect(screen.getAllByRole('rowheader', { name: 'Sara Lindholm' })).toHaveLength(before + 1);
+    });
+    expect(screen.queryByRole('button', { name: /Sara Lindholm, Mar 2026, person-months: 0.25/ })).toBeNull();
+    // ...and the retry works.
+    repository.failWrites(null);
+    const again = screen
+      .getAllByRole('rowheader', { name: 'Sara Lindholm' })
+      .map((header) => header.closest('tr') as HTMLElement)
+      .find((row) => within(row).queryByRole('button', { name: /Mar 2026.*no allocation/ }));
+    await user.click(within(again as HTMLElement).getByRole('button', { name: /Mar 2026.*no allocation/ }));
+    await user.type(screen.getByRole('textbox', { name: /Edit Sara Lindholm, Mar 2026/ }), '0.25{Enter}');
+    expect(await screen.findByText('Saved 0.25 PM for Sara Lindholm, Design, Mar 2026.')).toBeInTheDocument();
+    expect(screen.getAllByRole('rowheader', { name: 'Sara Lindholm' })).toHaveLength(before + 1);
+  });
+
   describe('an assigned person with no value yet', () => {
     // Ledger migration › Data checks, a leaf at the second level with nothing on it.
     const leafData = () => {
