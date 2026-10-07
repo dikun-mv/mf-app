@@ -25,11 +25,11 @@ async function cellOf(name: string, monthIndex: number): Promise<HTMLElement> {
   return cell;
 }
 
-/** Gives the cell the focus a person cell's editor will take (T6.6): the default cell isn't focusable. */
+/** Focuses the button of a person cell (T6.6), as Tab would. */
 function focusCell(cell: HTMLElement): void {
-  cell.tabIndex = 0;
+  const button = within(cell).getByRole('button');
   act(() => {
-    cell.focus();
+    button.focus();
   });
 }
 
