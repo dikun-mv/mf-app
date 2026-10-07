@@ -214,7 +214,7 @@ Each team runs its own stock PocketBase, `people-pb` and `delivery-pb` (D4). Not
 | Required fields, string shapes (`IsoDate`, `Month`, ids), numeric bounds (`amount ≥ 0`, `hourlyCost` above 0) | collection fields |
 | One allocation per `(breakdownItemId, employeeId, month)`, one rate per `(employeeId, validFrom)` | unique indexes |
 | `projectId`, `parentId` and `breakdownItemId` point at existing records | relation fields, with no cascade: a change set deletes children first |
-| No employee create or delete (D16); no API writes to `employee_month_loads` | API rules left locked (superusers only) |
+| Employees are read-only (D16); no API writes to `projects` or `employee_month_loads` | API rules left locked (superusers only) |
 | Records that change together (D9, tree operations, rate corrections) | one batch request: one transaction |
 | `editedAt` is stamped on effort edits only (D18) | `delivery-pb` request hook on `allocations` |
 | `employee_month_loads` follows the allocations (D8) | `delivery-pb` model hook, inside the same transaction |
@@ -233,7 +233,7 @@ Request flow for a write:
 
 - **Record ids are the entity ids** (`emp-001`, `alloc-<uuid>`): a migration widens the system `id` field's pattern and maximum length. Client-generated ids (T1.1) are sent as `id` on create.
 - **Fields are named like the contracts** (`employeeId`, `validFrom`, `hourlyCost`, …). Dates and months are text fields with the contracts' patterns, not PocketBase `date` fields, which store `YYYY-MM-DD HH:MM:SS.sssZ`.
-- **PocketBase has no null:** an empty relation is `""`. Each contract's record schema maps `parentId: ""` to `null` and drops PocketBase's system fields (`collectionId`, `collectionName`, `created`, `updated`), so the rest of the code sees only the T1.1 entities.
+- **PocketBase has no null:** an empty relation is `""`. The record schemas map `parentId: ""` to `null` and drop PocketBase's system fields (`collectionId`, `collectionName`, `created`, `updated`), so the rest of the code sees only the T1.1 entities. Published collections get their schema in the contract (T3.1, T3.2); a team's private ones get it in its app adapter (T3.7).
 - **Seeds:** a migration reads `SEED_FILE` (`/pb/seed/data.json`, copied into the image) and inserts the team's slice. Seed allocations all get the same `seededAt` as `editedAt` (D18), and `delivery-pb` fills `employee_month_loads` from the same `load.js`.
 
 **Capacity load (D8).** `employee_month_loads` has a unique `(employeeId, month)` index, public list and view rules, and locked write rules. After every allocation create, update or delete, a model hook recomputes that pair's row with `pb_hooks/lib/load.js`: the sum in id order, `overCapacity = sum > 1 + 1e-9`, and the causer by `(editedAt, id)`. It upserts the row, or deletes it when no effort is left. A move (D9 re-pointing) changes neither the sum nor `editedAt`. People reads and subscribes to the collection and never sees allocations.
@@ -242,7 +242,7 @@ Request flow for a write:
 
 **Runtime.**
 
-- **Image:** `infra/docker/pocketbase.Dockerfile` (D25) runs `pocketbase serve --http=0.0.0.0:8090 --dir=/pb_data --automigrate=false`, with the healthcheck `wget` against `/api/health`.
+- **Image:** `infra/docker/pocketbase.Dockerfile` (D25) runs `pocketbase serve` on 8090 with `/pb_data` as its data directory and automigrate off (the full command is in [phase-3.md](phase-3.md) §3), with the healthcheck `wget` against `/api/health`.
 - **Gateway:** it routes `/api/people/` to `people-pb:8090` and `/api/delivery/` to `delivery-pb:8090`, cutting the prefix with `rewrite … break` the same way it does for the remotes. The two `…/api/realtime` locations turn buffering off and use a long read timeout.
 - **Clients:** the SDK base URLs are `/api/people` and `/api/delivery` on the page's origin, standalone and hosted alike.
 - **Dev:** the Rsbuild dev servers proxy `/api` to the gateway on 8080, so dev runs PocketBase in Docker too (`docker compose up -d gateway people-pb delivery-pb`). PocketBase's admin dashboard isn't routed.
@@ -518,11 +518,11 @@ Built from [phase-3.md](phase-3.md): the exact collections, hooks and values, an
 - [ ] **T3.2** Write `delivery-contract` v1: the base path (`/api/delivery`), the `employee_month_loads` collection and topic, and a record schema that parses into `EmployeeMonthLoad` (`employeeId`, `month`, `allocatedPersonMonths`, `overCapacity`, `causingAllocationId`). Only `employee_month_loads` is published. Delivery's own collections (`projects`, `breakdown_items`, `allocations`) are parsed in its app adapter (T3.7), which maps `parentId: ""` to `null`.
 - [x] **T3.3** Finalise `host-contract` (started in T1.1 and T2.3): `HostContext` (`currency`, `activeUser`, `basePath`, `navigate(to)`), `RemoteModule` (`mount`, `update`, `unmount`), `RemoteAppProps` (`{ ctx: HostContext }`), `Currency`, `ActiveUser`. The contract has **no React dependency** (T0.2 rule 5): the shell types the loaded `./App` as `ComponentType<RemoteAppProps>`, and each remote types its own `App` the same way. Document that a remote's own navigation stays under `basePath`, and that anything outside it goes through `navigate` (D22).
 - [ ] **T3.4** Add the **PocketBase runtime** (platform, D25). It starts by checking the PocketBase rows of the assumptions table on the pinned release, and records the results in ADR 033:
-  - `infra/docker/pocketbase.Dockerfile`: the pinned release for `TARGETARCH`, checksum checked, build arg `SERVICE`, `docs/data.json` copied to `/pb/seed/data.json`, `serve --http=0.0.0.0:8090 --dir=/pb_data --automigrate=false`
+  - `infra/docker/pocketbase.Dockerfile`: the pinned release for `TARGETARCH`, checksum checked, build arg `SERVICE`, `docs/data.json` copied to `/pb/seed/data.json`, and the `serve` command from phase-3.md §3
   - compose services `people-pb` and `delivery-pb` with volumes `people-data` and `delivery-data` at `/pb_data`, and a healthcheck on `/api/health`. Nothing is published except the gateway
-  - gateway routes `/api/people/` and `/api/delivery/` with the prefix cut, and the realtime locations with buffering off and a 1 h read timeout; ADR 029's service rows and ADR 031's `/api` note are updated to match
-  - each team's first migration: enable the batch API with room for the largest change set (a subtree delete), and widen the `id` field (plan §3, Service design)
-  - `services/people-pb` and `services/delivery-pb` as private workspace packages, for their tests only. Update `.dependency-cruiser.cjs`: the new paths in the ownership groups, rule 4 replaced by `apps-no-services`, and `services-no-ui` kept. Update the `services` Rstest project to `services/*/test/**/*.test.ts`
+  - gateway routes `/api/people/` and `/api/delivery/` with the prefix cut, and the realtime locations with buffering off and a 1 h read timeout; ADR 031's `/api` note is updated to match (ADR 032 already records the change to ADR 029)
+  - each service's first migration, `001_settings.js`: enable the batch API with room for the largest change set (a subtree delete). Each collection widens its own `id` field when it is created (T3.5, T3.6)
+  - `services/people-pb` and `services/delivery-pb` as private workspace packages, for their tests only. Update `.dependency-cruiser.cjs`: the new paths in the ownership groups, rule 4 replaced by `apps-no-services`, and `services-no-ui` kept. Update the `services` Rstest project to `services/*/test/**/*.test.ts` (without `test/integration/`), add `rstest.integration.config.ts` and `pnpm test:integration`, and make `pnpm lint` accept the PocketBase globals in the services' JS
 - [ ] **T3.5** Build **`people-pb`**:
   - Collections `employees` (`name`, `role`, `weeklyHours`; read-only through the API, so no employee is created, changed or deleted, D16) and `rate_records` (`employeeId` relation, `validFrom`, `hourlyCost`; unique `(employeeId, validFrom)`).
   - Seed from `data.json`: employees and rateRecords only.
@@ -531,8 +531,8 @@ Built from [phase-3.md](phase-3.md): the exact collections, hooks and values, an
   - Collections `projects` (read-only through the API), `breakdown_items` (`projectId`, `parentId` relations, `name`), `allocations` (`breakdownItemId` relation, `employeeId` text, `month`, `amount ≥ 0`, `editedAt`; unique `(breakdownItemId, employeeId, month)`) and `employee_month_loads` (D8).
   - Seed from `data.json`: projects, breakdownItems and allocations with `editedAt = seededAt`, then the load rows.
   - Hook `editedAt` (D18): on create, and on an update that changes `amount`, set it to the server's `new Date().toISOString()`. Otherwise keep the stored value, whatever the client sent. Moves and D9 re-pointing don't change it.
-  - Hook load (D8): recompute the `(employeeId, month)` row after each allocation write, inside the transaction, with `pb_hooks/lib/load.js`. Update the header comment of `delivery-domain`'s `capacity.ts`, which still names `delivery-api`'s /load.
-  - Every tree and allocation write is a domain change set sent as one batch (plan §3, Service design).
+  - Hook load (D8): recompute the `(employeeId, month)` row after each allocation write, inside the transaction, with `pb_hooks/lib/load.js` (the rule) and `pb_hooks/lib/refresh.js` (the read and upsert). Update the header comment of `delivery-domain`'s `capacity.ts`, which still names `delivery-api`'s /load.
+  - No other server logic: clients send every tree and allocation write as one batch of a domain change set (plan §3, Service design; the adapter does this in T3.7).
 - [ ] **T3.7** Add **client adapters in each consuming app** (`apps/<app>/src/data/`). Contracts hold no behaviour, so each app writes its own adapter from the contract's base path, collection names and schemas.
   - Each adapter implements that app's repository interface on the `pocketbase` SDK (one client per instance it talks to): typed reads, change sets as batches, error mapping to `DomainError` codes, and realtime subscriptions that refetch after a reconnect. Every record and event is parsed with the contract schemas.
   - The SDK is an ordinary dependency of each app, bundled by each app like `react-router` and kept out of MF `shared`.
@@ -544,14 +544,13 @@ Built from [phase-3.md](phase-3.md): the exact collections, hooks and values, an
   - **Unit (Rstest `services` project, Node):** `pb_hooks/lib/*` on its own. The key one is a fast-check property test, over random allocations with ties in `editedAt`, that `load.js` gives the same rows as `delivery-domain`'s `loadsOf` (D8, D18).
   - **Integration (`pnpm test:integration`, a separate Rstest project against the compose stack through the gateway, using the SDK):**
     - seed counts match the brief's Fixtures section
-    - a duplicate client id and a unique-index clash map to `conflict`, and a field violation to `validation`
+    - a unique-index clash returns the error ADR 033 recorded (the adapter maps it to `conflict` in T3.7)
     - a batch with one failing operation leaves nothing behind
-    - adding a child under a leaf moves its allocations in one batch
-    - edits survive `docker compose restart`
-    - each write emits the right realtime event to a subscriber
+    - adding a child under a leaf and re-pointing its allocations commits as one batch (D9)
+    - a write reaches a realtime subscriber
     - `editedAt` changes on an effort edit and not on a move, and a user edit beats the seed rows as causer in `employee_month_loads` (D18)
 
-**Exit check:** editing a rate through the PocketBase API (via the gateway) emits a realtime event that a test subscriber receives, an allocation edit updates `employee_month_loads` in the same transaction, and the data survives `docker compose restart`.
+**Exit check** ([phase-3.md](phase-3.md) §6): editing a rate through the PocketBase API (via the gateway) emits a realtime event that a test subscriber receives, an allocation edit updates `employee_month_loads` in the same transaction, and the data survives `docker compose restart`.
 
 ### Phase 4 — Shell
 

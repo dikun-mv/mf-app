@@ -3,8 +3,8 @@ name: builder
 description: >-
   Implements one slice of docs/plan.md (the Baseline case study) inside its own
   git worktree, following a brief given as its prompt. Give it the brief
-  verbatim. It works only inside the paths the brief says it owns, commits per
-  task, runs lint, typecheck and tests until green, and returns a structured
+  verbatim. It works only inside the paths the brief says it owns, commits after
+  every working step, runs lint, typecheck and tests until green, and returns a structured
   report for the lead agent that launched it.
 model: sonnet
 effort: high

@@ -29,24 +29,24 @@ The lead then runs the exit check (§6) and ticks the tasks. T3.7 (client adapte
 
 Every brief uses these. Changing one needs the user.
 
-| Thing            | Value                                                                                                                                                                                                                                                                                                                |
-| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PocketBase       | One pinned release: the latest 0.x when S starts (v0.40.x at planning time). Exact version and SHA-256 per architecture as `ARG`s in the Dockerfile                                                                                                                                                                  |
-| Image            | `infra/docker/pocketbase.Dockerfile`, build arg `SERVICE` (`people-pb` or `delivery-pb`). Layout: `/pb/pocketbase`, `/pb/pb_migrations`, `/pb/pb_hooks`, `/pb/seed/data.json`                                                                                                                                        |
-| Command          | `/pb/pocketbase serve --http=0.0.0.0:8090 --dir=/pb_data --migrationsDir=/pb/pb_migrations --hooksDir=/pb/pb_hooks --automigrate=false`                                                                                                                                                                              |
-| Compose services | `people-pb`, `delivery-pb`; volumes `people-data`, `delivery-data` at `/pb_data`; healthcheck `wget -qO /dev/null http://127.0.0.1:8090/api/health`; no published ports                                                                                                                                              |
-| Gateway          | `/api/people/` → `people-pb:8090`, `/api/delivery/` → `delivery-pb:8090`, prefix cut with `rewrite … break`. `/api/people/api/realtime` and `/api/delivery/api/realtime` add `proxy_buffering off`, `proxy_cache off`, `proxy_read_timeout 1h`, `proxy_send_timeout 1h`. The `/api/` JSON 404 stays as the catch-all |
-| SDK base URLs    | `http://localhost:8080/api/people` and `http://localhost:8080/api/delivery` in tests; `/api/people` and `/api/delivery` on the page origin in the apps                                                                                                                                                               |
-| Record ids       | The entity ids. The `id` field takes pattern `^[a-z0-9]+(-[a-z0-9]+)*$` and max length 64                                                                                                                                                                                                                            |
-| Seed time        | `2026-01-01T00:00:00.000Z`, the same as `SEEDED_AT` in `delivery-domain`'s test seed                                                                                                                                                                                                                                 |
-| Batch            | Enabled, `maxRequests` 500, timeout 10 s (a project's whole subtree with its allocations fits)                                                                                                                                                                                                                       |
-| Packages         | `@baseline/people-pb`, `@baseline/delivery-pb`: private, test-only workspace packages                                                                                                                                                                                                                                |
-| Tests            | Unit: the `services` Rstest project, `services/*/test/**/*.test.ts` minus `test/integration/`. Integration: `pnpm test:integration`, `rstest.integration.config.ts`, against the running stack, reset first                                                                                                          |
-| ADRs             | 033 (runtime and PocketBase checks), 034 (`people-pb`), 035 (`delivery-pb`)                                                                                                                                                                                                                                          |
+| Thing            | Value                                                                                                                                                                                                                                                                                                                                                                                             |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PocketBase       | One pinned release: the latest 0.x when S starts (v0.40.x at planning time). Exact version and SHA-256 per architecture as `ARG`s in the Dockerfile                                                                                                                                                                                                                                               |
+| Image            | `infra/docker/pocketbase.Dockerfile`, build arg `SERVICE` (`people-pb` or `delivery-pb`). Layout: `/pb/pocketbase`, `/pb/pb_migrations`, `/pb/pb_hooks`, `/pb/seed/data.json`                                                                                                                                                                                                                     |
+| Command          | `/pb/pocketbase serve --http=0.0.0.0:8090 --dir=/pb_data --migrationsDir=/pb/pb_migrations --hooksDir=/pb/pb_hooks --automigrate=false`                                                                                                                                                                                                                                                           |
+| Compose services | `people-pb`, `delivery-pb`; volumes `people-data`, `delivery-data` at `/pb_data`; healthcheck `wget -qO /dev/null http://127.0.0.1:8090/api/health`; no published ports                                                                                                                                                                                                                           |
+| Gateway          | `/api/people/` → `people-pb:8090`, `/api/delivery/` → `delivery-pb:8090`, prefix cut with `rewrite … break`. `/api/people/api/realtime` and `/api/delivery/api/realtime` add `proxy_buffering off`, `proxy_cache off`, `proxy_read_timeout 1h`, `proxy_send_timeout 1h`. The `/api/` JSON 404 stays as the catch-all                                                                              |
+| SDK base URLs    | `http://localhost:8080/api/people` and `http://localhost:8080/api/delivery` in tests; `/api/people` and `/api/delivery` on the page origin in the apps                                                                                                                                                                                                                                            |
+| Record ids       | The entity ids. The `id` field takes pattern `^[a-z0-9]+(-[a-z0-9]+)*$` and max length 64                                                                                                                                                                                                                                                                                                         |
+| Seed time        | `2026-01-01T00:00:00.000Z`, the same as `SEEDED_AT` in `delivery-domain`'s test seed                                                                                                                                                                                                                                                                                                              |
+| Batch            | Enabled, `maxRequests` 500, timeout 10 s (a project's whole subtree with its allocations fits)                                                                                                                                                                                                                                                                                                    |
+| Packages         | `@baseline/people-pb`, `@baseline/delivery-pb`: private, test-only workspace packages                                                                                                                                                                                                                                                                                                             |
+| Tests            | Unit: the `services` Rstest project, `services/*/test/**/*.test.ts` minus `test/integration/`. Integration: `pnpm test:integration`, `rstest.integration.config.ts` over `services/*/test/integration/**/*.test.ts`, against the running stack, reset first. Each service's integration tests import their own `test/integration/setup.ts`, which puts the `eventsource` polyfill on `globalThis` |
+| ADRs             | 033 (runtime and PocketBase checks), 034 (`people-pb`), 035 (`delivery-pb`)                                                                                                                                                                                                                                                                                                                       |
 
 ## 4. Collections
 
-API rules: `""` means public, `null` means locked (superusers only). Dates and months are text fields with the contract patterns, never PocketBase `date` fields. No `created` or `updated` autodate fields: nothing reads them.
+Every collection's `id` field gets the pattern and maximum length from §3 (Record ids) in the migration that creates it. API rules: `""` means public, `null` means locked (superusers only). Dates and months are text fields with the contract patterns, never PocketBase `date` fields. No `created` or `updated` autodate fields: nothing reads them.
 
 ### `people-pb`
 
@@ -128,8 +128,10 @@ Tasks, one commit each:
    If an answer breaks a decision with no fallback, stop and report.
 2. The image, compose services, volumes and gateway routes from docs/phase-3.md §3. Update ADR 031
    for the new /api routes.
-3. The two service skeletons: package.json (private, test-only), tsconfig.json, and
-   pb_migrations/001_settings.js (batch settings only). Remove services/.gitkeep. Update
+3. The two service skeletons: package.json (private, test-only, with no `typecheck` script yet: P
+   and D add it with their first test, since tsc fails on a package with no inputs), tsconfig.json
+   (include `test`), and pb_migrations/001_settings.js (batch settings only; ids are widened per
+   collection by P and D). Remove services/.gitkeep. Update
    .dependency-cruiser.cjs and its test: services/people-pb and services/delivery-pb in the ownership
    groups, and app-to-own-service-types-only replaced by apps-no-services (apps never import
    services/). Update the `services` Rstest project, and add rstest.integration.config.ts plus the
@@ -159,8 +161,9 @@ You own: packages/people-contract/, services/people-pb/ (except pb_migrations/00
 docs/adr/034-*.md. Nothing else.
 
 Tasks, one commit each:
-1. people-contract v1 (T3.1): PEOPLE_BASE_PATH ('/api/people'), the collection names, and record
-   schemas EmployeeRecord and RateRecordRecord. Each parses a PocketBase record into the existing
+1. people-contract v1 (T3.1): PEOPLE_BASE_PATH ('/api/people'), the collection names (each is
+   also its realtime topic, `<name>/*`), the effective-dating rule in prose (a doc comment), and
+   record schemas EmployeeRecord and RateRecordRecord. Each parses a PocketBase record into the existing
    Employee or RateRecord and drops PocketBase's own fields. Add the conformance fixture: A. Okafor's
    rate records and the expected March 2026 slices (8 days at 80, 14 at 95). Tests next to the code.
    Update the header comment, which still promises REST paths and events.
@@ -174,7 +177,7 @@ Tasks, one commit each:
    schemas.
 5. docs/adr/034-people-pb.md: what was built, and anything that differed from docs/phase-3.md.
 
-No hooks in people-pb. You may run `docker compose up` and infra/scripts/reset.sh. Done when
+No hooks in people-pb. You may run `docker compose up` (gateway on 8080) and infra/scripts/reset.sh. Done when
 `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm test:integration` (after a reset) are green.
 ```
 
@@ -212,6 +215,8 @@ Tasks, one commit each:
    - seed counts, and exactly 6 over-capacity rows with the causers in plan §1;
    - an amount edit stamps a new editedAt, and the edited allocation becomes the causer;
    - a move (new breakdownItemId) keeps editedAt and the load;
+   - a D9 batch (create a child item under a leaf and re-point the leaf's allocations to it)
+     commits as one, and keeps editedAt and the load;
    - a batch with one bad operation leaves nothing behind (no allocation, no load change);
    - a duplicate (breakdownItemId, employeeId, month) fails with the unique-index error;
    - a write to employee_month_loads is refused;
@@ -219,7 +224,8 @@ Tasks, one commit each:
    - every load row parses with EmployeeMonthLoadRecord.
 7. docs/adr/035-delivery-pb.md: what was built, and anything that differed from docs/phase-3.md.
 
-No other hooks and no custom routes. You may run `docker compose up` and infra/scripts/reset.sh.
+No other hooks and no custom routes. You may run `docker compose up` (gateway on 8080) and
+infra/scripts/reset.sh.
 Done when `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm test:integration` (after a reset)
 are green.
 ```
