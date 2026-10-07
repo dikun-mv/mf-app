@@ -1,0 +1,66 @@
+/*
+ * The row's `⋯` disclosure (D36): the list sits in the label cell's normal flow under the name, so the rows
+ * below move down while it is open and nothing is positioned over the scrolling grid.
+ */
+.more {
+  align-self: center;
+  min-width: 1.75rem;
+  height: 1.5rem;
+  padding: 0 var(--bl-space-1);
+  border: 1px solid transparent;
+  border-radius: var(--bl-radius);
+  background: none;
+  color: var(--bl-color-text-muted);
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.more:hover,
+.more[aria-expanded='true'] {
+  border-color: var(--bl-color-border-strong);
+  background: var(--bl-color-surface);
+  color: var(--bl-color-text);
+}
+
+.list {
+  /* A line of its own under the name, whatever the label's width. */
+  flex-basis: 100%;
+  margin: var(--bl-space-1) 0 var(--bl-space-2);
+  padding: var(--bl-space-1) var(--bl-space-2);
+  border-inline-start: 2px solid var(--bl-color-primary);
+  list-style: none;
+  font-weight: normal;
+}
+
+.entry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--bl-space-2);
+}
+
+.action {
+  padding: var(--bl-space-1) 0;
+  border: 0;
+  background: none;
+  color: var(--bl-color-primary);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+}
+
+.action:disabled {
+  color: var(--bl-color-text-muted);
+  text-decoration: none;
+  cursor: not-allowed;
+}
+
+.reason {
+  /* The reason may be long; it wraps inside the label's width. */
+  flex: 1 1 10rem;
+  color: var(--bl-color-text-muted);
+  font-size: var(--bl-text-xs);
+  white-space: normal;
+}

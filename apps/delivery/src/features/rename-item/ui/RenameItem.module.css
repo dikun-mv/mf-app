@@ -1,0 +1,7 @@
+/* The field takes the label's own line, under the name, so the cell keeps its width. */
+.form {
+  flex-basis: 100%;
+  margin: var(--bl-space-1) 0 var(--bl-space-2);
+  font-weight: normal;
+  white-space: normal;
+}

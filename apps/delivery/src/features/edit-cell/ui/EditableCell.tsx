@@ -16,7 +16,7 @@ import { UNIT_NAMES } from './unitNames';
  * draft typed in one unit under numbers shown in another.
  */
 export function EditableCell(props: EditableCellProps) {
-  const { row, cell, month, unit, adornment, describedById } = props;
+  const { row, cell, month, unit, adornment, describedById, report } = props;
   const [editingIn, setEditingIn] = useState<DisplayUnit | null>(null);
   const button = useRef<HTMLButtonElement>(null);
   const returnFocus = useRef(false);
@@ -43,6 +43,7 @@ export function EditableCell(props: EditableCellProps) {
           month={month}
           unit={unit}
           describedById={describedById}
+          report={report}
           hasAdornment={hasAdornment}
           onClose={(focusButton) => {
             returnFocus.current = focusButton;
