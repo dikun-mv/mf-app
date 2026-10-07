@@ -31,7 +31,10 @@ const upsertAll = (list: readonly RateRecord[], records: readonly RateRecord[]):
  *
  * A failed write marks the collection for a refetch, but the refetch waits until no write is in flight:
  * refetching earlier would replace the optimistic changes of the writes queued behind it with the server's
- * older data. The last write to settle, whichever way, does it.
+ * older data. The last write to settle, whichever way, does it. So does a write that succeeded while an event
+ * for one of its records arrived that the cache did not already show (another user's edit, say): the event
+ * is not applied while the write is in flight, and it carries no version to compare with the write's
+ * result, so the collection is read again once nothing is in flight.
  */
 export function applyChangeSetOptions(
   queryClient: QueryClient,
@@ -101,8 +104,9 @@ export function applyChangeSetOptions(
     onSettled: async (_records, _error, _changes, rollback) => {
       const writes = writesFor(queryClient);
       if (rollback) finishWrite(writes, rollback.token);
-      if (writes.inFlight.size === 0 && writes.failed) {
+      if (writes.inFlight.size === 0 && (writes.failed || writes.refetchOwed)) {
         writes.failed = false;
+        writes.refetchOwed = false;
         await queryClient.invalidateQueries({ queryKey: rateRecordKeys.all });
       }
     },

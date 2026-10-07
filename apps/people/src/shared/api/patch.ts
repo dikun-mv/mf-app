@@ -1,6 +1,7 @@
 import type { EmployeeMonthLoad } from '@baseline/delivery-contract';
 import type { Employee, RateRecord } from '@baseline/people-contract';
 import type { QueryClient } from '@tanstack/react-query';
+import { sameFields } from './fields';
 import { employeeKeys, employeeMonthLoadKeys, rateRecordKeys } from './queryKeys';
 import type { RealtimeAction, RecordEvent } from './repository';
 import { absorbServerRecord } from './writes';
@@ -8,14 +9,6 @@ import { absorbServerRecord } from './writes';
 // Patching a cached collection by id (D29). A record that is already there and unchanged keeps its object,
 // and a patch that changes nothing returns the same array, so the realtime echo of the app's own write
 // re-renders nothing and the memoisation that relies on stable references holds (D35).
-
-type Fields = Record<string, unknown>;
-
-function sameFields(a: object, b: object): boolean {
-  const left = Object.entries(a as Fields);
-  const right = b as Fields;
-  return left.length === Object.keys(right).length && left.every(([key, value]) => right[key] === value);
-}
 
 /** Replaces or adds `record` (create and update), or removes it (delete), by `keyOf`. */
 export function patchList<T extends object>(

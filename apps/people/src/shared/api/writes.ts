@@ -1,5 +1,7 @@
 import type { RateRecord, RateRecordId } from '@baseline/people-contract';
 import type { QueryClient } from '@tanstack/react-query';
+import { sameFields } from './fields';
+import { rateRecordKeys } from './queryKeys';
 import type { RealtimeAction } from './repository';
 
 // What the app's rate writes have in flight (D26). TanStack Query runs `onMutate` at once even for a write
@@ -24,6 +26,11 @@ export interface Writes {
   readonly inFlight: Map<symbol, InFlightWrite>;
   /** A write failed and the collection has not been refetched since. */
   failed: boolean;
+  /**
+   * An event for a record a write had in flight differed from what the cache showed, so the write's result
+   * may be older than the server's state. The collection is refetched once no write is in flight.
+   */
+  refetchOwed: boolean;
   /** Work waiting for the writes to go idle. */
   readonly idle: Set<() => void>;
 }
@@ -33,7 +40,7 @@ const writesOf = new WeakMap<QueryClient, Writes>();
 export function writesFor(queryClient: QueryClient): Writes {
   let writes = writesOf.get(queryClient);
   if (!writes) {
-    writes = { inFlight: new Map(), failed: false, idle: new Set() };
+    writes = { inFlight: new Map(), failed: false, refetchOwed: false, idle: new Set() };
     writesOf.set(queryClient, writes);
   }
   return writes;
@@ -83,11 +90,25 @@ export function afterWrites(queryClient: QueryClient, run: () => void): (() => v
  * concerned (or none has read the cache yet) and the event goes into the cache as usual.
  */
 export function absorbServerRecord(queryClient: QueryClient, action: RealtimeAction, record: RateRecord): boolean {
+  const writes = writesFor(queryClient);
   let absorbed = false;
-  for (const write of writesFor(queryClient).inFlight.values()) {
+  for (const write of writes.inFlight.values()) {
     if (!write.previous.has(record.id)) continue;
     write.previous.set(record.id, action === 'delete' ? undefined : record);
     absorbed = true;
   }
+  if (absorbed && !matchesCache(queryClient, action, record)) writes.refetchOwed = true;
   return absorbed;
+}
+
+/**
+ * Whether the cache already shows what an event says: the echo of the write's own change does, an edit made
+ * elsewhere does not. Events carry no version, so an event that differs may be older or newer than the cache
+ * and than the write's result; only a read after the writes can tell (`refetchOwed`).
+ */
+function matchesCache(queryClient: QueryClient, action: RealtimeAction, record: RateRecord): boolean {
+  const cached = queryClient
+    .getQueryData<readonly RateRecord[]>(rateRecordKeys.all)
+    ?.find(({ id }) => id === record.id);
+  return action === 'delete' ? cached === undefined : cached !== undefined && sameFields(cached, record);
 }

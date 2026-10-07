@@ -341,6 +341,35 @@ describe('useApplyChangeSet and realtime events for a record a write has changed
     expect(cached()).toEqual([old, first]);
   });
 
+  it('reads the collection again when another user’s edit arrived before the write’s result, so a stale result does not stay', async () => {
+    const { client, run, reached, emit } = queued();
+    const refetch = rs.spyOn(client, 'invalidateQueries');
+    const write = run({ ...EMPTY_RATE_CHANGE_SET, update: [first] });
+    await reached(0);
+
+    // The write committed, then someone else edited the rate; both events beat the HTTP response.
+    emit('update', first);
+    emit('update', { ...current, hourlyCost: 125 });
+    expect(refetch).not.toHaveBeenCalled();
+
+    (await reached(0)).resolve([first]);
+    await write;
+    expect(refetch).toHaveBeenCalledTimes(1);
+    expect(refetch).toHaveBeenCalledWith({ queryKey: rateRecordKeys.all });
+  });
+
+  it('owes no read for the echo of the write’s own change', async () => {
+    const { client, run, reached, emit } = queued();
+    const refetch = rs.spyOn(client, 'invalidateQueries');
+    const write = run({ ...EMPTY_RATE_CHANGE_SET, update: [first] });
+    await reached(0);
+
+    emit('update', first);
+    (await reached(0)).resolve([first]);
+    await write;
+    expect(refetch).not.toHaveBeenCalled();
+  });
+
   it('applies an event for a record no write has changed as usual', async () => {
     const { run, cached, reached, emit } = queued();
     const pending = run({ ...EMPTY_RATE_CHANGE_SET, update: [first] });
