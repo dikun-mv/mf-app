@@ -1,11 +1,19 @@
 .button {
-  font: inherit;
-  padding: var(--bl-space-2) var(--bl-space-3);
-  border: 1px solid var(--bl-color-border);
+  box-sizing: border-box;
+  min-height: var(--bl-control-height);
+  padding: 0 var(--bl-control-padding);
+  border: 1px solid var(--bl-color-border-strong);
   border-radius: var(--bl-radius);
   background: var(--bl-color-surface);
   color: var(--bl-color-text);
+  font: inherit;
+  font-weight: var(--bl-weight-medium);
+  line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
+  transition:
+    background-color var(--bl-duration),
+    border-color var(--bl-duration);
 }
 
 .button:disabled {
@@ -13,18 +21,30 @@
   cursor: not-allowed;
 }
 
+/* The one filled button on a form is its main action. */
 .primary {
   background: var(--bl-color-primary);
   border-color: var(--bl-color-primary);
   color: var(--bl-color-primary-contrast);
 }
 
-.secondary {
-  background: var(--bl-color-surface);
+.primary:hover:not(:disabled) {
+  background: var(--bl-color-primary-hover);
+  border-color: var(--bl-color-primary-hover);
+}
+
+.secondary:hover:not(:disabled) {
+  background: var(--bl-color-surface-muted);
+  border-color: var(--bl-color-text-muted);
 }
 
 .danger {
   background: var(--bl-color-danger);
   border-color: var(--bl-color-danger);
   color: var(--bl-color-primary-contrast);
+}
+
+.danger:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--bl-color-danger) 82%, #000000);
+  border-color: color-mix(in srgb, var(--bl-color-danger) 82%, #000000);
 }

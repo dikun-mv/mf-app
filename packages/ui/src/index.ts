@@ -12,9 +12,10 @@ export {
   type InlineMessageProps,
   type InlineMessageTone,
 } from './components/InlineMessage/InlineMessage';
-export { Spinner } from './components/Spinner/Spinner';
 export { PageHeader, type PageHeaderProps } from './components/PageHeader/PageHeader';
 export { Select, type SelectProps } from './components/Select/Select';
+export { Spinner } from './components/Spinner/Spinner';
+export { StatusMessage } from './components/StatusMessage/StatusMessage';
 export {
   Table,
   TableCell,
@@ -23,5 +24,4 @@ export {
   type TableHeaderCellProps,
 } from './components/Table/Table';
 export { TextField, type TextFieldProps } from './components/TextField/TextField';
-export { StatusMessage } from './components/StatusMessage/StatusMessage';
 export { vars } from './vars';

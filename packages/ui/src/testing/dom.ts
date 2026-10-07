@@ -127,7 +127,7 @@ export function accessibleName(el: Element): string {
   const labelledBy = el.getAttribute('aria-labelledby');
   if (labelledBy !== null) return referencedText(labelledBy);
   if (el instanceof HTMLInputElement || el instanceof HTMLSelectElement) {
-    return Array.from(el.labels, (label) => textOf(label)).join(' ');
+    return Array.from(el.labels ?? [], (label) => textOf(label)).join(' ');
   }
   return textOf(el);
 }

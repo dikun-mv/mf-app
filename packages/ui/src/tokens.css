@@ -17,9 +17,9 @@
   --bl-color-surface: var(--bl-theme-color-surface, #ffffff);
   --bl-color-surface-muted: var(--bl-theme-color-surface-muted, #f4f6f7);
   --bl-color-surface-sunken: var(--bl-theme-color-surface-sunken, #e8ecef);
-  /* Lines: `border` separates, `border-strong` is a control's edge. */
+  /* Lines: `border` separates, `border-strong` is a control's edge, at 3:1 on white. */
   --bl-color-border: var(--bl-theme-color-border, #d5dbe0);
-  --bl-color-border-strong: var(--bl-theme-color-border-strong, #8d99a5);
+  --bl-color-border-strong: var(--bl-theme-color-border-strong, #7f8b97);
   /* Text: ink, and a muted tone that still passes 4.5:1 on every ground above. */
   --bl-color-text: var(--bl-theme-color-text, #1d2733);
   --bl-color-text-muted: var(--bl-theme-color-text-muted, #55626f);
