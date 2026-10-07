@@ -66,6 +66,24 @@ describe('adding a rate', () => {
     expect(addForm().getByLabelText(/Hourly cost/)).toHaveValue('');
   });
 
+  it('keeps what was typed while the write was on its way, as the next draft, instead of clearing it', async () => {
+    const repository = createFakeRepository();
+    const { user } = await openEmployee({ repository });
+    const release = repository.holdWrites();
+    await fillAdd(user, '2026-11-01', '98');
+    await user.click(addForm().getByRole('button', { name: 'Add rate' }));
+    expect(addForm().getByRole('button', { name: 'Add rate' })).toBeDisabled();
+
+    const cost = addForm().getByLabelText(/Hourly cost/);
+    await user.clear(cost);
+    await user.type(cost, '105');
+    release();
+
+    expect(await screen.findByText('Rate from 1 Nov 2026 added.')).toBeInTheDocument();
+    expect(addForm().getByLabelText(/Hourly cost/)).toHaveValue('105');
+    expect(repository.writes[0]?.create.at(0)?.hourlyCost).toBe(98);
+  });
+
   it('takes the cost in the display currency, names it in the label, and stores it in EUR', async () => {
     const { user, repository } = await openEmployee({ ctx: USD });
     expect(addForm().getByLabelText('Hourly cost (USD)')).toBeInTheDocument();

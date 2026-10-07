@@ -23,7 +23,7 @@ interface AddRateOptions {
  * The add-a-rate form's state (D27). Three layers check it: the form schema (shapes), then `addRate` on submit
  * (a clash with another rate's start day lands on the day field), then a `conflict` from the server (the
  * form's `root.server`). Nothing is sent until the first two pass. The draft stays while the write is on its
- * way, and is cleared once it is saved.
+ * way, and is cleared once it is saved, unless it was edited meanwhile.
  */
 export function useAddRate({ employeeId, history, onStart, onSaved, onFailed }: AddRateOptions) {
   const { currency } = useHost();
@@ -35,6 +35,7 @@ export function useAddRate({ employeeId, history, onStart, onSaved, onFailed }: 
   });
 
   const handle = form.handleSubmit(async ({ validFrom, hourlyCost }) => {
+    const submitted = form.getValues();
     const record: RateRecord = { id: newRateRecordId(), employeeId, validFrom, hourlyCost };
     const checked = addRate(history, record);
     if (!checked.ok) {
@@ -50,7 +51,10 @@ export function useAddRate({ employeeId, history, onStart, onSaved, onFailed }: 
       else onFailed(error);
       return;
     }
-    form.reset();
+    // Only a form still holding what was sent is cleared: anything typed while the write was on its way is the
+    // next draft, and stays.
+    const now = form.getValues();
+    if (now.validFrom === submitted.validFrom && now.amount === submitted.amount) form.reset();
     onSaved(`Rate from ${formatDate(validFrom)} added.`);
   });
 
