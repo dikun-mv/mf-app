@@ -167,4 +167,50 @@ describe('Row actions', () => {
     if (project === null) throw new Error('No project row');
     expect(within(project).getAllByRole('cell').at(-1)).toHaveTextContent('47.37');
   });
+
+  it('assigns a person to a leaf as a row of empty cells, writing nothing until a value is saved', async () => {
+    const { user, repository, unmount } = renderGrid();
+    const before = (await screen.findAllByRole('rowheader', { name: 'Henrik Bauer' })).length;
+    await user.click(await moreOf('Design'));
+    await user.click(screen.getByRole('button', { name: 'Assign person…' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Assign a person to "Design"' });
+    await user.selectOptions(await within(dialog).findByRole('combobox', { name: 'Employee' }), 'emp-023');
+    await user.click(within(dialog).getByRole('button', { name: 'Assign' }));
+
+    expect(
+      await screen.findByText('Added Henrik Bauer to Design. Enter a value in any month to save it.'),
+    ).toBeInTheDocument();
+    // Henrik Bauer has rows elsewhere in the seed; the new one is the one with nothing in it.
+    const rows = screen.getAllByRole('rowheader', { name: 'Henrik Bauer' }).map((header) => header.closest('tr'));
+    expect(rows).toHaveLength(before + 1);
+    const empty = rows.filter((row) =>
+      within(row as HTMLElement)
+        .getAllByRole('cell')
+        .slice(0, -1)
+        .every((cell) => cell.textContent.includes('·')),
+    );
+    expect(empty).toHaveLength(1);
+    expect(
+      within(empty[0] as HTMLElement)
+        .getAllByRole('cell')
+        .at(-1),
+    ).toHaveTextContent('0.00');
+    // The sums did not move, and nothing was written.
+    const project = (await screen.findByRole('rowheader', { name: 'Ledger Consolidation' })).closest('tr');
+    if (project === null) throw new Error('No project row');
+    expect(within(project).getAllByRole('cell').at(-1)).toHaveTextContent('57.06');
+    expect(repository.written).toHaveLength(0);
+
+    // Offered once only: he is on Design now.
+    await user.click(await moreOf('Design'));
+    await user.click(screen.getByRole('button', { name: 'Assign person…' }));
+    const again = await screen.findByRole('dialog', { name: 'Assign a person to "Design"' });
+    await within(again).findByRole('option', { name: /Hanna Virtanen/ });
+    expect(within(again).queryByRole('option', { name: /Henrik Bauer/ })).not.toBeInTheDocument();
+
+    // A reload (a fresh page over the same data) has no such row.
+    unmount();
+    renderGrid();
+    expect(await screen.findAllByRole('rowheader', { name: 'Henrik Bauer' })).toHaveLength(before);
+  });
 });

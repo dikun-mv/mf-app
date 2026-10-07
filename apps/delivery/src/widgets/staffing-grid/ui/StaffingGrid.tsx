@@ -5,7 +5,7 @@ import { clsx } from 'clsx';
 import { useCallback, useId, useMemo, useState } from 'react';
 import { describeGridError } from '../lib/describeGridError';
 import { visibleRows } from '../lib/visibleRows';
-import { GridActionsProvider, useGridFeedback } from '../model/GridActions';
+import { GridActionsProvider, useGridAssignments, useGridFeedback } from '../model/GridActions';
 import { useFocusedCell } from '../model/useFocusedCell';
 import { useGridView } from '../model/useGridView';
 import { PersonRow, SumRow } from './GridRows';
@@ -38,10 +38,12 @@ export interface StaffingGridProps {
  * (`ui/slots/`, see the widget's `index.ts`).
  */
 export function StaffingGrid({ projectId, unit = 'personMonths' }: StaffingGridProps) {
-  const { result, units, peopleLoading } = useGridView(projectId, unit);
+  // People assigned to a leaf and not yet given a value: rows that exist only in this page (T6.7, D31).
+  const { assigned, assign } = useGridAssignments();
+  const { result, units, peopleLoading } = useGridView(projectId, unit, assigned);
   // What the features in the slots report (D33): the status line, and a failed write's message.
   const { status, failure, report } = useGridFeedback();
-  const actions = useMemo(() => ({ report }), [report]);
+  const actions = useMemo(() => ({ report, assigned, assign }), [report, assigned, assign]);
   // Keys of the collapsed nodes: empty means everything is open, as on load. Local state (D31).
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set());
   // The row whose actions are open: one at a time, and closed again by choosing an action (D36).

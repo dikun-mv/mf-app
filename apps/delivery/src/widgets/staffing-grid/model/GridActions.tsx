@@ -1,6 +1,9 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import type { BreakdownItemId } from '@baseline/delivery-contract';
+import type { EmployeeId } from '@baseline/people-contract';
 import type { ActionReport } from '../../../shared/lib';
 import { describeWriteFailure, type WriteFailure } from '../lib/describeWriteFailure';
+import { NO_ASSIGNMENTS, type PendingAssignment } from './pendingRows';
 
 // What the slots' features share with the widget (D33): the status line's text and the failed-write
 // message live in the widget, and the features reach them through `report`. A context rather than slot
@@ -32,7 +35,24 @@ export function useGridFeedback(): GridFeedback {
   return { status, failure, report };
 }
 
-export interface GridActions {
+/**
+ * People added to leaves in this page and not given a value yet (T6.7, D31). They are the grid's local state:
+ * a reload drops them, and nothing is written for an empty row.
+ */
+export interface PendingAssignments {
+  readonly assigned: readonly PendingAssignment[];
+  readonly assign: (itemId: BreakdownItemId, employeeId: EmployeeId) => void;
+}
+
+export function useGridAssignments(): PendingAssignments {
+  const [assigned, setAssigned] = useState<readonly PendingAssignment[]>(NO_ASSIGNMENTS);
+  const assign = useCallback((itemId: BreakdownItemId, employeeId: EmployeeId) => {
+    setAssigned((current) => [...current, { itemId, employeeId }]);
+  }, []);
+  return { assigned, assign };
+}
+
+export interface GridActions extends PendingAssignments {
   readonly report: ActionReport;
 }
 
