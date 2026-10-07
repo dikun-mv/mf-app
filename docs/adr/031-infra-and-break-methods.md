@@ -31,6 +31,15 @@ Each leaves the gateway, the shell and the other remote running. The shell shows
 2. **Bad remote URL.** `PEOPLE_REMOTE_URL=/remotes/people/nope.js docker compose up -d shell`. This recreates the shell container with a different `config.json`, and the shell asks for a file that is a `404` (not HTML, because of the no-fallback rule). Undo with `docker compose up -d shell` without the variable. A URL without an extension, such as `…/nope`, also breaks the remote, but it is answered with the remote's `index.html` (`200`, a page route) and fails only when the browser tries to run it as a script. A URL on a dead host, for example `http://localhost:9/remoteEntry.js`, fails with a network error.
 3. **In the browser.** `?break=people`, handled by the shell itself: no infrastructure involved.
 
+## Reset to seed (T3.8)
+
+PocketBase seeds in a migration, which runs once, on the first start against an empty `/pb_data`. Resetting therefore means emptying the volume and starting the service again. There are two ways, with the same result (both services back at their seed, every edit gone):
+
+1. **`docker compose down -v`.** Removes all containers and both data volumes. Start again with `docker compose up -d`. Use it to go back to nothing, including the other containers.
+2. **`infra/scripts/reset.sh`.** Keeps the gateway, the shell and the remotes running. It stops `people-pb` and `delivery-pb`, empties each volume with `docker compose run --rm --no-deps --entrypoint sh <service> -c 'rm -rf /pb_data/*'` (`--entrypoint sh` because the image's command would start PocketBase), and starts both again with `up -d --wait`, so it returns when they are healthy and seeded. The start is in an `EXIT` trap: when the script fails half way (a volume that can't be emptied) or is interrupted, the services are started again, with whatever data is left, and the script still exits non-zero. While the services are down their `/api/…` routes answer `502`. Checked by running it twice in a row, and with `docker compose run` made to fail.
+
+`pnpm test:integration` expects a reset stack: run `infra/scripts/reset.sh` first.
+
 ## Alternatives
 
 - A custom gateway image with the config baked in: it needs a rebuild to tweak a route, and adds a Dockerfile for one file.
