@@ -10,7 +10,7 @@ import styles from './EmployeeScreen.module.css';
 /** Screens 2.7: the way back, and a message that names what was asked for. */
 function EmployeeNotFound({ id }: { id: string }) {
   return (
-    <div className={styles.screen}>
+    <div className={styles.notFound}>
       <BackToRegister />
       <InlineMessage tone="warning">Employee not found: there is no employee &quot;{id}&quot;.</InlineMessage>
     </div>
@@ -22,7 +22,7 @@ function EmployeeDetail({ id }: { id: EmployeeId }) {
   const employee = useEmployee(id);
   if (employee === undefined) return <EmployeeNotFound id={id} />;
   return (
-    <div className={styles.screen}>
+    <div>
       <EmployeeProfile employee={employee} />
       <RateHistory employee={employee} />
     </div>

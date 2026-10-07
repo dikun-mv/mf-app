@@ -1,7 +1,7 @@
-/* The page's blocks, one under the other: the header, the capacity message, the rate history. */
-.screen {
+/* Screens 2.7: the way back, then the message. */
+.notFound {
   display: flex;
   flex-direction: column;
-  gap: var(--bl-space-4);
+  gap: var(--bl-space-3);
   align-items: stretch;
 }

@@ -35,7 +35,7 @@ function refetchInstance(queryClient: QueryClient, instance: Instance): void {
  * connection. The status (`connecting`, `live`, `down`) is available to the widgets below through
  * `useRealtimeStatus`.
  *
- * An app mounts one per instance it reads. Nothing reads Delivery's feed yet (T5.4), so only `people` is mounted.
+ * An app mounts one per instance it reads: `people`, and `delivery` for the load feed (T5.4).
  */
 export function RealtimeProvider({ instance, children }: { instance: Instance; children: ReactNode }) {
   const queryClient = useQueryClient();

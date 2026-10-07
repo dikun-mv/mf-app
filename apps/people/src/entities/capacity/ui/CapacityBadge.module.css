@@ -1,0 +1,19 @@
+.badge {
+  display: inline-block;
+  padding: 0 var(--bl-space-2);
+  border: 1px solid color-mix(in srgb, var(--bl-badge-accent) 35%, var(--bl-color-surface));
+  border-radius: var(--bl-radius);
+  background: color-mix(in srgb, var(--bl-badge-accent) 11%, var(--bl-color-surface));
+  color: var(--bl-badge-accent);
+  font-size: var(--bl-text-sm);
+  font-weight: var(--bl-weight-medium);
+  line-height: 1.5;
+}
+
+.over {
+  --bl-badge-accent: var(--bl-color-warning);
+}
+
+.within {
+  --bl-badge-accent: var(--bl-color-success);
+}
