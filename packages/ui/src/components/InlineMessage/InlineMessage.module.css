@@ -1,0 +1,28 @@
+/* A callout: a tinted surface with an accent bar on the leading edge, in the tone's colour. The words
+   carry the meaning (and `role="alert"` for errors); the colour only helps the eye find it. */
+.message {
+  --bl-message-accent: var(--bl-color-info);
+  --bl-message-surface: var(--bl-color-info-surface);
+
+  padding: var(--bl-space-2) var(--bl-space-3);
+  border: 1px solid color-mix(in srgb, var(--bl-message-accent) 28%, var(--bl-color-surface));
+  border-left: 4px solid var(--bl-message-accent);
+  border-radius: 0 var(--bl-radius) var(--bl-radius) 0;
+  background: var(--bl-message-surface);
+  color: var(--bl-color-text);
+}
+
+.info {
+  --bl-message-accent: var(--bl-color-info);
+  --bl-message-surface: var(--bl-color-info-surface);
+}
+
+.warning {
+  --bl-message-accent: var(--bl-color-warning);
+  --bl-message-surface: var(--bl-color-warning-surface);
+}
+
+.error {
+  --bl-message-accent: var(--bl-color-danger);
+  --bl-message-surface: var(--bl-color-danger-surface);
+}

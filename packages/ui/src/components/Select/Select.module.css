@@ -1,0 +1,9 @@
+.select {
+  composes: control from '../Field/Field.module.css';
+  cursor: pointer;
+}
+
+/* After `.select`, so a disabled select doesn't keep the pointer. */
+.select:disabled {
+  cursor: not-allowed;
+}

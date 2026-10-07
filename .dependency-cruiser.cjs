@@ -100,11 +100,33 @@ module.exports = {
     },
     {
       name: 'ui-deps',
-      comment: 'ui is presentational: it imports nothing but itself, react, react-dom and clsx (no workspace package).',
+      comment:
+        'ui is presentational: it imports nothing but itself, react, react-dom and clsx (no workspace package). Only its component tests and src/testing/ may also import the test libraries.',
       severity: 'error',
-      from: { path: '^packages/ui/' },
+      from: { path: '^packages/ui/', pathNot: ['\\.test\\.tsx$', '^packages/ui/src/testing/'] },
       to: {
         pathNot: ['^packages/ui/', npmPackage(['react', 'react-dom', 'clsx', '@types/react', '@types/react-dom'])],
+      },
+    },
+    {
+      name: 'ui-test-deps',
+      comment:
+        'ui’s component tests and src/testing/ follow the same rule, and may also import the test tools (Rstest and Testing Library).',
+      severity: 'error',
+      from: { path: ['^packages/ui/.*\\.test\\.tsx$', '^packages/ui/src/testing/'] },
+      to: {
+        pathNot: [
+          '^packages/ui/',
+          npmPackage([
+            'react',
+            'react-dom',
+            'clsx',
+            '@types/react',
+            '@types/react-dom',
+            '@rstest/core',
+            '@testing-library/[^/]+',
+          ]),
+        ],
       },
     },
     // Feature-Sliced Design (D28), inside each app: `^apps/([^/]+)/src/…` scopes every rule to one app.

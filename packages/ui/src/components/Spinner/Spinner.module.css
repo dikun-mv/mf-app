@@ -14,6 +14,7 @@
   }
 }
 
+/* A slow turn still shows that something is happening. */
 @media (prefers-reduced-motion: reduce) {
   .spinner {
     animation-duration: 3s;

@@ -73,6 +73,9 @@ const clean: Files = {
   'packages/people-domain/src/index.ts': `import { EmployeeId } from '@baseline/people-contract';\nexport const rateHistory = EmployeeId;`,
   'packages/delivery-domain/src/index.ts': `import { addDays } from 'date-fns';\nimport { Load } from '@baseline/delivery-contract';\nimport { EmployeeId } from '@baseline/people-contract';\nexport const pricing = [addDays, Load, EmployeeId];`,
   'packages/ui/src/index.ts': `import { createElement } from 'react';\nimport clsx from 'clsx';\nexport const Button = [createElement, clsx];`,
+  // ui's tests and test helpers may import the test libraries (here @rstest/core); its product code may not.
+  'packages/ui/src/components/Button/Button.test.tsx': `import { expect } from '@rstest/core';\nimport { Button } from '../../index';\nexport const t = [expect, Button];`,
+  'packages/ui/src/testing/setup.ts': `import { afterEach } from '@rstest/core';\nexport const s = afterEach;`,
   // A service's tests may use its own team's domain and contracts, and the SDK.
   'services/people-pb/test/index.ts': `import PocketBase from 'pocketbase';\nimport { rateHistory } from '@baseline/people-domain';\nimport { Load } from '@baseline/delivery-contract';\nexport const client = [PocketBase, rateHistory, Load];`,
   'services/delivery-pb/test/index.ts': `import PocketBase from 'pocketbase';\nimport { pricing } from '@baseline/delivery-domain';\nimport { EmployeeId } from '@baseline/people-contract';\nexport const client = [PocketBase, pricing, EmployeeId];`,
@@ -252,6 +255,28 @@ describe('dependency boundary rules', () => {
       rule: 'ui-deps',
       description: 'ui imports an npm package outside react/react-dom/clsx',
       files: { 'packages/ui/src/leak.ts': `import 'lodash';` },
+    },
+    {
+      rule: 'ui-test-deps',
+      description: 'ui test imports a workspace package',
+      files: { 'packages/ui/src/components/Button/Button.test.tsx': `import '@baseline/people-domain';` },
+    },
+    {
+      rule: 'ui-test-deps',
+      description: 'ui test helper imports an npm package outside react, clsx and the test tools',
+      files: { 'packages/ui/src/testing/setup.ts': `import 'lodash';` },
+    },
+    {
+      rule: 'ui-test-deps',
+      description: 'ui test imports app code',
+      files: {
+        'packages/ui/src/components/Button/Button.test.tsx': `import '../../../../../apps/people/src/app/main';`,
+      },
+    },
+    {
+      rule: 'ui-deps',
+      description: 'ui product code imports a test library',
+      files: { 'packages/ui/src/leak.ts': `import '@rstest/core';` },
     },
     {
       rule: 'ui-deps',

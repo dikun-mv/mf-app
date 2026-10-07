@@ -1,0 +1,17 @@
+/* One line is always reserved, so a result appearing doesn't push the table below it down. */
+.status {
+  display: flex;
+  align-items: baseline;
+  gap: var(--bl-space-2);
+  margin: 0;
+  min-height: calc(var(--bl-text-base) * var(--bl-leading-base));
+  color: var(--bl-color-text-muted);
+  font-size: var(--bl-text-sm);
+  line-height: var(--bl-leading-base);
+}
+
+.mark {
+  flex: none;
+  color: var(--bl-color-success);
+  font-weight: var(--bl-weight-strong);
+}

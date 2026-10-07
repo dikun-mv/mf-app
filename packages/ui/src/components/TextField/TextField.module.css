@@ -1,0 +1,7 @@
+.input {
+  composes: control from '../Field/Field.module.css';
+}
+
+.input::placeholder {
+  color: var(--bl-color-text-muted);
+}
