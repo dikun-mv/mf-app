@@ -22,6 +22,9 @@ start() {
   docker compose up -d --wait $SERVICES
 }
 trap start EXIT
+# dash and busybox ash (the usual Linux /bin/sh) don't run the EXIT trap when a signal ends the
+# script, so turn Ctrl-C and `kill` into a normal exit, which does. 130 is the shell convention.
+trap 'exit 130' INT TERM
 
 # shellcheck disable=SC2086
 docker compose stop $SERVICES
