@@ -45,3 +45,24 @@ export function probeRows(registry: Record<string, ReactProbe> | undefined): Pro
     }))
     .sort((a, b) => (a.app === 'shell' ? -1 : b.app === 'shell' ? 1 : a.app.localeCompare(b.app)));
 }
+
+export interface ReactReadoutSummary {
+  /** The distinct React versions on the page, the shell's first: `18.3.1`. */
+  readonly versions: string;
+  /** Whether every app that has reported holds the shell's own `react` and `react-dom`; `null` until a remote has reported. */
+  readonly oneCopy: boolean | null;
+  /** One line per app, for a tooltip. */
+  readonly detail: string;
+}
+
+/** What the status strip shows (T4.4): the version, and whether it is one copy across the apps loaded so far. */
+export function summarizeProbes(rows: readonly ProbeRow[]): ReactReadoutSummary {
+  const versions = [...new Set(rows.map((row) => row.reactVersion))].join(' / ');
+  const detail = rows
+    .map((row) => {
+      const copy = row.app === 'shell' ? '' : row.sameAsShell ? ", the shell's copy" : ', its own copy';
+      return `${row.app}: React ${row.reactVersion}, react-dom ${row.reactDomVersion}${copy}`;
+    })
+    .join('\n');
+  return { versions, oneCopy: rows.length > 1 ? rows.every((row) => row.sameAsShell) : null, detail };
+}
