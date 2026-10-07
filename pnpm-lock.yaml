@@ -486,6 +486,10 @@ importers:
         version: 0.28.1
 
   services/people-pb:
+    dependencies:
+      '@baseline/people-contract':
+        specifier: workspace:^
+        version: link:../../packages/people-contract
     devDependencies:
       eventsource:
         specifier: 'catalog:'
@@ -493,6 +497,9 @@ importers:
       pocketbase:
         specifier: 'catalog:'
         version: 0.28.1
+      zod:
+        specifier: 'catalog:'
+        version: 4.6.5
 
 packages:
 
