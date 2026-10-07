@@ -60,3 +60,39 @@ services:
       interval: 10s
       timeout: 3s
       retries: 3
+
+  # One PocketBase per team (ADR 032, ADR 033): same image, different migrations and hooks.
+  # Reachable only through the gateway, at /api/people/ and /api/delivery/.
+  people-pb:
+    build:
+      context: .
+      dockerfile: infra/docker/pocketbase.Dockerfile
+      args:
+        SERVICE: people-pb
+    volumes:
+      - people-data:/pb_data
+    healthcheck:
+      test: ['CMD', 'wget', '-qO', '/dev/null', 'http://127.0.0.1:8090/api/health']
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+  delivery-pb:
+    build:
+      context: .
+      dockerfile: infra/docker/pocketbase.Dockerfile
+      args:
+        SERVICE: delivery-pb
+    volumes:
+      - delivery-data:/pb_data
+    healthcheck:
+      test: ['CMD', 'wget', '-qO', '/dev/null', 'http://127.0.0.1:8090/api/health']
+      interval: 10s
+      timeout: 3s
+      retries: 3
+
+# Named volumes keep the data across restarts. `docker compose down -v` or
+# infra/scripts/reset.sh empties them, and the migrations seed again.
+volumes:
+  people-data:
+  delivery-data:

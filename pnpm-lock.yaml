@@ -170,6 +170,12 @@ catalogs:
     date-fns:
       specifier: ^4.4.0
       version: 4.4.0
+    eventsource:
+      specifier: ^5.1.2
+      version: 5.1.2
+    pocketbase:
+      specifier: ^0.28.1
+      version: 0.28.1
     react:
       specifier: ^18.3.1
       version: 18.3.1
@@ -469,6 +475,24 @@ importers:
       react:
         specifier: 'catalog:'
         version: 18.3.1
+
+  services/delivery-pb:
+    devDependencies:
+      eventsource:
+        specifier: 'catalog:'
+        version: 5.1.2
+      pocketbase:
+        specifier: 'catalog:'
+        version: 0.28.1
+
+  services/people-pb:
+    devDependencies:
+      eventsource:
+        specifier: 'catalog:'
+        version: 5.1.2
+      pocketbase:
+        specifier: 'catalog:'
+        version: 0.28.1
 
 packages:
 
@@ -1087,6 +1111,14 @@ packages:
     resolution: {integrity: sha512-Zf5H2Kxt2xjTvbJvP2ZWLEICxA6j+hAmMzIlypy4xcBg1vKVnx89Wy0GbS+kf5cwCVFFzdCFh2XSCFNULS6csw==}
     engines: {node: '>= 0.4'}
 
+  eventsource-parser@4.1.1:
+    resolution: {integrity: sha512-zaWNqeSLeyzEAAt2Q6aDBRDRk/VnPmsKqvToyGvv6aahvLv71A4Jw7jG93Hckf11zXurbqgsffvpSgKPoeU1Qw==}
+    engines: {node: '>=22.12'}
+
+  eventsource@5.1.2:
+    resolution: {integrity: sha512-VJnwqqp+fOT3WDkjnUy49Zuyh48+kH0JdJApZkslrRQyx35zIZJeJYJl0+a+LrTzh5TFv6MdmXnBDv71UXFyWQ==}
+    engines: {node: '>=22.12.0'}
+
   expect-type@1.4.0:
     resolution: {integrity: sha512-KfYbmpRm0VbLjEvVa9yGwCi9GI34xvi7A/HXYWQO65CSD2u3MczUJSuwXKFIxlGsgBQizV9q5J9NHj4VG0n+pA==}
     engines: {node: '>=12.0.0'}
@@ -1264,6 +1296,9 @@ packages:
   picomatch@4.0.7:
     resolution: {integrity: sha512-qcJu88Q2IWqJsDD529JKMdwGm/dvInW4HvQnRwiH9JtihJvzGOscDtHE3x1pBKeUOTysQ8kVmLnJ2kJu7yhcGA==}
     engines: {node: '>=12'}
+
+  pocketbase@0.28.1:
+    resolution: {integrity: sha512-/3ihkq+rvfcs0MQgrK4sEElOg6gfenHW9S/O+3BSO+V1yT+4B10+9aT22uTQUPqze9ItwNtwWyY5ZmdgVCTdVA==}
 
   prettier@3.9.9:
     resolution: {integrity: sha512-Z/CJHIkdujO/OtN7nXUii0Rf3VT5SRuhjBA82Xvu2XhBUgX3nhP67T0LHceBdQLex7OOFGTox+Q5Yg8Jk2Qivg==}
@@ -2096,6 +2131,12 @@ snapshots:
 
   es-errors@1.3.0: {}
 
+  eventsource-parser@4.1.1: {}
+
+  eventsource@5.1.2:
+    dependencies:
+      eventsource-parser: 4.1.1
+
   expect-type@1.4.0: {}
 
   fast-check@4.10.2:
@@ -2250,6 +2291,8 @@ snapshots:
   picocolors@1.1.1: {}
 
   picomatch@4.0.7: {}
+
+  pocketbase@0.28.1: {}
 
   prettier@3.9.9: {}
 

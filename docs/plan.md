@@ -226,7 +226,7 @@ Request flow for a write:
 1. **Decide:** the domain function returns `Result<ChangeSet, DomainError>`, and the app applies the change set optimistically.
 2. **Send:** the adapter sends the change set as one batch: creates parent-first, deletes children-first.
 3. **Commit:** PocketBase validates the fields, indexes and relations, runs the hooks, then commits or rolls back the whole batch.
-4. **On failure:** the adapter rolls back the optimistic update and maps the PocketBase error to `DomainError` codes in one place: 400 validation, 404 missing, and a unique-index failure (`validation_not_unique`, including a duplicate client-generated id) to `conflict`.
+4. **On failure:** the adapter rolls back the optimistic update and maps the PocketBase error to `DomainError` codes in one place: 400 validation, 404 missing, and a unique-index failure (`validation_not_unique`) or a duplicate client-generated id (`validation_pk_invalid` on `id`) to `conflict`.
 5. **Notify:** after the commit, PocketBase pushes a realtime event for every changed record, load rows included.
 
 **Records**

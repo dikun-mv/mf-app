@@ -1,16 +1,16 @@
 /**
  * Boundary rules (D23). Three owners, by path:
- *   People team:   apps/people,   services/people-api,   packages/people-domain,   packages/people-contract
- *   Delivery team: apps/delivery, services/delivery-api, packages/delivery-domain, packages/delivery-contract
+ *   People team:   apps/people,   services/people-pb,   packages/people-domain,   packages/people-contract
+ *   Delivery team: apps/delivery, services/delivery-pb, packages/delivery-domain, packages/delivery-contract
  *   Platform:      apps/shell, packages/ui, packages/host-contract
  * Only `*-contract` packages and `ui` may cross a team line. Each rule is proved to fail by
  * .dependency-cruiser.test.ts.
  */
 
-const PEOPLE = '^(apps/people|services/people-api|packages/people-domain|packages/people-contract)/';
-const DELIVERY = '^(apps/delivery|services/delivery-api|packages/delivery-domain|packages/delivery-contract)/';
-const PEOPLE_INTERNALS = '^(apps/people|services/people-api|packages/people-domain)/';
-const DELIVERY_INTERNALS = '^(apps/delivery|services/delivery-api|packages/delivery-domain)/';
+const PEOPLE = '^(apps/people|services/people-pb|packages/people-domain|packages/people-contract)/';
+const DELIVERY = '^(apps/delivery|services/delivery-pb|packages/delivery-domain|packages/delivery-contract)/';
+const PEOPLE_INTERNALS = '^(apps/people|services/people-pb|packages/people-domain)/';
+const DELIVERY_INTERNALS = '^(apps/delivery|services/delivery-pb|packages/delivery-domain)/';
 
 /** Resolved path of an installed npm package, whether flat or inside pnpm's virtual store. */
 const npmPackage = (names) => `(^|/)node_modules/(${names.join('|')})/`;
@@ -50,11 +50,12 @@ module.exports = {
       to: { path: '^(apps/(people|delivery)|services|packages/(people|delivery)-domain)/' },
     },
     {
-      name: 'app-to-own-service-types-only',
-      comment: "An app may import its own team's service only as a type (Hono's typed client), never at runtime.",
+      name: 'apps-no-services',
+      comment:
+        'An app never imports anything under services/. PocketBase services have no TypeScript to import: an app reaches its data over HTTP, with the pocketbase SDK and the contract packages (ADR 032).',
       severity: 'error',
       from: { path: '^apps/' },
-      to: { path: '^services/', dependencyTypesNot: ['type-only'] },
+      to: { path: '^services/' },
     },
     {
       name: 'contracts-are-leaves',
