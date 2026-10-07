@@ -257,6 +257,23 @@ describe('dependency boundary rules', () => {
       files: { 'packages/ui/src/leak.ts': `import 'lodash';` },
     },
     {
+      rule: 'ui-test-deps',
+      description: 'ui test imports a workspace package',
+      files: { 'packages/ui/src/components/Button/Button.test.tsx': `import '@baseline/people-domain';` },
+    },
+    {
+      rule: 'ui-test-deps',
+      description: 'ui test helper imports an npm package outside react, clsx and the test tools',
+      files: { 'packages/ui/src/testing/setup.ts': `import 'lodash';` },
+    },
+    {
+      rule: 'ui-test-deps',
+      description: 'ui test imports app code',
+      files: {
+        'packages/ui/src/components/Button/Button.test.tsx': `import '../../../../../apps/people/src/app/main';`,
+      },
+    },
+    {
       rule: 'ui-deps',
       description: 'ui product code imports a test library',
       files: { 'packages/ui/src/leak.ts': `import '@rstest/core';` },

@@ -108,6 +108,27 @@ module.exports = {
         pathNot: ['^packages/ui/', npmPackage(['react', 'react-dom', 'clsx', '@types/react', '@types/react-dom'])],
       },
     },
+    {
+      name: 'ui-test-deps',
+      comment:
+        'ui’s component tests and src/testing/ follow the same rule, and may also import the test tools (Rstest and Testing Library).',
+      severity: 'error',
+      from: { path: ['^packages/ui/.*\\.test\\.tsx$', '^packages/ui/src/testing/'] },
+      to: {
+        pathNot: [
+          '^packages/ui/',
+          npmPackage([
+            'react',
+            'react-dom',
+            'clsx',
+            '@types/react',
+            '@types/react-dom',
+            '@rstest/core',
+            '@testing-library/[^/]+',
+          ]),
+        ],
+      },
+    },
     // Feature-Sliced Design (D28), inside each app: `^apps/([^/]+)/src/…` scopes every rule to one app.
     // One rule per layer, all named alike: a layer must not import any layer above it.
     ...FSD_LAYERS.slice(1).map((layer, index) => ({
