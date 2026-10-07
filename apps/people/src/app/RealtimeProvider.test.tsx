@@ -7,6 +7,7 @@ import {
   EMPTY_RATE_CHANGE_SET,
   applyChangeSetOptions,
   employeeKeys,
+  employeesQuery,
   rateRecordKeys,
   rateRecordsQuery,
   useRealtimeStatus,
@@ -24,6 +25,12 @@ import { RealtimeProvider } from './RealtimeProvider';
 
 function Status() {
   return <p>People is {useRealtimeStatus('people')}</p>;
+}
+
+/** A reader of the employees, whose refetch a rate write does not cancel. */
+function Employees() {
+  const { data } = useQuery(employeesQuery(useRepository()));
+  return <p>{data?.length ?? 0} employees</p>;
 }
 
 /** A reader of the cache that fetches by itself, as a page does: Adaeze's highest rate (the one that starts in 2099). */
@@ -166,6 +173,7 @@ describe('RealtimeProvider', () => {
     const app = renderWithApp(
       <RealtimeProvider instance="people">
         <Status />
+        <Employees />
         <Adaeze />
       </RealtimeProvider>,
       { repository },
