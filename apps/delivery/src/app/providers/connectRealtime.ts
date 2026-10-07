@@ -24,8 +24,8 @@ const defaultRetryDelay = (attempt: number): number => Math.min(1000 * 2 ** atte
 
 /**
  * Keeps one instance's collections in the query cache (D29): subscribes to each, patches the matching
- * query by id on every event, and refetches the instance's queries after a reconnect, because missed
- * events aren't replayed (D6). The SDK reconnects a connection that dropped on its own but doesn't retry a
+ * query by id on every event, and refetches the instance's queries once connected, because events from before
+ * a (re)connect aren't replayed (D6). The SDK reconnects a connection that dropped on its own but doesn't retry a
  * first connect that failed, so this does, with a growing wait. Returns the function that stops it all.
  */
 export function connectRealtime({
@@ -48,8 +48,15 @@ export function connectRealtime({
       onStatus('down');
       return;
     }
-    // A connection after a drop, or after a failed first try, may have missed events.
-    if (missedEvents) void client.invalidateQueries({ queryKey: instanceKey(instance) });
+    // A connection after a drop, or after a failed first try, may have missed events, so every query is
+    // refetched. The first connect isn't live until after the first reads were sent: what was edited in
+    // between is in none of them, and nothing refetches by itself (`staleTime: Infinity`). So a collection
+    // that has already loaded is refetched too; one still loading is left to finish.
+    const everything = missedEvents;
+    void client.invalidateQueries({
+      queryKey: instanceKey(instance),
+      predicate: ({ state }) => everything || state.status === 'success',
+    });
     missedEvents = false;
     attempt = 0;
     onStatus('live');
