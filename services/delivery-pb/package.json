@@ -3,8 +3,18 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@baseline/delivery-contract": "workspace:^",
+    "@baseline/delivery-domain": "workspace:^",
+    "@baseline/host-contract": "workspace:^",
+    "@baseline/people-contract": "workspace:^"
+  },
   "devDependencies": {
     "eventsource": "catalog:",
-    "pocketbase": "catalog:"
+    "pocketbase": "catalog:",
+    "zod": "catalog:"
   }
 }
