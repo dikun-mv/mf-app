@@ -511,23 +511,23 @@ This proves the micro-frontend mechanics before any features are built.
 
 Built from [phase-3.md](phase-3.md): the exact collections, hooks and values, and the three `builder` briefs (runtime, People, Delivery), run one after another.
 
-- [ ] **T3.1** Write `people-contract` v1:
+- [x] **T3.1** Write `people-contract` v1:
   - the base path (`/api/people`), collection names (`employees`, `rate_records`) and realtime topics
   - record schemas that parse a PocketBase record into `Employee` and `RateRecord`, dropping system fields. Writes send the entity's own fields, so there are no separate write schemas
   - the effective-dating rule in prose, and a conformance fixture: A. Okafor's records and the expected slices
-- [ ] **T3.2** Write `delivery-contract` v1: the base path (`/api/delivery`), the `employee_month_loads` collection and topic, and a record schema that parses into `EmployeeMonthLoad` (`employeeId`, `month`, `allocatedPersonMonths`, `overCapacity`, `causingAllocationId`). Only `employee_month_loads` is published. Delivery's own collections (`projects`, `breakdown_items`, `allocations`) are parsed in its app adapter (T3.7), which maps `parentId: ""` to `null`.
+- [x] **T3.2** Write `delivery-contract` v1: the base path (`/api/delivery`), the `employee_month_loads` collection and topic, and a record schema that parses into `EmployeeMonthLoad` (`employeeId`, `month`, `allocatedPersonMonths`, `overCapacity`, `causingAllocationId`). Only `employee_month_loads` is published. Delivery's own collections (`projects`, `breakdown_items`, `allocations`) are parsed in its app adapter (T3.7), which maps `parentId: ""` to `null`.
 - [x] **T3.3** Finalise `host-contract` (started in T1.1 and T2.3): `HostContext` (`currency`, `activeUser`, `basePath`, `navigate(to)`), `RemoteModule` (`mount`, `update`, `unmount`), `RemoteAppProps` (`{ ctx: HostContext }`), `Currency`, `ActiveUser`. The contract has **no React dependency** (T0.2 rule 5): the shell types the loaded `./App` as `ComponentType<RemoteAppProps>`, and each remote types its own `App` the same way. Document that a remote's own navigation stays under `basePath`, and that anything outside it goes through `navigate` (D22).
-- [ ] **T3.4** Add the **PocketBase runtime** (platform, D25). It starts by checking the PocketBase rows of the assumptions table on the pinned release, and records the results in ADR 033:
+- [x] **T3.4** Add the **PocketBase runtime** (platform, D25). It starts by checking the PocketBase rows of the assumptions table on the pinned release, and records the results in ADR 033:
   - `infra/docker/pocketbase.Dockerfile`: the pinned release for `TARGETARCH`, checksum checked, build arg `SERVICE`, `docs/data.json` copied to `/pb/seed/data.json`, and the `serve` command from phase-3.md §3
   - compose services `people-pb` and `delivery-pb` with volumes `people-data` and `delivery-data` at `/pb_data`, and a healthcheck on `/api/health`. Nothing is published except the gateway
   - gateway routes `/api/people/` and `/api/delivery/` with the prefix cut, and the realtime locations with buffering off and a 1 h read timeout; ADR 031's `/api` note is updated to match (ADR 032 already records the change to ADR 029)
   - each service's first migration, `001_settings.js`: enable the batch API with room for the largest change set (a subtree delete). Each collection widens its own `id` field when it is created (T3.5, T3.6)
   - `services/people-pb` and `services/delivery-pb` as private workspace packages, for their tests only. Update `.dependency-cruiser.cjs`: the new paths in the ownership groups, rule 4 replaced by `apps-no-services`, and `services-no-ui` kept. Update the `services` Rstest project to `services/*/test/**/*.test.ts` (without `test/integration/`), add `rstest.integration.config.ts` and `pnpm test:integration`, and make `pnpm lint` accept the PocketBase globals in the services' JS
-- [ ] **T3.5** Build **`people-pb`**:
+- [x] **T3.5** Build **`people-pb`**:
   - Collections `employees` (`name`, `role`, `weeklyHours`; read-only through the API, so no employee is created, changed or deleted, D16) and `rate_records` (`employeeId` relation, `validFrom`, `hourlyCost`; unique `(employeeId, validFrom)`).
   - Seed from `data.json`: employees and rateRecords only.
   - No hooks: every People rule is a field, an index or a `people-domain` check in the app.
-- [ ] **T3.6** Build **`delivery-pb`**:
+- [x] **T3.6** Build **`delivery-pb`**:
   - Collections `projects` (read-only through the API), `breakdown_items` (`projectId`, `parentId` relations, `name`), `allocations` (`breakdownItemId` relation, `employeeId` text, `month`, `amount ≥ 0`, `editedAt`; unique `(breakdownItemId, employeeId, month)`) and `employee_month_loads` (D8).
   - Seed from `data.json`: projects, breakdownItems and allocations with `editedAt = seededAt`, then the load rows.
   - Hook `editedAt` (D18): on create, and on an update that changes `amount`, set it to the server's `new Date().toISOString()`. Otherwise keep the stored value, whatever the client sent. Moves and D9 re-pointing don't change it.
@@ -539,8 +539,8 @@ Built from [phase-3.md](phase-3.md): the exact collections, hooks and values, an
   - Each app's Rsbuild dev server proxies `/api` to the gateway (`http://localhost:8080`), so dev talks to the same PocketBase as Docker.
   - Adapters for the other team's instance use only that team's contract.
   - Components get an in-memory fake of the same interface in tests (T8.2).
-- [ ] **T3.8** Add **reset to seed**: `docker compose down -v`, plus `infra/scripts/reset.sh`. The script stops `people-pb` and `delivery-pb`, empties each `/pb_data` volume with `docker compose run --rm --no-deps --entrypoint sh <service> -c 'rm -rf /pb_data/*'`, and starts them again from an `EXIT` trap, so a failed reset doesn't leave them down. The migrations re-seed on that start. Document both in ADR 031.
-- [ ] **T3.9** Write **service tests**:
+- [x] **T3.8** Add **reset to seed**: `docker compose down -v`, plus `infra/scripts/reset.sh`. The script stops `people-pb` and `delivery-pb`, empties each `/pb_data` volume with `docker compose run --rm --no-deps --entrypoint sh <service> -c 'rm -rf /pb_data/*'`, and starts them again from an `EXIT` trap, so a failed reset doesn't leave them down. The migrations re-seed on that start. Document both in ADR 031.
+- [x] **T3.9** Write **service tests**:
   - **Unit (Rstest `services` project, Node):** `pb_hooks/lib/*` on its own. The key one is a fast-check property test, over random allocations with ties in `editedAt`, that `load.js` gives the same rows as `delivery-domain`'s `loadsOf` (D8, D18).
   - **Integration (`pnpm test:integration`, a separate Rstest project against the compose stack through the gateway, using the SDK):**
     - seed counts match the brief's Fixtures section
