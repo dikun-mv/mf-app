@@ -721,13 +721,13 @@ Build the screens in [screens.md](screens.md) §3. The grid, cells, tree column,
   - an unchanged value causes no write
 - [ ] **T6.7** ([screens.md](screens.md) §3.5) Add a way to assign a person to a leaf (a `Dialog` with a `Select` of the employees not yet on it), which adds a person row. The row is local state (D31) until a value is saved in one of its months, which creates its first allocation; a reload before that removes it, and nothing is written for an empty row ([screens.md](screens.md) §3.5).
 - [x] **T6.8** ([screens.md](screens.md) §3.2) Make derived parent rows (the project row and every WBS row) read-only and visually distinct; their value cells aren't focusable (D36).
-- [ ] **T6.9** ([screens.md](screens.md) §3.3) Add markers:
+- [x] **T6.9** ([screens.md](screens.md) §3.3) Add markers:
   - `†` for over capacity on **every** contributing cell in the open project, because the causer may sit in a project that isn't open. Its text names the causing assignment (`itemPath` from T6.0, D18), in the cell-details panel (T6.12) and as the marker's `title`.
   - An "unpriced" marker for months before the first rate.
   - A separate marker for partially unpriced months, with the D17 reason in the cell-details panel (T6.12) and as the marker's `title`.
 - [x] **T6.10** Compute every displayed number with `roundGrid` (T1.9, D19), once per project and unit. Only the edited cell's value is exact as typed; neighbours may move by one step.
 - [ ] **T6.11** Handle performance: memoise per-cell derivations by `(allocation, rates version)`, and memoise `roundGrid` by `(project, unit, data version)`. Re-render only affected rows when a rate event arrives. How is fixed by D35: reference-stable cache records, memoised `gridView` parts, `React.memo` rows.
-- [ ] **T6.12** ([screens.md](screens.md) §3.2, §3.3) Add a **cell details panel** under the grid that follows the focused cell ([screens.md](screens.md) §3.2). It is where the five reference numbers (§3.4) show in the UI, since the grid shows one unit at a time:
+- [x] **T6.12** ([screens.md](screens.md) §3.2, §3.3) Add a **cell details panel** under the grid that follows the focused cell ([screens.md](screens.md) §3.2). It is where the five reference numbers (§3.4) show in the UI, since the grid shows one unit at a time:
   - the cell's value in all four units (`0.50 PM = 88.00 h = 50.0% of capacity = €7,880.00`)
   - the person-month and hours per working day (`176.00 h (40 h/week × 22 working days ÷ 5) · 4.00 h per working day`)
   - the working days per rate slice, and the blended rate at 4 dp (`€89.5455/h`)
