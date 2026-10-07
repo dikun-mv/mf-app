@@ -4,8 +4,9 @@ import type { Month } from '@baseline/host-contract';
 import type { EmployeeId } from '@baseline/people-contract';
 
 // Capacity is cross-project: 100% of a person's person-month, summed over every project (brief
-// §3.9). The grid and `delivery-api`'s /load feed both use this module, so the threshold and the
-// causer rule exist once (D8, D18).
+// §3.9). The grid uses this module, so the threshold and the causer rule are defined once here (D8,
+// D18). `delivery-pb`'s `pb_hooks/lib/load.js` is the one plain-JS mirror of them, for the
+// `employee_month_loads` rows it keeps; a property test holds it equal to `loadsOf` (T3.9).
 
 /** A floating-point allowance only, like the brief's 0.01 tolerance; not a rounding budget. */
 export const CAPACITY_EPSILON = 1e-9;
