@@ -215,3 +215,128 @@ describe('realtime events while writes are pending', () => {
     expect(readCollection(client, 'allocations')).toEqual([{ ...effort, amount: 0.75 }, other]);
   });
 });
+
+describe('realtime events that race a write’s answer', () => {
+  // Another user's edit of the cell commits after this write, and its event arrives before the HTTP answer.
+  const theirs = { ...effort, amount: 0.9, editedAt: IsoDateTime.parse('2026-05-01T10:00:05.000Z') };
+
+  it('owes a refetch when a newer edit by someone else was absorbed, instead of keeping the older answer', () => {
+    const client = loaded();
+    const change = edit(0.75);
+    const write = make(client, change);
+    applyRealtimeEvent(client, 'allocations', {
+      action: 'update',
+      record: { ...effort, amount: 0.75, editedAt: stamp },
+    });
+    applyRealtimeEvent(client, 'allocations', { action: 'update', record: theirs });
+    // The cache still shows the write's value while it is pending.
+    expect(readCollection(client, 'allocations')).toEqual([{ ...effort, amount: 0.75 }]);
+
+    writeResult(client, write, change, answer(0.75));
+
+    // The answer is older than the absorbed event, so the cache is brought up to date by a refetch.
+    expect(takeRefetch(client)).toBe(true);
+    expect(takeRefetch(client)).toBe(false);
+  });
+
+  it('waits for the other pending writes before the refetch is due', () => {
+    const client = loaded();
+    const first = edit(0.75);
+    const a = make(client, first);
+    const b = make(client, removing(leaf.id));
+    applyRealtimeEvent(client, 'allocations', { action: 'update', record: theirs });
+
+    writeResult(client, a, first, answer(0.75));
+    expect(takeRefetch(client)).toBe(false);
+    writeResult(client, b, removing(leaf.id), { items: [], allocations: [] });
+    expect(takeRefetch(client)).toBe(true);
+  });
+
+  it('owes nothing when the only absorbed event is the write’s own echo', () => {
+    const client = loaded();
+    const change = edit(0.75);
+    const write = make(client, change);
+    applyRealtimeEvent(client, 'allocations', {
+      action: 'update',
+      record: { ...effort, amount: 0.75, editedAt: stamp },
+    });
+    writeResult(client, write, change, answer(0.75));
+    expect(takeRefetch(client)).toBe(false);
+    expect(readCollection(client, 'allocations')).toEqual([{ ...effort, amount: 0.75, editedAt: stamp }]);
+  });
+
+  it('owes nothing when the absorbed event is the delete echo of a deletion', () => {
+    const client = loaded();
+    const change = removing(leaf.id);
+    const write = make(client, change);
+    applyRealtimeEvent(client, 'breakdownItems', { action: 'delete', record: leaf });
+    writeResult(client, write, change, { items: [], allocations: [] });
+    expect(takeRefetch(client)).toBe(false);
+  });
+
+  it('owes a refetch when someone else edited an item this write deleted', () => {
+    const client = loaded();
+    const change = removing(leaf.id);
+    const write = make(client, change);
+    applyRealtimeEvent(client, 'breakdownItems', { action: 'update', record: { ...leaf, name: 'Renamed elsewhere' } });
+    writeResult(client, write, change, { items: [], allocations: [] });
+    expect(takeRefetch(client)).toBe(true);
+  });
+
+  describe('with a later write pending on the same record', () => {
+    const second = edit(0.9);
+    const secondStamp = IsoDateTime.parse('2026-05-01T10:00:02.000Z');
+    const secondAnswer = { items: [], allocations: [{ ...effort, amount: 0.9, editedAt: secondStamp }] };
+    const firstEcho = { ...effort, amount: 0.75, editedAt: stamp };
+
+    it('owes nothing when the earlier write’s echo arrives after its answer and before the later write’s', () => {
+      const client = loaded();
+      const first = edit(0.75);
+      const a = make(client, first);
+      const b = make(client, second);
+
+      writeResult(client, a, first, answer(0.75));
+      // A has ended, so its late echo is absorbed by B.
+      applyRealtimeEvent(client, 'allocations', { action: 'update', record: firstEcho });
+      writeResult(client, b, second, secondAnswer);
+
+      expect(takeRefetch(client)).toBe(false);
+      expect(readCollection(client, 'allocations')).toEqual([{ ...effort, amount: 0.9, editedAt: secondStamp }]);
+    });
+
+    it('still owes a refetch for another user’s edit in between', () => {
+      const client = loaded();
+      const first = edit(0.75);
+      const a = make(client, first);
+      const b = make(client, second);
+
+      writeResult(client, a, first, answer(0.75));
+      applyRealtimeEvent(client, 'allocations', { action: 'update', record: firstEcho });
+      applyRealtimeEvent(client, 'allocations', { action: 'update', record: theirs });
+      writeResult(client, b, second, secondAnswer);
+
+      expect(takeRefetch(client)).toBe(true);
+    });
+
+    it('remembers the answers of every earlier write across three', () => {
+      const client = loaded();
+      const first = edit(0.75);
+      const third = edit(1);
+      const a = make(client, first);
+      const b = make(client, second);
+      const c = make(client, third);
+
+      writeResult(client, a, first, answer(0.75));
+      writeResult(client, b, second, secondAnswer);
+      // Both earlier echoes come late, while only C is pending.
+      applyRealtimeEvent(client, 'allocations', { action: 'update', record: firstEcho });
+      applyRealtimeEvent(client, 'allocations', {
+        action: 'update',
+        record: { ...effort, amount: 0.9, editedAt: secondStamp },
+      });
+      writeResult(client, c, third, { items: [], allocations: [{ ...effort, amount: 1, editedAt: stamp }] });
+
+      expect(takeRefetch(client)).toBe(false);
+    });
+  });
+});

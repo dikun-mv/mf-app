@@ -13,6 +13,20 @@ import type { QueryClient } from '@tanstack/react-query';
 export interface Write {
   readonly items: Map<string, BreakdownItem | undefined>;
   readonly allocations: Map<string, Allocation | undefined>;
+  /**
+   * The ids of the records whose `previous` is a realtime event that arrived while the write was pending,
+   * not the record as it was before the write. When the write ends, the server's answer is checked
+   * against these events (see `writeResult`).
+   */
+  readonly absorbedItems: Set<string>;
+  readonly absorbedAllocations: Set<string>;
+  /**
+   * Versions of a record that earlier writes' answers showed the server to hold, handed on when they ended
+   * while this write was pending. Their realtime echoes may arrive late, after the earlier write has ended,
+   * and are then absorbed here: they are expected, not another user's edit (see `writeResult`).
+   */
+  readonly knownItems: Map<string, (BreakdownItem | undefined)[]>;
+  readonly knownAllocations: Map<string, (Allocation | undefined)[]>;
 }
 
 interface Pending {
@@ -37,7 +51,14 @@ function pending(client: QueryClient): Pending {
 
 /** Registers a write the moment it is made, before anything is awaited, so the pending count is right. */
 export function beginWrite(client: QueryClient): Write {
-  const write: Write = { items: new Map(), allocations: new Map() };
+  const write: Write = {
+    items: new Map(),
+    allocations: new Map(),
+    absorbedItems: new Set(),
+    absorbedAllocations: new Set(),
+    knownItems: new Map(),
+    knownAllocations: new Map(),
+  };
   pending(client).writes.push(write);
   return write;
 }
@@ -88,6 +109,7 @@ export function takeRefetch(client: QueryClient): boolean {
 export function claimItem(client: QueryClient, id: string, serverVersion: BreakdownItem | undefined): boolean {
   const owner = pending(client).writes.find((write) => write.items.has(id));
   owner?.items.set(id, serverVersion);
+  owner?.absorbedItems.add(id);
   return owner !== undefined;
 }
 
@@ -95,5 +117,6 @@ export function claimItem(client: QueryClient, id: string, serverVersion: Breakd
 export function claimAllocation(client: QueryClient, id: string, serverVersion: Allocation | undefined): boolean {
   const owner = pending(client).writes.find((write) => write.allocations.has(id));
   owner?.allocations.set(id, serverVersion);
+  owner?.absorbedAllocations.add(id);
   return owner !== undefined;
 }

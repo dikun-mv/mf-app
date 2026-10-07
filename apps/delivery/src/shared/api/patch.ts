@@ -6,7 +6,8 @@ interface HasId {
   readonly id: string;
 }
 
-const sameRecord = (a: object, b: object): boolean => {
+/** True when both records have the same fields with the same values. */
+export const sameRecord = (a: object, b: object): boolean => {
   const entriesA = Object.entries(a);
   return (
     entriesA.length === Object.keys(b).length &&

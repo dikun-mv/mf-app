@@ -4,6 +4,7 @@ import { InlineMessage, PageHeader } from '@baseline/ui';
 import { Link, useParams } from 'react-router';
 import { useProject } from '../../../entities/project';
 import { PageBoundary } from '../../../shared/ui';
+import { StaffingGrid } from '../../../widgets/staffing-grid';
 import styles from './ProjectScreen.module.css';
 
 const BackToProjects = () => (
@@ -23,16 +24,25 @@ function ProjectNotFound({ id }: { id: string }) {
   );
 }
 
-/** The header of a project that exists, and the place the staffing grid goes (brief D2). */
+/**
+ * A project that exists: its header, then the staffing grid. The grid loads on its own, so the header is
+ * there while it does.
+ */
 function ProjectPage({ id }: { id: ProjectId }) {
   const project = useProject(id);
   if (!project) return <ProjectNotFound id={id} />;
   return (
-    <PageHeader
-      back={<BackToProjects />}
-      title={project.name}
-      subtitle={`${formatDate(project.startDate)} – ${formatDate(project.endDate)}`}
-    />
+    <>
+      <PageHeader
+        back={<BackToProjects />}
+        title={project.name}
+        subtitle={`${formatDate(project.startDate)} – ${formatDate(project.endDate)}`}
+      />
+      <PageBoundary subject="Staffing grid">
+        {/* Keyed by project: its collapsed nodes, open actions and focused cell are not carried to the next one. */}
+        <StaffingGrid key={id} projectId={id} />
+      </PageBoundary>
+    </>
   );
 }
 

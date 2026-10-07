@@ -2,3 +2,4 @@ export { createFakeRepository, type FakeData, type FakeRepository } from './fake
 export { testContext } from './hostContext';
 export { allocation, asPocketBase, employee, item, project, rate, SEEDED_AT, seedProjects } from './records';
 export { renderWithApp, type AppRender, type RenderWithAppOptions } from './renderWithApp';
+export { seedData } from './seed';
