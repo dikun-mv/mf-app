@@ -61,7 +61,11 @@ export function subscribeToInstance(pb: PocketBase, topics: readonly Topic[], ha
     active = false;
     clearTimeout(retryTimer);
     delete pb.realtime.onDisconnect;
-    // No topic: drop every subscription, which also closes the connection.
+    // No topic: drop every subscription, which closes a live connection.
     pb.realtime.unsubscribe().catch(() => undefined);
+    // `unsubscribe` closes only while a client id is set. During the SDK's own reconnect loop it is empty
+    // and a timer is pending, so an unmounted app would keep opening connections for as long as the service
+    // is down. `disconnect` (private in the types) clears that timer and closes the event source.
+    (pb.realtime as unknown as { disconnect(): void }).disconnect();
   };
 }
