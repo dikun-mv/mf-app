@@ -1,0 +1,77 @@
+/*
+ * The panel is a worked sum, set like a ledger note: the equation first, large enough to read across the
+ * four units at a glance, then the working beneath it on a rule, then any marker in full. Figures are
+ * tabular so the same cell reads the same width whichever one has focus.
+ */
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bl-space-2);
+  padding: var(--bl-space-3);
+  border: 1px solid var(--bl-color-border);
+  border-radius: var(--bl-radius);
+  background: var(--bl-color-surface-muted);
+  font-size: var(--bl-text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.panel p,
+.panel ul {
+  margin: 0;
+}
+
+.title {
+  margin: 0;
+  color: var(--bl-color-text-muted);
+  font-size: var(--bl-text-sm);
+  font-weight: var(--bl-weight-medium);
+}
+
+.conversion {
+  font-size: var(--bl-text-md);
+  font-weight: var(--bl-weight-strong);
+  line-height: var(--bl-leading-tight);
+}
+
+.hint {
+  color: var(--bl-color-text-muted);
+}
+
+.workings {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bl-space-1);
+  padding-inline-start: var(--bl-space-3);
+  border-inline-start: 2px solid var(--bl-color-border-strong);
+}
+
+.markers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bl-space-1);
+  padding: 0;
+  list-style: none;
+}
+
+/* A marker's full text hangs from its glyph, so a long causer path wraps under the words, not the glyph. */
+.note {
+  display: grid;
+  grid-template-columns: 1.25rem 1fr;
+  align-items: baseline;
+}
+
+.glyph {
+  font-weight: var(--bl-weight-strong);
+}
+
+.overCapacity {
+  color: var(--bl-color-danger);
+}
+
+.partiallyPriced {
+  color: var(--bl-color-warning);
+}
+
+.unpriced {
+  color: var(--bl-color-text-muted);
+}
