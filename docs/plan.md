@@ -698,7 +698,7 @@ Build the screens in [screens.md](screens.md) §2 from `ui` primitives (`PageHea
 
 Build the screens in [screens.md](screens.md) §3. The grid, cells, tree column, unit switcher and row-actions disclosure are Delivery's own components. They compose `ui` primitives where useful (a `TextField` with `hideLabel` as the cell editor, `Dialog` for the WBS actions, `Select` to assign a person), but `ui` never knows about the domain.
 
-- [ ] **T6.0** **Delivery domain additions** (lane DD), pure and tested, so the Delivery screens only wire them up:
+- [x] **T6.0** **Delivery domain additions** (lane DD), pure and tested, so the Delivery screens only wire them up:
   - `gridView(plan, people, projectId, unit, currency)` (D35, on top of the existing `buildGrid`, `rollUp` and `roundGrid`): the project row, WBS rows and person rows in tree order, exact and displayed values from `roundGrid`, cell states and markers, and the cell-details content of T6.12. It also works without People's data: PM and % only, employee ids as names (screens 3.6, D32)
   - `rowActions(state, itemId)`: which WBS actions apply, each with its refusal reason (e.g. *Design is at the third level*), for the row disclosure (screens 3.4)
   - `moveTargets(state, itemId)`: every node of the same project, each allowed or refused with its reason (current parent, depth, cycle), for the move dialog (screens 3.4, D15)
