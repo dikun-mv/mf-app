@@ -46,11 +46,40 @@ function isAction(action: string): action is RealtimeEvent<CollectionKey>['actio
 }
 
 /**
+ * Closes the realtime connection and cancels any reconnect still pending. Unsubscribing the last topic closes
+ * a connection that is up, but not one in the SDK's own reconnect loop (no client id yet, a timer pending,
+ * retries unbounded): an unmounted app would keep opening connections for as long as its service is down.
+ * `disconnect` is private in the SDK's types; it is what the SDK itself calls to stop.
+ */
+function closeConnection(pb: PocketBase): void {
+  (pb.realtime as unknown as { disconnect(): void }).disconnect();
+}
+
+/**
  * The SDK implementation of `Repository` (T6.0a). Only this file and `createClients` touch `pocketbase`.
  * Reads are typed by collection and parsed with the contracts' record schemas, or the adapter's own for
  * Delivery's private collections.
  */
 export function createSdkRepository(clients: Clients): Repository {
+  // Live subscriptions per instance. When the last one stops, the connection is closed outright.
+  const open: Record<Instance, number> = { delivery: 0, people: 0 };
+
+  /** Counts a subscription that is up; its stop function closes the connection once none is left. */
+  const tracked = (instance: Instance, stop: Unsubscribe): Unsubscribe => {
+    open[instance] += 1;
+    let stopped = false;
+    return async () => {
+      if (stopped) return;
+      stopped = true;
+      try {
+        await stop();
+      } finally {
+        open[instance] -= 1;
+        if (open[instance] === 0) closeConnection(clients[instance]);
+      }
+    };
+  };
+
   return {
     async list(key) {
       const { instance, name } = COLLECTIONS[key];
@@ -98,7 +127,7 @@ export function createSdkRepository(clients: Clients): Repository {
           const parsed = parseRealtimeEvent(key, event);
           if (parsed) onEvent(parsed);
         });
-        return stop;
+        return tracked(instance, stop);
       } catch (error) {
         // A failed connect leaves the listener registered, and the SDK doesn't retry a first connect
         // (the provider does), so take it out before the retry adds another.
@@ -119,10 +148,10 @@ export function createSdkRepository(clients: Clients): Repository {
       try {
         // `PB_CONNECT` is the connection's own event: it fires on the first connect and after each reconnect.
         const stop = await realtime.subscribe('PB_CONNECT', listener);
-        return async () => {
+        return tracked(instance, async () => {
           delete realtime.onDisconnect;
           await stop();
-        };
+        });
       } catch (error) {
         delete realtime.onDisconnect;
         await realtime.unsubscribeByTopicAndListener('PB_CONNECT', listener).catch(() => undefined);
