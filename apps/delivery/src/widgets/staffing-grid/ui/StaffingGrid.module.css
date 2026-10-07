@@ -11,6 +11,8 @@
 }
 
 .scroll {
+  /* The box the visually hidden texts are placed in, so they can't reach outside it and widen the page. */
+  position: relative;
   overflow-x: auto;
   border: 1px solid var(--bl-color-border);
   border-radius: var(--bl-radius);

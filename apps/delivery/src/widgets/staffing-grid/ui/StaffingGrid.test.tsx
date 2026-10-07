@@ -2,6 +2,7 @@ import { ProjectId } from '@baseline/delivery-contract';
 import { describe, expect, it } from '@rstest/core';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { readFileSync } from 'node:fs';
 import { Suspense } from 'react';
 import { createFakeRepository, renderWithApp, seedData } from '../../../shared/testing';
 import { StaffingGrid } from './StaffingGrid';
@@ -82,6 +83,15 @@ describe('StaffingGrid', () => {
     expect(months[1]).toBe('·0.00, no allocation');
     expect(total).toBe('0.50');
     expect(within(okafor).getAllByText('·')[0]).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('contains its visually hidden texts: the scrolling box is their positioning context', () => {
+    // jsdom applies no stylesheet, so read the rules: an absolutely placed text with no positioned
+    // ancestor resolves against the viewport and widens the whole page.
+    const css = readFileSync(new URL('./StaffingGrid.module.css', import.meta.url), 'utf8');
+    const rule = (selector: string) => new RegExp(`^\\.${selector} \\{([^}]*)\\}`, 'm').exec(css)?.[1] ?? '';
+    expect(rule('visuallyHidden')).toMatch(/position:\s*absolute/);
+    expect(rule('scroll')).toMatch(/position:\s*relative/);
   });
 
   it('shows employee ids as names when People’s employees are not there', async () => {
