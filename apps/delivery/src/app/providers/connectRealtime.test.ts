@@ -72,6 +72,36 @@ describe('connectRealtime', () => {
     stopObserving();
   });
 
+  it('ends on the value after an edit made while the first read was in flight', async () => {
+    const repository = createFakeRepository({ allocations: [effort] });
+    const client = createQueryClient();
+    const release = repository.holdReads('allocations');
+    const stopObserving = new QueryObserver(client, collectionQuery(repository, 'allocations')).subscribe(
+      () => undefined,
+    );
+    // The first read has left, holding 0.5. Then an edit nobody is told about, as the subscription is not live yet.
+    repository.replace('allocations', [{ ...effort, amount: 0.9 }]);
+
+    const stop = connectRealtime({
+      repository,
+      client,
+      instance: 'delivery',
+      onStatus: () => undefined,
+      retryDelay: () => 0,
+    });
+    await waitFor(() => {
+      expect(client.getQueryState(collectionKey('allocations'))?.fetchStatus).toBe('fetching');
+    });
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    release();
+
+    await waitFor(() => {
+      expect(client.getQueryData(collectionKey('allocations'))).toEqual([{ ...effort, amount: 0.9 }]);
+    });
+    stop();
+    stopObserving();
+  });
+
   it('retries a first connect that failed, and refetches once it is up', async () => {
     const { repository, listed, statuses, connect, stopObserving } = await setup();
     repository.failSubscribe('delivery', new RepositoryError('unavailable', 'delivery'));

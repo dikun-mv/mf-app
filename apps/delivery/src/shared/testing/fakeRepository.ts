@@ -140,11 +140,13 @@ export function createFakeRepository(data: FakeData = {}): FakeRepository {
     },
 
     async list<K extends CollectionKey>(key: K): Promise<readonly RecordOf<K>[]> {
+      // The server reads when the request arrives; a held answer then reaches the client later.
+      const list: readonly RecordOf<K>[] = records[key];
+      const read = [...list];
       await gates.get(key);
       const failure = readFailures.get(key);
       if (failure) throw failure;
-      const list: readonly RecordOf<K>[] = records[key];
-      return [...list];
+      return read;
     },
 
     async applyChangeSet(changeSet): Promise<ChangeSetResult> {
