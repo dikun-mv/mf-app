@@ -1,3 +1,10 @@
 export { loadConfig, type LoadedConfig } from './loadConfig';
 export { REMOTE_NAMES, ShellConfig, type RemoteName } from './schema';
-export { initialSelection, type Selection } from './selection';
+export {
+  browserStorage,
+  initialSelection,
+  SELECTION_KEY,
+  storeSelection,
+  type Selection,
+  type SelectionStorage,
+} from './selection';

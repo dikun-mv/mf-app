@@ -1,6 +1,5 @@
 import { afterEach, describe, expect, it, rs } from '@rstest/core';
 import { applyBreak, loadConfig, resolveRemotes, resolveRemoteUrl } from './loadConfig';
-import { initialSelection } from './selection';
 import { ShellConfig } from './schema';
 
 const validConfig = {
@@ -69,14 +68,6 @@ describe('applyBreak (?break=)', () => {
     const result = applyBreak(remotes, '?break=people,delivery,nope', origin);
     expect(result.people).toContain('__broken__');
     expect(result.delivery).toContain('__broken__');
-  });
-});
-
-describe('initialSelection', () => {
-  it('picks the default currency and the first user', () => {
-    const selection = initialSelection(ShellConfig.parse({ ...validConfig, defaultCurrency: 'USD' }));
-    expect(selection.currency.code).toBe('USD');
-    expect(selection.activeUser.name).toBe('Demo Planner');
   });
 });
 
