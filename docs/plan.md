@@ -726,7 +726,7 @@ Build the screens in [screens.md](screens.md) §3. The grid, cells, tree column,
   - An "unpriced" marker for months before the first rate.
   - A separate marker for partially unpriced months, with the D17 reason in the cell-details panel (T6.12) and as the marker's `title`.
 - [x] **T6.10** Compute every displayed number with `roundGrid` (T1.9, D19), once per project and unit. Only the edited cell's value is exact as typed; neighbours may move by one step.
-- [ ] **T6.11** Handle performance: memoise per-cell derivations by `(allocation, rates version)`, and memoise `roundGrid` by `(project, unit, data version)`. Re-render only affected rows when a rate event arrives. How is fixed by D35: reference-stable cache records, memoised `gridView` parts, `React.memo` rows.
+- [x] **T6.11** Handle performance: memoise per-cell derivations by `(allocation, rates version)`, and memoise `roundGrid` by `(project, unit, data version)`. Re-render only affected rows when a rate event arrives. How is fixed by D35: reference-stable cache records, memoised `gridView` parts, `React.memo` rows.
 - [x] **T6.12** ([screens.md](screens.md) §3.2, §3.3) Add a **cell details panel** under the grid that follows the focused cell ([screens.md](screens.md) §3.2). It is where the five reference numbers (§3.4) show in the UI, since the grid shows one unit at a time:
   - the cell's value in all four units (`0.50 PM = 88.00 h = 50.0% of capacity = €7,880.00`)
   - the person-month and hours per working day (`176.00 h (40 h/week × 22 working days ÷ 5) · 4.00 h per working day`)
