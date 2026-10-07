@@ -735,7 +735,7 @@ Build the screens in [screens.md](screens.md) §3. The grid, cells, tree column,
   - Its content comes from `gridView` (D35), so it is tested in `delivery-domain` without React. Derived cells aren't focusable (D36), so they have no details.
 - [x] **T6.13** ([screens.md](screens.md) §3.6) **Grid with People unreachable** (D32): Delivery's own data still loads; an `InlineMessage` says People's data can't be reached; Hours and Cost are disabled in the unit switcher; person rows show employee ids; PM and % stay editable. It clears by itself when People's realtime reconnects (D29). T7.4 verifies it.
 
-**Exit check:** every state in [screens.md](screens.md) §3 works hosted, the main ones also standalone; the reference cell shows €7,880.00 in Cost and the details panel shows all five reference numbers; edits in all four units, and every tree operation, survive a reload and a restart of `delivery-pb`. The exact steps are in [phases-4-6.md](phases-4-6.md) §6.
+**Exit check:** every state in [screens.md](screens.md) §3 works hosted, the main ones also standalone; the reference cell shows €7,880.00 in Cost and the details panel shows all five reference numbers; edits in all four units, and every tree operation, survive a reload and a restart of `delivery-pb`. The exact steps are in [phases-4-6.md](phases-4-6.md) §6. **Passed on 2026-10-07.**
 
 ### Phase 7 — Cross-app behaviour
 
