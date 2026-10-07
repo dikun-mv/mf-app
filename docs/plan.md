@@ -692,7 +692,7 @@ Build the screens in [screens.md](screens.md) §2 from `ui` primitives (`PageHea
 - [x] **T5.5** ([screens.md](screens.md) §2.2) Show a degraded state when the Delivery API is unreachable: "capacity unknown", never a crash. The load feed is the other team's data, so it never suspends or throws (D32); the state comes from the query and the realtime status (D29).
 - [x] **T5.6** (lane PD, with T5.0) Format money (rates) in the host currency: convert with `HostContext.currency.perEur` and format with `Intl.NumberFormat`, in a small helper inside `people-domain`. The same module converts entered amounts back to EUR (T5.3). People can't use `delivery-domain`'s `formatUnit` (T0.2 rule 2).
 
-**Exit check:** every state in [screens.md](screens.md) §2 works hosted, the main ones also standalone, and a rate added, corrected or removed survives a reload and a restart of `people-pb`. The exact steps are in [phases-4-6.md](phases-4-6.md) §6.
+**Exit check:** every state in [screens.md](screens.md) §2 works hosted, the main ones also standalone, and a rate added, corrected or removed survives a reload and a restart of `people-pb`. The exact steps are in [phases-4-6.md](phases-4-6.md) §6. **Passed on 2026-10-07.**
 
 ### Phase 6 — Delivery remote
 
