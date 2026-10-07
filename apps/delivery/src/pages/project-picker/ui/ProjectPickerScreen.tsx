@@ -1,8 +1,8 @@
 import { Button } from '@baseline/ui';
 import { useState, version } from 'react';
 import { Link } from 'react-router';
-import { useHost } from '../host/HostContextProvider';
-import styles from './Screen.module.css';
+import { useHost } from '../../../shared/lib';
+import styles from './ProjectPickerScreen.module.css';
 
 /** Placeholder for the project picker (index route). Real features arrive in Phase 6. */
 export function ProjectPickerScreen() {

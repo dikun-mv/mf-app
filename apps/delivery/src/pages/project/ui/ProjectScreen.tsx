@@ -2,8 +2,8 @@ import { ProjectId } from '@baseline/delivery-contract';
 import { Button } from '@baseline/ui';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router';
-import { NotFoundScreen } from './NotFoundScreen';
-import styles from './Screen.module.css';
+import { NotFoundScreen } from '../../../shared/ui';
+import styles from './ProjectScreen.module.css';
 
 /** Placeholder for one project. The id from the URL is parsed into a branded `ProjectId`. */
 export function ProjectScreen() {

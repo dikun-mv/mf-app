@@ -1,8 +1,7 @@
 import type { RouteObject } from 'react-router';
-import { NotFoundScreen } from '../screens/NotFoundScreen';
-import { ProjectPickerScreen } from '../screens/ProjectPickerScreen';
-import { ProjectScreen } from '../screens/ProjectScreen';
-import { RouteError } from '../screens/RouteError';
+import { ProjectScreen } from '../../pages/project';
+import { ProjectPickerScreen } from '../../pages/project-picker';
+import { NotFoundScreen, RouteError } from '../../shared/ui';
 
 // Elements are hoisted: they never change, so React can skip re-creating them.
 const picker = <ProjectPickerScreen />;

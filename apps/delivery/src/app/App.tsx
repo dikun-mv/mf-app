@@ -1,8 +1,8 @@
 import '@baseline/ui/tokens.css';
 import type { RemoteAppProps } from '@baseline/host-contract';
 import { RouterProvider } from 'react-router/dom';
-import { reportReact } from './debug/reactProbe';
-import { HostContextProvider } from './host/HostContextProvider';
+import { reportReact } from '../shared/debug';
+import { HostContextProvider } from '../shared/lib';
 import { useBrowserRouter } from './routing/useBrowserRouter';
 import styles from './App.module.css';
 
