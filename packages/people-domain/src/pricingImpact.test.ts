@@ -49,6 +49,8 @@ describe('monthPricing', () => {
 
 describe('pricingImpact', () => {
   const okafor = [from('2025-01-01'), from('2026-03-12')];
+  const february = { month: '2026-02', allocatedPersonMonths: 0.5 };
+  const march = { month: '2026-03', allocatedPersonMonths: 0.5 };
   const loads = [load('2026-02'), load('2026-03'), load('2026-04'), load('2026-05', 0)];
 
   it('flags nothing when the edit keeps every allocated month priced', () => {
@@ -60,8 +62,57 @@ describe('pricingImpact', () => {
     // Deleting the 2025-01-01 rate makes 12 Mar 2026 the first rate (plan T8.1): February has no
     // rate left and March loses its first eight working days. April, and May with no work, don't appear.
     expect(pricingImpact(okafor, [from('2026-03-12')], loads)).toEqual([
-      { month: '2026-02', before: 'priced', after: 'unpriced', allocatedPersonMonths: 0.5 },
-      { month: '2026-03', before: 'priced', after: 'partiallyPriced', allocatedPersonMonths: 0.5 },
+      {
+        ...february,
+        before: 'priced',
+        after: 'unpriced',
+        firstRateFrom: '2026-03-12',
+        workingDays: 20,
+        workingDaysBefore: 20,
+      },
+      {
+        ...march,
+        before: 'priced',
+        after: 'partiallyPriced',
+        firstRateFrom: '2026-03-12',
+        workingDays: 22,
+        workingDaysBefore: 8,
+      },
+    ]);
+  });
+
+  it('says how many of the month’s working days come before the new first rate (screens 2.5)', () => {
+    // 12 Mar 2026 is a Thursday: of March's 22 working days, the 2nd to the 11th (8) are before it.
+    const [, march] = pricingImpact(okafor, [from('2026-03-12')], loads);
+    expect(march).toMatchObject({ firstRateFrom: '2026-03-12', workingDays: 22, workingDaysBefore: 8 });
+  });
+
+  it('counts only working days before the rate, and every one when the rate is in a later month', () => {
+    // A rate on Monday 2 Mar leaves no working day of March before it, so March isn't flagged at all;
+    // one on Saturday 7 Mar does: the 2nd to the 6th (5) are before it.
+    expect(pricingImpact(okafor, [from('2026-03-02')], [load('2026-03')])).toEqual([]);
+    expect(pricingImpact(okafor, [from('2026-03-07')], [load('2026-03')])[0]).toMatchObject({
+      after: 'partiallyPriced',
+      workingDaysBefore: 5,
+    });
+    expect(pricingImpact(okafor, [from('2026-06-15')], [load('2026-03')])[0]).toMatchObject({
+      after: 'unpriced',
+      workingDays: 22,
+      workingDaysBefore: 22,
+    });
+  });
+
+  it('has no first rate date, and every working day before it, when the last rate is removed', () => {
+    expect(pricingImpact(okafor, [], [load('2026-03')])).toEqual([
+      {
+        month: '2026-03',
+        before: 'priced',
+        after: 'unpriced',
+        allocatedPersonMonths: 0.5,
+        firstRateFrom: null,
+        workingDays: 22,
+        workingDaysBefore: 22,
+      },
     ]);
   });
 
@@ -81,14 +132,29 @@ describe('pricingImpact', () => {
   it('moves a partly priced month to unpriced, but does not flag an improvement', () => {
     const partly = [from('2026-03-12')];
     expect(pricingImpact(partly, [from('2026-04-01')], [load('2026-03')])).toEqual([
-      { month: '2026-03', before: 'partiallyPriced', after: 'unpriced', allocatedPersonMonths: 0.5 },
+      {
+        ...march,
+        before: 'partiallyPriced',
+        after: 'unpriced',
+        firstRateFrom: '2026-04-01',
+        workingDays: 22,
+        workingDaysBefore: 22,
+      },
     ]);
     expect(pricingImpact(partly, [from('2025-01-01')], [load('2026-02'), load('2026-03')])).toEqual([]);
   });
 
   it('flags a retroactive correction that moves the first rate later', () => {
     expect(pricingImpact(okafor, [from('2026-01-01'), from('2026-03-12')], [load('2025-12')])).toEqual([
-      { month: '2025-12', before: 'priced', after: 'unpriced', allocatedPersonMonths: 0.5 },
+      {
+        month: '2025-12',
+        before: 'priced',
+        after: 'unpriced',
+        allocatedPersonMonths: 0.5,
+        firstRateFrom: '2026-01-01',
+        workingDays: 23,
+        workingDaysBefore: 23,
+      },
     ]);
   });
 });
