@@ -11,12 +11,19 @@ import { today, useHost } from '../../../shared/lib';
 import styles from './RateHistory.module.css';
 import { RateRow } from './RateRow';
 
+/** The rate whose correction form is open, and which opening of the form it is. */
+interface Editing {
+  readonly rate: RateRecord;
+  readonly session: symbol;
+}
+
 /**
  * Rates newest first. A rate being corrected stays in its place even if it was removed elsewhere meanwhile,
  * so its form keeps the draft and can say so (D37).
  */
-function listed(history: readonly RateRecord[], editing: RateRecord | null): RateRecord[] {
-  const rows = editing !== null && !history.some(({ id }) => id === editing.id) ? [...history, editing] : history;
+function listed(history: readonly RateRecord[], editing: Editing | null): RateRecord[] {
+  const open = editing?.rate;
+  const rows = open !== undefined && !history.some(({ id }) => id === open.id) ? [...history, open] : history;
   return rows.toSorted((a, b) => (a.validFrom < b.validFrom ? 1 : a.validFrom > b.validFrom ? -1 : 0));
 }
 
@@ -29,7 +36,7 @@ function listed(history: readonly RateRecord[], editing: RateRecord | null): Rat
 export function RateHistory({ employee }: { employee: Employee }) {
   const { currency } = useHost();
   const history = useRateHistory(employee.id);
-  const [editing, setEditing] = useState<RateRecord | null>(null);
+  const [editing, setEditing] = useState<Editing | null>(null);
   const [removing, setRemoving] = useState<RateRecord | null>(null);
   const [status, setStatus] = useState('');
   const [failure, setFailure] = useState<{ error: unknown } | null>(null);
@@ -45,9 +52,13 @@ export function RateHistory({ employee }: { employee: Employee }) {
   const failed = useCallback((error: unknown) => {
     setFailure({ error });
   }, []);
-  // Closes the form of rate `id` only: a result that lands late must not close the form of another rate.
-  const stopEditing = useCallback((id: RateRecord['id']) => {
-    setEditing((open) => (open?.id === id ? null : open));
+  // Each time Correct opens a form it starts a new session. A form closes only its own session, so a result that
+  // lands late, even for the same rate reopened since, can't close a form (and drop a draft) that isn't its own.
+  const startEditing = useCallback((rate: RateRecord) => {
+    setEditing({ rate, session: Symbol(rate.id) });
+  }, []);
+  const stopEditing = useCallback((session: symbol) => {
+    setEditing((open) => (open?.session === session ? null : open));
   }, []);
   const stopRemoving = useCallback(() => {
     setRemoving(null);
@@ -82,14 +93,14 @@ export function RateHistory({ employee }: { employee: Employee }) {
             </tr>
           ) : (
             rows.map((rate) =>
-              rate.id === editing?.id ? (
+              editing !== null && rate.id === editing.rate.id ? (
                 <CorrectRateForm
                   key={`${rate.id}-${currency.code}`}
-                  opened={editing}
+                  opened={editing.rate}
                   stored={history.find(({ id }) => id === rate.id)}
                   history={history}
                   onDone={() => {
-                    stopEditing(rate.id);
+                    stopEditing(editing.session);
                   }}
                   onStart={started}
                   onSaved={saved}
@@ -101,7 +112,7 @@ export function RateHistory({ employee }: { employee: Employee }) {
                   rate={rate}
                   cost={formatHourlyRate(rate.hourlyCost, currency)}
                   current={rate.id === current?.id}
-                  onCorrect={setEditing}
+                  onCorrect={startEditing}
                   onRemove={setRemoving}
                 />
               ),

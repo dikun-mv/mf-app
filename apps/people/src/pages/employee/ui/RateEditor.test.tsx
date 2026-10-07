@@ -398,6 +398,31 @@ describe('a correction whose result lands after its form has gone', () => {
   });
 });
 
+describe('a correction reopened on the same rate while its first save is on its way', () => {
+  it('keeps the reopened form and its draft when the first save lands', async () => {
+    const repository = createFakeRepository();
+    const { user } = await openEmployee({ repository });
+    const release = repository.holdWrites();
+
+    // Save a correction of the 12 Mar rate, cancel its form, and open the same rate again with a new draft.
+    await user.click(screen.getByRole('button', { name: 'Correct the rate from 12 Mar 2026' }));
+    const first = correctRow().getByLabelText('Hourly cost (EUR)');
+    await user.clear(first);
+    await user.type(first, '97');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    await user.click(screen.getByRole('button', { name: 'Correct the rate from 12 Mar 2026' }));
+    const again = correctRow().getByLabelText('Hourly cost (EUR)');
+    await user.clear(again);
+    await user.type(again, '88');
+
+    release();
+    expect(await screen.findByText('Rate from 12 Mar 2026 corrected.')).toBeInTheDocument();
+    expect(correctRow().getByLabelText('Hourly cost (EUR)')).toHaveValue('88');
+    expect(screen.getByRole('button', { name: 'Save' })).toBeEnabled();
+  });
+});
+
 describe('a write that fails', () => {
   it('undoes the change and says so at the top, keeping the draft for another try', async () => {
     const repository = createFakeRepository();
