@@ -16,7 +16,10 @@ import {
 // component only acts on it. The numbers themselves come from `delivery-domain`; this routes the text there.
 
 /** The part of a cell's view an edit needs. */
-type EditedCell = Pick<PersonCellView, 'allocationId' | 'exact' | 'month' | 'personMonths' | 'euroEditRefusal'>;
+type EditedCell = Pick<
+  PersonCellView,
+  'allocationId' | 'exact' | 'text' | 'month' | 'personMonths' | 'euroEditRefusal'
+>;
 
 /** What People holds for the employee of the row, which hours and cost edits need. Null while it isn't known. */
 export type EmployeeRates = Pick<EmployeeMonth, 'weeklyHours' | 'rates'>;
@@ -61,14 +64,18 @@ const NEEDS_PEOPLE = "Hours and cost need People's data, which can't be reached.
  * Decides what to do with a finished draft. An untouched draft is unchanged, however the cell moved under
  * it meanwhile: a value changed elsewhere isn't overwritten by a draft nobody edited (D37). A touched draft
  * is compared only with what is stored at this moment, which is what D37 means by comparing at save time:
- * it is unchanged when it is the text the cell shows now (so a cell shown rounded isn't rewritten with its
- * rounding) or the same number. Typing the old text back over a remote change is a real edit.
+ * it is unchanged when it is the text or number the cell shows now (so a cell shown rounded isn't rewritten
+ * with its rounding) or the stored number. Typing the old text back over a remote change is a real edit.
  * A € edit in a partly priced or unpriced month is refused with the cell's own reason (D17).
  */
 export function resolveEdit({ draft, touched, unit, cell, employee, perEur }: EditInput): EditOutcome {
   if (!touched || draft.trim() === openingText(unit, cell)) return { kind: 'unchanged' };
   const parsed = parseAmount(draft);
   if (!parsed.ok) return { kind: 'rejected', message: AMOUNT_PROBLEMS[parsed.error] };
+  // The number the cell shows is no edit either. Grid rounding can move a cell a step from its exact value
+  // so that rows and columns add up (0.3333 shown as 0.34), and typing back what was seen changes nothing.
+  const shown = parseAmount(cell.text);
+  if (shown.ok && parsed.value === shown.value) return { kind: 'unchanged' };
   // Compared with what is stored now, in the unit it was typed in: the exact value `cell.exact`, to within float noise (7880 typed back over a cost of 7880.0000000001 is no edit).
   if (Math.abs(parsed.value - cell.exact) <= NOISE * Math.max(1, Math.abs(cell.exact))) return { kind: 'unchanged' };
 

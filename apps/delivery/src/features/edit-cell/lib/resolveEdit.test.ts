@@ -15,9 +15,10 @@ const stored = {
   month: MARCH,
   personMonths: 0.4,
   exact: 0.4,
+  text: '0.40',
   euroEditRefusal: null,
 };
-const empty = { ...stored, allocationId: null, personMonths: 0, exact: 0 };
+const empty = { ...stored, allocationId: null, personMonths: 0, exact: 0, text: '0.00' };
 
 const edit = (draft: string, overrides: Partial<EditInput> = {}) =>
   resolveEdit({ draft, touched: true, unit: 'personMonths', cell: stored, employee: priced, perEur: 1, ...overrides });
@@ -58,26 +59,36 @@ describe('resolveEdit', () => {
     expect(edit('0.4')).toEqual({ kind: 'unchanged' });
   });
 
+  it('treats the number the cell shows as no edit, though grid rounding moved it from its exact value', () => {
+    // 0.3333 PM, shown as 0.34 so that the rows and columns add up; the editor opens on 0.33.
+    const moved = { ...stored, personMonths: 0.3333, exact: 0.3333, text: '0.34' };
+    expect(edit('0.34', { cell: moved })).toEqual({ kind: 'unchanged' });
+    expect(edit('0.33', { cell: moved })).toEqual({ kind: 'unchanged' });
+    expect(edit('0.35', { cell: moved })).toEqual({ kind: 'save', amount: 0.35 });
+    const cost = { ...stored, personMonths: 0.5, exact: 7880.004, text: '€7,880.01' };
+    expect(edit('7,880.01', { unit: 'cost', cell: cost })).toEqual({ kind: 'unchanged' });
+  });
+
   it('ignores float noise between a typed value and the stored one', () => {
     const cell = { ...stored, personMonths: 0.5, exact: 7880.000000000001 };
     expect(edit('7880', { unit: 'cost', cell })).toEqual({ kind: 'unchanged' });
   });
 
   it('writes a touched draft that restores the opening value after the cell changed elsewhere (D37)', () => {
-    const elsewhere = { ...stored, personMonths: 0.75, exact: 0.75 };
+    const elsewhere = { ...stored, personMonths: 0.75, exact: 0.75, text: '0.75' };
     expect(edit('0.5', { cell: elsewhere })).toEqual({ kind: 'save', amount: 0.5 });
-    const hours = { ...stored, personMonths: 0.75, exact: 132 };
+    const hours = { ...stored, personMonths: 0.75, exact: 132, text: '132.00' };
     expect(edit('80', { unit: 'hours', cell: hours })).toEqual({ kind: 'save', amount: 80 / 176 });
   });
 
   it('leaves an untouched draft alone even when the cell changed elsewhere meanwhile', () => {
-    const elsewhere = { ...stored, personMonths: 0.75, exact: 0.75 };
+    const elsewhere = { ...stored, personMonths: 0.75, exact: 0.75, text: '0.75' };
     expect(edit('0.50', { touched: false, cell: elsewhere })).toEqual({ kind: 'unchanged' });
     expect(edit('0.40', { touched: false })).toEqual({ kind: 'unchanged' });
   });
 
   it('writes the exact text the editor opened with when it was typed over a remote change', () => {
-    const elsewhere = { ...stored, personMonths: 0.75, exact: 0.75 };
+    const elsewhere = { ...stored, personMonths: 0.75, exact: 0.75, text: '0.75' };
     expect(edit('0.40', { cell: elsewhere })).toEqual({ kind: 'save', amount: 0.4 });
   });
 
