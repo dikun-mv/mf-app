@@ -34,3 +34,11 @@ export const asPocketBase = (collectionName: string, record: object): Record<str
   collectionName,
   ...record,
 });
+
+/** The seed's four projects (docs/data.json), for screens that list them. */
+export const seedProjects = () => [
+  project('prj-1', 'Ledger Consolidation', '2026-03-01', '2027-02-28'),
+  project('prj-2', 'Reporting Platform', '2026-04-01', '2027-03-31'),
+  project('prj-3', 'Client Portal Rebuild', '2026-06-01', '2027-03-31'),
+  project('prj-4', 'Warehouse Data Migration', '2026-04-01', '2026-12-31'),
+];

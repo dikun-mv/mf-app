@@ -1,0 +1,15 @@
+/* Screens 4: a quiet line while loading, and the failure as one message with its retry under it. */
+.loading {
+  display: flex;
+  align-items: center;
+  gap: var(--bl-space-2);
+  margin: var(--bl-space-3) 0;
+  color: var(--bl-color-text-muted);
+}
+
+.failed {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--bl-space-2);
+}

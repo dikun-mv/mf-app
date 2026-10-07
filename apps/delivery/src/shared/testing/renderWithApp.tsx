@@ -2,7 +2,7 @@ import type { HostContext } from '@baseline/host-contract';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, type RenderResult } from '@testing-library/react';
 import type { ReactElement } from 'react';
-import { createMemoryRouter, RouterProvider } from 'react-router';
+import { createMemoryRouter, RouterProvider, type RouteObject } from 'react-router';
 import { RepositoryProvider } from '../api';
 import { HostContextProvider } from '../lib';
 import { createFakeRepository, type FakeRepository } from './fakeRepository';
@@ -18,6 +18,8 @@ export interface RenderWithAppOptions {
   path?: string;
 }
 
+const isElement = (target: ReactElement | readonly RouteObject[]): target is ReactElement => !Array.isArray(target);
+
 export interface AppRender extends RenderResult {
   readonly repository: FakeRepository;
   readonly queryClient: QueryClient;
@@ -27,9 +29,10 @@ export interface AppRender extends RenderResult {
 /**
  * Renders `ui` the way `App` does, minus realtime: the host context, a fresh `QueryClient` that doesn't
  * retry (D30), the repository and a memory router. Pass a `repository` to seed or to drive the "server".
+ * Pass a list of routes instead of `ui` to render the app's own routes.
  */
 export function renderWithApp(
-  ui: ReactElement,
+  target: ReactElement | readonly RouteObject[],
   { repository = createFakeRepository(), ctx = testContext(), route = '/', path = '*' }: RenderWithAppOptions = {},
 ): AppRender {
   const queryClient = new QueryClient({
@@ -38,7 +41,8 @@ export function renderWithApp(
       mutations: { retry: false },
     },
   });
-  const router = createMemoryRouter([{ path, element: ui }], { initialEntries: [route] });
+  const routes = isElement(target) ? [{ path, element: target }] : [...target];
+  const router = createMemoryRouter(routes, { initialEntries: [route] });
   const result = render(
     <HostContextProvider ctx={ctx}>
       <QueryClientProvider client={queryClient}>
