@@ -31,6 +31,9 @@ interface Pair {
 /** A pair no other test or run has touched: a fresh employee id (`emp-<uuid>`, which the contract accepts) in a far month. */
 const freshPair = (month: string): Pair => ({ employeeId: `emp-${crypto.randomUUID()}`, month });
 
+/** A month far from the seed's (2026-2027): the round picks the year, so any number of rounds gives a valid month. */
+const monthOf = (round: number, month: number): string => `${String(2040 + round)}-${String(month).padStart(2, '0')}`;
+
 /** The load row of a pair as the API returns it, or null when there is none. */
 const rowOf = async ({ employeeId, month }: Pair) =>
   loads.getOne(`${employeeId}-${month}`).catch((error: unknown) => {
@@ -133,7 +136,7 @@ function runsOf<T>(items: T[], sizes: number[]): T[][] {
 describe('concurrent batches onto one pair', () => {
   it('creates: 20 batches of 2-3 allocations each keep the row equal to loadOf', async () => {
     for (let round = 0; round < ROUNDS; round++) {
-      const pair = freshPair(`204${String(round)}-03`);
+      const pair = freshPair(monthOf(round, 3));
       const sizes = Array.from({ length: BATCHES }, (_, i) => 2 + (i % 2));
       const leafIds = await leaves(sizes.reduce((a, b) => a + b, 0));
       let next = 0;
@@ -158,7 +161,7 @@ describe('concurrent batches onto one pair', () => {
 
   it('updates: 20 batches changing the amounts of 2-3 allocations each, some to 0, keep the row equal to loadOf', async () => {
     for (let round = 0; round < ROUNDS; round++) {
-      const pair = freshPair(`204${String(round)}-04`);
+      const pair = freshPair(monthOf(round, 4));
       const sizes = Array.from({ length: BATCHES }, (_, i) => 2 + (i % 2));
       const leafIds = await leaves(sizes.reduce((a, b) => a + b, 0));
       const planned = await seedPair(pair, leafIds, (i) => 0.1 + (i % 7) / 20);
@@ -182,8 +185,8 @@ describe('concurrent batches onto one pair', () => {
   it('moves: 20 batches each moving one allocation between two pairs keep both rows equal to loadOf', async () => {
     for (let round = 0; round < ROUNDS; round++) {
       // The two pairs differ in employee and month, so a move changes both fields.
-      const a = freshPair(`204${String(round)}-05`);
-      const b = freshPair(`204${String(round)}-06`);
+      const a = freshPair(monthOf(round, 5));
+      const b = freshPair(monthOf(round, 6));
       const leafIds = await leaves(BATCHES);
       // Half of the allocations start in A and half in B, 0.1 to 0.5 each: both pairs begin over capacity.
       const inA = await seedPair(a, leafIds.slice(0, BATCHES / 2), (i) => 0.1 + (i % 5) / 10);
@@ -209,7 +212,7 @@ describe('concurrent batches onto one pair', () => {
 
   it('deletes: 20 batches of 1-2 deletions, then the rest, keep the row equal to loadOf and remove it with the last', async () => {
     for (let round = 0; round < ROUNDS; round++) {
-      const pair = freshPair(`204${String(round)}-07`);
+      const pair = freshPair(monthOf(round, 7));
       const leafIds = await leaves(45);
       const planned = await seedPair(pair, leafIds, (i) => 0.1 + (i % 6) / 20);
       await expectRowFollowsStore(pair);
