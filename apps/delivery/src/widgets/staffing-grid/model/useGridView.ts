@@ -16,6 +16,7 @@ import { useProjects } from '../../../entities/project';
 import { useRateRecords } from '../../../entities/rate-record';
 import { useHost } from '../../../shared/lib';
 import { NO_ASSIGNMENTS, withoutPlaceholders, withPendingRows, type PendingAssignment } from './pendingRows';
+import { useSharedStructure } from './useSharedStructure';
 
 export interface GridModel {
   readonly result: Result<GridView, GridViewError>;
@@ -56,11 +57,16 @@ export function useGridView(
     () => withPendingRows({ projects, items, allocations }, assigned),
     [projects, items, allocations, assigned],
   );
-  const result = useMemo(
+  // `gridView` is rerun, and its rounding with it, only when one of its inputs changes. The cache keeps the
+  // references of the records a patch didn't touch (D26, D29), so a rate event or an edit changes the
+  // inputs, not every record; and the rows that come out the same keep their old references, so the
+  // memoised rows below skip them (D35).
+  const fresh = useMemo(
     () => withoutPlaceholders(gridView(plan, people, projectId, unit, currency), pendingKeys),
     [plan, pendingKeys, people, projectId, unit, currency],
   );
-  const units = useMemo(() => availableUnits(people), [people]);
+  const result = useSharedStructure(fresh);
+  const units = availableUnits(people);
   const peopleLoading = employeesQuery.isPending || ratesQuery.isPending;
   return { result, units, peopleLoading, staleAssignments: stale };
 }
