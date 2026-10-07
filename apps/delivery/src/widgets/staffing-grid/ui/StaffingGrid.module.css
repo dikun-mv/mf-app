@@ -1,0 +1,141 @@
+/*
+ * The grid is read as a ledger: figures in tabular columns, hairlines between rows only, and shading that
+ * says which rows are sums. The project row is the darkest band, WBS rows a lighter one, and person rows
+ * (the only rows that hold allocations) sit on the page's own ground. The label and Total columns are
+ * sticky, so every row keeps its name and its total in view while the months scroll.
+ */
+.scroll {
+  overflow-x: auto;
+  border: 1px solid var(--bl-color-border);
+  border-radius: var(--bl-radius);
+}
+
+.grid {
+  /* Separate borders, so a sticky cell keeps its own rules while it moves over the others. */
+  border-collapse: separate;
+  border-spacing: 0;
+  min-width: 100%;
+  font-size: var(--bl-text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Cells ---- */
+
+.head,
+.label,
+.value {
+  padding: var(--bl-space-1) var(--bl-space-3);
+  border-bottom: 1px solid var(--bl-color-border);
+  background: var(--row-bg, var(--bl-color-surface));
+  white-space: nowrap;
+}
+
+.head {
+  --row-bg: var(--bl-color-surface);
+  border-bottom-color: var(--bl-color-border-strong);
+  color: var(--bl-color-text-muted);
+  font-weight: var(--bl-weight-medium);
+  text-align: start;
+}
+
+.numeric,
+.value {
+  min-width: 4.5rem;
+  text-align: end;
+}
+
+/* ---- Fixed columns ---- */
+
+.label,
+.total {
+  position: sticky;
+  z-index: 1;
+}
+
+.label {
+  inset-inline-start: 0;
+  min-width: 17rem;
+  text-align: start;
+  font-weight: inherit;
+  box-shadow: inset -1px 0 var(--bl-color-border);
+}
+
+.total {
+  inset-inline-end: 0;
+  min-width: 5.5rem;
+  font-weight: var(--bl-weight-strong);
+  box-shadow: inset 1px 0 var(--bl-color-border);
+}
+
+/* The corner cells sit above both the rows and the other header cells while the months pass under. */
+thead .label,
+thead .total {
+  z-index: 2;
+}
+
+/* ---- Rows ---- */
+
+.project {
+  --row-bg: var(--bl-color-surface-sunken);
+  font-weight: var(--bl-weight-strong);
+}
+
+.node {
+  --row-bg: var(--bl-color-surface-muted);
+  font-weight: var(--bl-weight-medium);
+}
+
+.person {
+  --row-bg: var(--bl-color-surface);
+}
+
+.person:hover {
+  --row-bg: var(--bl-color-surface-muted);
+}
+
+/* ---- The label ---- */
+
+.labelContent {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 var(--bl-space-2);
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: baseline;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.twisty {
+  display: inline-block;
+  width: 1.25rem;
+  color: var(--bl-color-text-muted);
+}
+
+/* A name with no control keeps the control's width, so names line up at one depth. */
+.name {
+  padding-inline-start: 1.25rem;
+}
+
+.empty {
+  color: var(--bl-color-text-muted);
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
