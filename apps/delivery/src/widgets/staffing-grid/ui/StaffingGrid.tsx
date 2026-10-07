@@ -2,7 +2,7 @@ import type { ProjectId } from '@baseline/delivery-contract';
 import type { DisplayUnit } from '@baseline/delivery-domain';
 import { InlineMessage } from '@baseline/ui';
 import { clsx } from 'clsx';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useId, useMemo, useState } from 'react';
 import { visibleRows } from '../lib/visibleRows';
 import { useFocusedCell } from '../model/useFocusedCell';
 import { useGridView } from '../model/useGridView';
@@ -32,7 +32,7 @@ export interface StaffingGridProps {
  * sums (D31). The label and Total columns stay in place while the months scroll sideways. Suspends until
  * Delivery's collections are loaded; the page shows that state (D32).
  *
- * The toolbar above the table, the cell renderer, the row actions and the details panel below are slots
+ * The toolbar above the table, the cell renderer and its adornment, the row actions and the details panel below are slots
  * (`ui/slots/`, see the widget's `index.ts`).
  */
 export function StaffingGrid({ projectId, unit = 'personMonths' }: StaffingGridProps) {
@@ -42,6 +42,8 @@ export function StaffingGrid({ projectId, unit = 'personMonths' }: StaffingGridP
   // The row whose actions are open: one at a time, and closed again by choosing an action (D36).
   const [actionsOpen, setActionsOpen] = useState<string | null>(null);
   const { focus, onFocus } = useFocusedCell();
+  // The details panel's id: the cells point their `aria-describedby` at it (D36).
+  const detailsId = useId();
 
   const toggle = useCallback((key: string) => {
     setCollapsed((current) => {
@@ -87,7 +89,7 @@ export function StaffingGrid({ projectId, unit = 'personMonths' }: StaffingGridP
           <tbody>
             {shown.map(({ row, expandable, expanded }) =>
               row.kind === 'person' ? (
-                <PersonRow key={row.key} row={row} months={view.months} unit={view.unit} />
+                <PersonRow key={row.key} row={row} months={view.months} unit={view.unit} describedById={detailsId} />
               ) : (
                 <SumRow
                   key={row.key}
@@ -103,7 +105,7 @@ export function StaffingGrid({ projectId, unit = 'personMonths' }: StaffingGridP
           </tbody>
         </table>
       </div>
-      {Details !== null && <Details view={view} focus={focus} />}
+      {Details !== null && <Details id={detailsId} view={view} focus={focus} />}
     </div>
   );
 }

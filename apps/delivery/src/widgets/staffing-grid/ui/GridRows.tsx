@@ -3,6 +3,7 @@ import { clsx } from 'clsx';
 import { memo } from 'react';
 import { RowLabel } from './RowLabel';
 import { cellSlot as Cell } from './slots/cell';
+import { cellAdornmentSlot as Adornment } from './slots/cellAdornment';
 import { rowActionsSlot as RowActions } from './slots/rowActions';
 import styles from './StaffingGrid.module.css';
 
@@ -54,17 +55,20 @@ export const SumRow = memo(function SumRow({
 });
 
 /**
- * A person under a leaf: the cells that hold allocations, drawn by the cell slot. Each `<td>` carries
+ * A person under a leaf: the cells that hold allocations, drawn by the cell slot with the adornment slot's output. Each `<td>` carries
  * its row and month so the grid can tell which cell has focus.
  */
 export const PersonRow = memo(function PersonRow({
   row,
   months,
   unit,
+  describedById,
 }: {
   row: PersonRowView;
   months: readonly GridMonthView[];
   unit: DisplayUnit;
+  /** The details panel's id, passed on to every cell. */
+  describedById: string;
 }) {
   return (
     <tr className={styles.person}>
@@ -73,7 +77,16 @@ export const PersonRow = memo(function PersonRow({
         const month = months[position];
         return (
           <td key={cell.month} className={styles.value} data-row-key={row.key} data-month-index={position}>
-            {month !== undefined && <Cell row={row} cell={cell} month={month} unit={unit} />}
+            {month !== undefined && (
+              <Cell
+                row={row}
+                cell={cell}
+                month={month}
+                unit={unit}
+                describedById={describedById}
+                adornment={Adornment === null ? null : <Adornment row={row} cell={cell} month={month} unit={unit} />}
+              />
+            )}
           </td>
         );
       })}
