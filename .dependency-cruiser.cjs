@@ -3,14 +3,26 @@
  *   People team:   apps/people,   services/people-pb,   packages/people-domain,   packages/people-contract
  *   Delivery team: apps/delivery, services/delivery-pb, packages/delivery-domain, packages/delivery-contract
  *   Platform:      apps/shell, packages/ui, packages/host-contract
- * Only `*-contract` packages and `ui` may cross a team line. Each rule is proved to fail by
- * .dependency-cruiser.test.ts.
+ * Only `*-contract` packages and `ui` may cross a team line. Inside each app, three Feature-Sliced
+ * Design rules (D28) keep the layers one-way. Each rule is proved to fail by .dependency-cruiser.test.ts.
  */
 
 const PEOPLE = '^(apps/people|services/people-pb|packages/people-domain|packages/people-contract)/';
 const DELIVERY = '^(apps/delivery|services/delivery-pb|packages/delivery-domain|packages/delivery-contract)/';
 const PEOPLE_INTERNALS = '^(apps/people|services/people-pb|packages/people-domain)/';
 const DELIVERY_INTERNALS = '^(apps/delivery|services/delivery-pb|packages/delivery-domain)/';
+
+/**
+ * The Feature-Sliced Design layers of an app's `src/` (D28), highest first. A layer imports only the
+ * layers below it. `app` and `shared` have segments (`shared/api`, `shared/lib`, …) rather than
+ * slices, but a shared segment is imported through its `index.ts` like a slice is.
+ */
+const FSD_LAYERS = ['app', 'pages', 'widgets', 'features', 'entities', 'shared'];
+/** The layers that hold slices: `<layer>/<slice>/…`. */
+const SLICED_LAYERS = FSD_LAYERS.filter((layer) => layer !== 'app' && layer !== 'shared');
+const oneOf = (names) => `(${names.join('|')})`;
+/** A slice's `index.ts`, the only file other code may import. */
+const SLICE_INDEX = '^apps/[^/]+/src/[^/]+/[^/]+/index\\.ts$';
 
 /** Resolved path of an installed npm package, whether flat or inside pnpm's virtual store. */
 const npmPackage = (names) => `(^|/)node_modules/(${names.join('|')})/`;
@@ -94,6 +106,42 @@ module.exports = {
       to: {
         pathNot: ['^packages/ui/', npmPackage(['react', 'react-dom', 'clsx', '@types/react', '@types/react-dom'])],
       },
+    },
+    // Feature-Sliced Design (D28), inside each app: `^apps/([^/]+)/src/…` scopes every rule to one app.
+    // One rule per layer, all named alike: a layer must not import any layer above it.
+    ...FSD_LAYERS.slice(1).map((layer, index) => ({
+      name: 'fsd-layers-import-down',
+      comment: `The ${layer} layer imports only layers below it (app, pages, widgets, features, entities, shared, top to bottom).`,
+      severity: 'error',
+      from: { path: `^apps/([^/]+)/src/${layer}/` },
+      to: { path: `^apps/$1/src/${oneOf(FSD_LAYERS.slice(0, index + 1))}/` },
+    })),
+    {
+      name: 'fsd-no-cross-slice',
+      comment:
+        'Slices of one layer never import each other, not even through an index.ts, and there are no @x cross-imports: entities are combined in features and widgets.',
+      severity: 'error',
+      from: { path: `^apps/([^/]+)/src/${oneOf(SLICED_LAYERS)}/([^/]+)/` },
+      to: { path: '^apps/$1/src/$2/', pathNot: '^apps/$1/src/$2/$3/' },
+    },
+    {
+      name: 'fsd-public-api',
+      comment:
+        'Code outside a slice (or a shared segment) imports it only through its index.ts: another layer, and another shared segment, never reach into its folders.',
+      severity: 'error',
+      from: { path: '^apps/([^/]+)/src/([^/]+)/' },
+      to: {
+        path: `^apps/$1/src/${oneOf([...SLICED_LAYERS, 'shared'])}/[^/]+/`,
+        // The importing layer is left to the cross-slice rule (same layer) and the segment rule below.
+        pathNot: ['^apps/$1/src/$2/', SLICE_INDEX],
+      },
+    },
+    {
+      name: 'fsd-public-api',
+      comment: 'A shared segment imports another shared segment only through its index.ts.',
+      severity: 'error',
+      from: { path: '^apps/([^/]+)/src/shared/([^/]+)/' },
+      to: { path: '^apps/$1/src/shared/[^/]+/', pathNot: ['^apps/$1/src/shared/$2/', SLICE_INDEX] },
     },
     {
       name: 'no-circular',
