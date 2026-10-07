@@ -21,13 +21,13 @@ export default defineConfig(({ command }) => {
         name: NAME,
         filename: 'remoteEntry.js',
         // `./App` is what the shell loads (D10); `./mount` is the framework-agnostic seam the standalone page uses.
-        exposes: { './App': './src/App.tsx', './mount': './src/mount.tsx' },
+        exposes: { './App': './src/app/App.tsx', './mount': './src/app/mount.tsx' },
         // react-router is deliberately not shared: each app bundles its own copy (D22).
         shared: { react: singleton, 'react-dom': singleton },
         dts: false,
       }),
     ],
-    source: { entry: { index: './src/index.ts' } },
+    source: { entry: { index: './src/app/index.ts' } },
     output: {
       // Chunks and CSS resolve against wherever remoteEntry.js was loaded from, not a build-time prefix.
       assetPrefix: 'auto',
