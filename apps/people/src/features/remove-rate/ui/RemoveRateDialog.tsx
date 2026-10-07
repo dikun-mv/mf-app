@@ -13,6 +13,7 @@ export interface RemoveRateDialogProps {
   /** The employee's rate records, oldest first. */
   history: readonly RateRecord[];
   onClose: () => void;
+  onStart: () => void;
   onSaved: (message: string) => void;
   onFailed: (error: unknown) => void;
 }
@@ -33,24 +34,33 @@ function describeImpact({ month, after, firstRateFrom, workingDays, workingDaysB
  * The months come from Delivery's load feed through `pricingImpact`; without the feed the dialog says it
  * can't list them. Confirming closes the dialog and sends the removal.
  */
-export function RemoveRateDialog({ employee, rate, history, onClose, onSaved, onFailed }: RemoveRateDialogProps) {
+export function RemoveRateDialog({
+  employee,
+  rate,
+  history,
+  onClose,
+  onStart,
+  onSaved,
+  onFailed,
+}: RemoveRateDialogProps) {
   const { currency } = useHost();
   const write = useApplyChangeSet();
   const impacts = useRemovalImpact(employee, history, rate);
   const next = rate === null ? undefined : history.find(({ validFrom }) => validFrom > rate.validFrom);
 
-  const confirm = () => {
+  // `mutateAsync`, not `mutate` with callbacks: TanStack runs a call's callbacks only for the latest call of
+  // a hook, so with two removals overlapping the first one's failure would be rolled back without a word.
+  const confirm = async () => {
     if (rate === null) return;
     onClose();
-    write.mutate(
-      { ...EMPTY_RATE_CHANGE_SET, delete: [rate.id] },
-      {
-        onSuccess: () => {
-          onSaved(`Rate from ${formatDate(rate.validFrom)} removed.`);
-        },
-        onError: onFailed,
-      },
-    );
+    onStart();
+    try {
+      await write.mutateAsync({ ...EMPTY_RATE_CHANGE_SET, delete: [rate.id] });
+    } catch (error) {
+      onFailed(error);
+      return;
+    }
+    onSaved(`Rate from ${formatDate(rate.validFrom)} removed.`);
   };
 
   return (
@@ -61,7 +71,12 @@ export function RemoveRateDialog({ employee, rate, history, onClose, onSaved, on
       actions={
         <>
           <Button onClick={onClose}>Cancel</Button>
-          <Button variant="danger" onClick={confirm}>
+          <Button
+            variant="danger"
+            onClick={() => {
+              void confirm();
+            }}
+          >
             Remove rate
           </Button>
         </>

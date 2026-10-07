@@ -324,6 +324,28 @@ describe('a write that fails', () => {
     expect(listedRates()).toHaveLength(3);
   });
 
+  it('shows the failure of a removal that is still on its way when a second removal starts, and the second one’s result too', async () => {
+    const repository = createFakeRepository();
+    const { user } = await openEmployee({ repository });
+    const release = repository.holdWrites();
+    repository.failNextWrite(new ApiError('unavailable', 'people'));
+
+    for (const day of ['1 Jan 2025', '1 Jan 2099']) {
+      await user.click(screen.getByRole('button', { name: `Remove the rate from ${day}` }));
+      await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Remove rate' }));
+    }
+    expect(listedRates()).toEqual(['12 Mar 2026 €95.00/hcurrent']);
+
+    release();
+    // The first removal fails and is undone, and says so; the second goes through and says so. Neither is lost.
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "Your change wasn't saved: the People service didn't respond.",
+    );
+    expect(await screen.findByText('Rate from 1 Jan 2099 removed.')).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toBeInTheDocument();
+    expect(listedRates()).toEqual(['12 Mar 2026 €95.00/hcurrent', '1 Jan 2025 €80.00/h']);
+  });
+
   it('says the data changed, in the form, when the server reports a conflict', async () => {
     const repository = createFakeRepository();
     repository.failWrites(new ApiError('conflict', 'people'));

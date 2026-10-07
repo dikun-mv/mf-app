@@ -16,6 +16,8 @@ export interface CorrectRateOptions {
   history: readonly RateRecord[];
   /** The form is finished: saved, unchanged, or cancelled. */
   onDone: () => void;
+  /** A write is about to be sent: the previous failure, if any, no longer applies. */
+  onStart: () => void;
   onSaved: (message: string) => void;
   /** The write failed for a reason other than a conflict, which the form shows itself. */
   onFailed: (error: unknown) => void;
@@ -28,7 +30,7 @@ export interface CorrectRateOptions {
  * shows it, so a round trip through another currency can't nudge a stored rate) differs. Only what differs is
  * changed, so a corrected day keeps the stored cost to the cent.
  */
-export function useCorrectRate({ opened, stored, history, onDone, onSaved, onFailed }: CorrectRateOptions) {
+export function useCorrectRate({ opened, stored, history, onDone, onStart, onSaved, onFailed }: CorrectRateOptions) {
   const { currency } = useHost();
   const write = useApplyChangeSet();
   const schema = useMemo(() => rateFormSchema(currency), [currency]);
@@ -56,6 +58,7 @@ export function useCorrectRate({ opened, stored, history, onDone, onSaved, onFai
     }
     const corrected = checked.value.find(({ id }) => id === stored.id);
     if (corrected === undefined) return; // `correctRate` keeps the record it corrects.
+    onStart();
     try {
       await write.mutateAsync({ ...EMPTY_RATE_CHANGE_SET, update: [corrected] });
     } catch (error) {

@@ -30,6 +30,8 @@ export interface FakeRepository extends PeopleRepository {
   failReads(error: Error | null): void;
   /** Makes only the read of Delivery's load feed reject with `error` until called with `null`. */
   failLoads(error: Error | null): void;
+  /** Makes only the next write that reaches the server reject with `error`. */
+  failNextWrite(error: Error): void;
   /** Makes every write reject with `error` until called with `null`. */
   failWrites(error: Error | null): void;
   /** Holds reads until the returned function is called. */
@@ -56,6 +58,7 @@ export function createFakeRepository(data: FakeRepositoryData = {}): FakeReposit
   let readError: Error | null = null;
   let writeError: Error | null = null;
   let loadError: Error | null = null;
+  let nextWriteError: Error | null = null;
   let gate: Promise<void> = Promise.resolve();
   let writeGate: Promise<void> = Promise.resolve();
   let loadGate: Promise<void> = Promise.resolve();
@@ -85,6 +88,11 @@ export function createFakeRepository(data: FakeRepositoryData = {}): FakeReposit
     applyRateChanges: async (changes) => {
       await writeGate;
       if (writeError) throw writeError;
+      if (nextWriteError) {
+        const error = nextWriteError;
+        nextWriteError = null;
+        throw error;
+      }
       writes.push(changes);
       const before = rateRecords;
       rateRecords = applyRateChangeSet(rateRecords, changes);
@@ -108,6 +116,9 @@ export function createFakeRepository(data: FakeRepositoryData = {}): FakeReposit
     },
     failLoads: (error) => {
       loadError = error;
+    },
+    failNextWrite: (error) => {
+      nextWriteError = error;
     },
     failWrites: (error) => {
       writeError = error;

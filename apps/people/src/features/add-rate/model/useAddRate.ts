@@ -11,6 +11,8 @@ interface AddRateOptions {
   employeeId: EmployeeId;
   /** The employee's rate records as they are now, oldest first. */
   history: readonly RateRecord[];
+  /** A write is about to be sent: the previous failure, if any, no longer applies. */
+  onStart: () => void;
   /** The write went through: the sentence for the widget's status line. */
   onSaved: (message: string) => void;
   /** The write failed for a reason other than a conflict, which the form shows itself. */
@@ -23,7 +25,7 @@ interface AddRateOptions {
  * form's `root.server`). Nothing is sent until the first two pass. The draft stays while the write is on its
  * way, and is cleared once it is saved.
  */
-export function useAddRate({ employeeId, history, onSaved, onFailed }: AddRateOptions) {
+export function useAddRate({ employeeId, history, onStart, onSaved, onFailed }: AddRateOptions) {
   const { currency } = useHost();
   const write = useApplyChangeSet();
   const schema = useMemo(() => rateFormSchema(currency), [currency]);
@@ -40,6 +42,7 @@ export function useAddRate({ employeeId, history, onSaved, onFailed }: AddRateOp
       form.setError(field, { message });
       return;
     }
+    onStart();
     try {
       await write.mutateAsync({ ...EMPTY_RATE_CHANGE_SET, create: [record] });
     } catch (error) {

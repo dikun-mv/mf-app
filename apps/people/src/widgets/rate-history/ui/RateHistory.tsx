@@ -36,9 +36,11 @@ export function RateHistory({ employee }: { employee: Employee }) {
   const current = rateOn(history, today());
   const rows = useMemo(() => listed(history, editing), [history, editing]);
 
+  const started = useCallback(() => {
+    setFailure(null);
+  }, []);
   const saved = useCallback((message: string) => {
     setStatus(message);
-    setFailure(null);
   }, []);
   const failed = useCallback((error: unknown) => {
     setFailure({ error });
@@ -86,6 +88,7 @@ export function RateHistory({ employee }: { employee: Employee }) {
                   stored={history.find(({ id }) => id === rate.id)}
                   history={history}
                   onDone={stopEditing}
+                  onStart={started}
                   onSaved={saved}
                   onFailed={failed}
                 />
@@ -103,13 +106,21 @@ export function RateHistory({ employee }: { employee: Employee }) {
           )}
         </tbody>
       </Table>
-      <AddRateForm key={currency.code} employeeId={employee.id} history={history} onSaved={saved} onFailed={failed} />
+      <AddRateForm
+        key={currency.code}
+        employeeId={employee.id}
+        history={history}
+        onStart={started}
+        onSaved={saved}
+        onFailed={failed}
+      />
       <StatusMessage>{status}</StatusMessage>
       <RemoveRateDialog
         employee={employee}
         rate={removing}
         history={history}
         onClose={stopRemoving}
+        onStart={started}
         onSaved={saved}
         onFailed={failed}
       />

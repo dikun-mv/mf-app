@@ -6,6 +6,7 @@ import styles from './AddRateForm.module.css';
 export interface AddRateFormProps {
   employeeId: EmployeeId;
   history: readonly RateRecord[];
+  onStart: () => void;
   onSaved: (message: string) => void;
   onFailed: (error: unknown) => void;
 }
