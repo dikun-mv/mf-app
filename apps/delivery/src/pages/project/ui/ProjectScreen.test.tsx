@@ -2,7 +2,7 @@ import { describe, expect, it, rs } from '@rstest/core';
 import { act, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { RepositoryError } from '../../../shared/api';
-import { createFakeRepository, renderWithApp, seedProjects } from '../../../shared/testing';
+import { createFakeRepository, renderWithApp, seedData, seedProjects } from '../../../shared/testing';
 import { ProjectScreen } from './ProjectScreen';
 
 const renderAt = (route: string, repository = createFakeRepository({ projects: seedProjects() })) =>
@@ -14,6 +14,32 @@ describe('ProjectScreen', () => {
     expect(await screen.findByRole('heading', { name: 'Ledger Consolidation' })).toBeInTheDocument();
     expect(screen.getByText('1 Mar 2026 – 28 Feb 2027')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Projects' })).toHaveAttribute('href', '/');
+  });
+
+  it('shows the staffing grid under the header (screens 3.2)', async () => {
+    renderWithApp(<ProjectScreen />, {
+      repository: createFakeRepository(seedData()),
+      route: '/prj-1',
+      path: ':projectId',
+    });
+    expect(await screen.findByRole('heading', { name: 'Ledger Consolidation' })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('table', { name: 'Staffing grid for Ledger Consolidation, in person-months' }),
+    ).toBeInTheDocument();
+    expect(await screen.findAllByRole('rowheader', { name: 'Adaeze Okafor' })).not.toHaveLength(0);
+  });
+
+  it('keeps the header while the grid’s allocations load', async () => {
+    const repository = createFakeRepository(seedData());
+    const release = repository.holdReads('allocations');
+    renderWithApp(<ProjectScreen />, { repository, route: '/prj-1', path: ':projectId' });
+
+    expect(await screen.findByRole('heading', { name: 'Ledger Consolidation' })).toBeInTheDocument();
+    expect(screen.getByText('Loading staffing grid…')).toBeInTheDocument();
+    act(() => {
+      release();
+    });
+    expect(await screen.findByRole('table', { name: /Staffing grid/ })).toBeInTheDocument();
   });
 
   it('says there is no such project for an id nobody has (screens 3.7)', async () => {
