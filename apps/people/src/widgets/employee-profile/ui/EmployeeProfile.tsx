@@ -11,7 +11,7 @@ export function EmployeeProfile({ employee }: { employee: Employee }) {
     <PageHeader
       back={<BackToRegister />}
       title={employee.name}
-      subtitle={`${employee.role} · ${employee.weeklyHours} h/week · ${employee.id}`}
+      subtitle={`${employee.role} · ${String(employee.weeklyHours)} h/week · ${employee.id}`}
     />
   );
 }
