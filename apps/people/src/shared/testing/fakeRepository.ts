@@ -32,6 +32,8 @@ export interface FakeRepository extends PeopleRepository {
   failWrites(error: Error | null): void;
   /** Holds reads until the returned function is called. */
   holdReads(): () => void;
+  /** Changes the stored rates without telling any subscriber, as an edit made while no subscription was live. */
+  setRateRecordsSilently(records: readonly RateRecord[]): void;
   /** Delivers an event to the open subscriptions, as the server would after a commit. */
   emit(event: RecordEvent): void;
   /** The connection of `instance` was established (the first time, or again after a loss). */
@@ -102,6 +104,9 @@ export function createFakeRepository(data: FakeRepositoryData = {}): FakeReposit
         release();
         gate = Promise.resolve();
       };
+    },
+    setRateRecordsSilently: (records) => {
+      rateRecords = [...records];
     },
     emit,
     connect: (instance) => {

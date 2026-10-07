@@ -2,7 +2,8 @@ import { IsoDate } from '@baseline/host-contract';
 import { RateRecordId, type Employee, type RateRecord } from '@baseline/people-contract';
 import { describe, expect, it, rs } from '@rstest/core';
 import { act, screen } from '@testing-library/react';
-import { employeeKeys, rateRecordKeys, useRealtimeStatus } from '../shared/api';
+import { useQuery } from '@tanstack/react-query';
+import { employeeKeys, rateRecordKeys, rateRecordsQuery, useRealtimeStatus, useRepository } from '../shared/api';
 import {
   ADAEZE_FIRST_RATE,
   ADAEZE_OKAFOR,
@@ -15,6 +16,13 @@ import { RealtimeProvider } from './RealtimeProvider';
 
 function Status() {
   return <p>People is {useRealtimeStatus('people')}</p>;
+}
+
+/** A reader of the cache that fetches by itself, as a page does: Adaeze's highest rate (the one that starts in 2099). */
+function Adaeze() {
+  const { data } = useQuery(rateRecordsQuery(useRepository()));
+  const top = data?.filter(({ employeeId }) => employeeId === ADAEZE_OKAFOR.id).at(-1);
+  return top ? <p>Adaeze Okafor earns {top.hourlyCost} an hour</p> : null;
 }
 
 function renderProvider() {
@@ -115,20 +123,56 @@ describe('RealtimeProvider', () => {
     expect(screen.getByText('People is live')).toBeInTheDocument();
   });
 
-  it('refetches after a reconnect, because missed events are not replayed, but not after the first connect', () => {
+  it('refetches everything after a reconnect, because missed events are not replayed', () => {
     const app = renderProvider();
-    const invalidate = rs.spyOn(app.queryClient, 'invalidateQueries');
-
     act(() => {
       app.repository.connect('people');
     });
-    expect(invalidate).not.toHaveBeenCalled();
+    const invalidate = rs.spyOn(app.queryClient, 'invalidateQueries');
 
     act(() => {
       app.repository.disconnect('people');
       app.repository.connect('people');
     });
+    expect(invalidate).toHaveBeenCalledTimes(1);
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['people'] });
+  });
+
+  it('refetches at the first connect only the queries that have already loaded', () => {
+    const app = renderProvider();
+    const invalidate = rs.spyOn(app.queryClient, 'invalidateQueries');
+    act(() => {
+      app.repository.connect('people');
+    });
+
+    expect(invalidate).toHaveBeenCalledTimes(1);
+    const [filters] = invalidate.mock.calls[0] ?? [];
+    const loaded = app.queryClient.getQueryCache().find({ queryKey: employeeKeys.all });
+    const loading = app.queryClient
+      .getQueryCache()
+      .build(app.queryClient, { queryKey: ['people', 'not-yet'] as readonly unknown[] });
+    expect(filters?.queryKey).toEqual(['people']);
+    expect(loaded && filters?.predicate?.(loaded)).toBe(true);
+    expect(filters?.predicate?.(loading)).toBe(false);
+  });
+
+  it('picks up an edit made between the first load and the subscription going live', async () => {
+    const repository = createFakeRepository();
+    const app = renderWithApp(
+      <RealtimeProvider instance="people">
+        <Adaeze />
+      </RealtimeProvider>,
+      { repository },
+    );
+    expect(await screen.findByText('Adaeze Okafor earns 120 an hour')).toBeInTheDocument();
+
+    // Someone changes the rate after the page loaded and before the connection is up: no event reaches us.
+    repository.setRateRecordsSilently(RATE_RECORDS.map((r) => ({ ...r, hourlyCost: r.hourlyCost + 1 })));
+    act(() => {
+      repository.connect('people');
+    });
+    expect(await screen.findByText('Adaeze Okafor earns 121 an hour')).toBeInTheDocument();
+    app.unmount();
   });
 
   it('refetches at the first connect when an earlier attempt failed', () => {
