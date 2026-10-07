@@ -44,6 +44,12 @@ export default defineConfig(({ command }) => {
     },
     dev: { assetPrefix: `http://localhost:${String(DEV_PORT)}/` },
     // Only the shell's dev server may load this dev build cross-origin.
-    server: { port: DEV_PORT, strictPort: true, cors: { origin: 'http://localhost:3000' } },
+    // `/api` goes to the gateway, so dev talks to the same PocketBase as Docker (T6.0a).
+    server: {
+      port: DEV_PORT,
+      strictPort: true,
+      cors: { origin: 'http://localhost:3000' },
+      proxy: { '/api': 'http://localhost:8080' },
+    },
   };
 });
