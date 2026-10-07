@@ -1,0 +1,54 @@
+/* The lists are the heart of the suite, so the table is the one place that gets a confident treatment:
+   hairline rules between rows, none between columns, and tabular figures so numbers line up. */
+.scroll {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.table caption {
+  padding: 0 0 var(--bl-space-2);
+  color: var(--bl-color-text-muted);
+  font-size: var(--bl-text-sm);
+  text-align: start;
+}
+
+.header,
+.cell {
+  padding: var(--bl-space-2) var(--bl-space-3);
+  text-align: start;
+  vertical-align: baseline;
+}
+
+.header {
+  border-bottom: 1px solid var(--bl-color-border-strong);
+  color: var(--bl-color-text-muted);
+  font-size: var(--bl-text-sm);
+  font-weight: var(--bl-weight-medium);
+  white-space: nowrap;
+}
+
+.cell {
+  border-bottom: 1px solid var(--bl-color-border);
+}
+
+/* A row header (scope="row") is the row's name, so it reads as content, not as a column label. */
+.header[scope='row'] {
+  border-bottom-color: var(--bl-color-border);
+  color: var(--bl-color-text);
+  font-size: inherit;
+  font-weight: var(--bl-weight-medium);
+  white-space: normal;
+}
+
+.table tbody tr:hover > * {
+  background: var(--bl-color-surface-muted);
+}
+
+.numeric {
+  text-align: end;
+}
