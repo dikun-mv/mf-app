@@ -161,8 +161,11 @@ describe('StaffingGrid', () => {
     const reached: string[] = [];
     for (let step = 0; step < 40; step += 1) {
       await user.tab();
-      if (document.activeElement === document.body) break;
-      reached.push(document.activeElement?.getAttribute('aria-expanded') ?? 'not a toggle');
+      const stop = document.activeElement;
+      if (stop === document.body) break;
+      // The unit switcher above the table and the editable person cells are other tasks' stops.
+      if (stop === null || stop.closest('tr') === null || stop.closest('td[data-row-key]') !== null) continue;
+      reached.push(stop.getAttribute('aria-expanded') ?? 'not a toggle');
     }
     expect(reached.length).toBeGreaterThan(0);
     expect(reached.every((state) => state === 'true' || state === 'false')).toBe(true);
