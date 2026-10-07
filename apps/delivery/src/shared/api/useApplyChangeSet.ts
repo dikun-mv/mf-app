@@ -2,7 +2,7 @@ import type { ChangeSet } from '@baseline/delivery-domain';
 import { useMutation, useQueryClient, type QueryClient, type UseMutationResult } from '@tanstack/react-query';
 import { applyOptimistically, rollBack, writeResult } from './changeSetCache';
 import type { RepositoryError } from './errors';
-import { beginWrite, takeRefetch, type Write } from './pendingWrites';
+import { beginWrite, oweRefetch, takeRefetch, type Write } from './pendingWrites';
 import { collectionKey } from './queries';
 import type { ChangeSetResult } from './repository';
 import { useRepository } from './RepositoryContext';
@@ -35,6 +35,9 @@ export function useApplyChangeSet(): UseMutationResult<ChangeSetResult, Reposito
     onMutate: async (changeSet) => {
       const write = beginWrite(client);
       try {
+        // A read that is cancelled here is not retried by itself, so a refetch is owed once the writes are done.
+        if (client.isFetching({ queryKey: collectionKey('breakdownItems') }) > 0) oweRefetch(client);
+        if (client.isFetching({ queryKey: collectionKey('allocations') }) > 0) oweRefetch(client);
         // A read that finishes now would overwrite the optimistic records with older ones.
         await Promise.all([
           client.cancelQueries({ queryKey: collectionKey('breakdownItems') }),

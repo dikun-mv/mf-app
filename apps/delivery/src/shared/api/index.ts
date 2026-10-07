@@ -2,6 +2,7 @@
 // keys and client, the cache patching, and the hooks the rest of the app reaches them through. Only this
 // segment imports `pocketbase` (D30).
 export { applyRealtimeEvent } from './cache';
+export { afterWrites } from './pendingWrites';
 export {
   COLLECTIONS,
   collectionsOf,

@@ -1,5 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
 import {
+  afterWrites,
   applyRealtimeEvent,
   collectionsOf,
   instanceKey,
@@ -46,17 +47,23 @@ export function connectRealtime({
       onStatus('down');
       return;
     }
-    // The connection is live now, but the first reads were sent before it was: whatever was edited in between
-    // is in none of them, and nothing refetches by itself (`staleTime: Infinity`). So every query of the
-    // instance is refetched, on a reconnect too, where events were missed outright. A read still on its first
-    // fetch has no data, and an invalidation doesn't restart those, so they are cancelled first.
+    // The connection is live now, but the reads before it were sent before it was: whatever was edited in
+    // between is in none of them, and nothing refetches by itself (`staleTime: Infinity`). So every query of
+    // the instance is refetched, on a reconnect too, where events were missed outright.
     const filters = { queryKey: instanceKey(instance) };
+    // A read still on its first fetch has no data, and an invalidation doesn't restart those, so they are
+    // cancelled and restarted at once: no write can be waiting on them.
     void client
       .cancelQueries({
         ...filters,
         predicate: ({ state }) => state.data === undefined && state.fetchStatus === 'fetching',
       })
-      .then(() => client.invalidateQueries(filters));
+      .then(() => client.invalidateQueries({ ...filters, predicate: ({ state }) => state.data === undefined }));
+    // The rest wait for the writes in flight. A refetch that read the server before a batch committed would
+    // land after it was answered, and put the older records over the edit.
+    afterWrites(client, () => {
+      void client.invalidateQueries(filters);
+    });
     attempt = 0;
     onStatus('live');
   };

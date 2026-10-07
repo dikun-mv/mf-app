@@ -11,6 +11,7 @@ import {
   useApplyChangeSet,
   useRepository,
 } from '../../shared/api';
+import { RealtimeProvider } from './RealtimeProvider';
 import { allocation, createFakeRepository, item, renderWithApp, SEEDED_AT } from '../../shared/testing';
 
 const root = item('wbs-1', 'prj-1', null);
@@ -186,5 +187,44 @@ describe('useApplyChangeSet', () => {
       expect(list.mock.calls.map(([key]) => key).sort()).toEqual(['allocations', 'breakdownItems']);
     });
     expect(screen.getByText('alloc-1: 0.5')).toBeInTheDocument();
+  });
+
+  it('waits for a write in flight before refetching on a reconnect, so the refetch cannot undo it', async () => {
+    const repository = createFakeRepository({ breakdownItems: [root, leaf], allocations: [effort] });
+    const list = rs.spyOn(repository, 'list');
+    renderWithApp(
+      <RealtimeProvider instance="delivery">
+        <Editor />
+      </RealtimeProvider>,
+      { repository },
+    );
+    const user = userEvent.setup();
+    await screen.findByText('alloc-1: 0.5');
+    // Each collection is read, and read again when the connection comes up.
+    await waitFor(() => {
+      expect(list).toHaveBeenCalledTimes(4);
+    });
+    const settled = list.mock.calls.length;
+    const release = repository.holdWrites();
+
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+    expect(await screen.findByText('alloc-1: 0.75')).toBeInTheDocument();
+    // The connection drops and comes back while the batch is in flight.
+    act(() => {
+      repository.setConnection('delivery', 'disconnected');
+      repository.setConnection('delivery', 'connected');
+    });
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    // A read now would see the server before the batch committed.
+    expect(list).toHaveBeenCalledTimes(settled);
+
+    act(() => {
+      release();
+    });
+    await waitFor(() => {
+      expect(list.mock.calls.length).toBeGreaterThan(settled);
+    });
+    expect(await screen.findByText('alloc-1: 0.75')).toBeInTheDocument();
+    expect(repository.stored('allocations')[0]?.amount).toBe(0.75);
   });
 });
