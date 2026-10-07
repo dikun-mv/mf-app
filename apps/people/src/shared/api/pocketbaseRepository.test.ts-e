@@ -1,0 +1,196 @@
+import { afterEach, beforeEach, describe, expect, it, rs } from '@rstest/core';
+import { EmployeeId, RateRecordId, type RateRecord } from '@baseline/people-contract';
+import { IsoDate } from '@baseline/host-contract';
+import { ApiError } from './errors';
+import { createPocketBaseRepository } from './pocketbaseRepository';
+import { createDeliveryClient, createPeopleClient } from './clients';
+import { EMPTY_RATE_CHANGE_SET } from './repository';
+
+// The adapter without a server: `fetch` is replaced, so the tests see exactly what the SDK sends and answer
+// with what PocketBase answers (ADR 033).
+
+interface Sent {
+  readonly method: string;
+  readonly path: string;
+  readonly body: unknown;
+}
+
+let sent: Sent[];
+
+function respondWith(status: number, body: unknown): void {
+  rs.spyOn(globalThis, 'fetch').mockImplementation((input, init) => {
+    const url = new URL(input instanceof Request ? input.url : String(input));
+    sent.push({
+      method: init?.method ?? 'GET',
+      path: url.pathname,
+      body: typeof init?.body === 'string' ? (JSON.parse(init.body) as unknown) : undefined,
+    });
+    return Promise.resolve(
+      new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } }),
+    );
+  });
+}
+
+const page = (items: unknown[]) => ({ page: 1, perPage: 1000, totalItems: -1, totalPages: -1, items });
+
+const repository = () =>
+  createPocketBaseRepository({
+    people: createPeopleClient('http://pb.test'),
+    delivery: createDeliveryClient('http://pb.test'),
+  });
+
+const employee = (id: string, extra: object = {}) => ({
+  collectionName: 'employees',
+  collectionId: 'c1',
+  id,
+  name: 'Adaeze Okafor',
+  role: 'Tech Lead',
+  weeklyHours: 40,
+  ...extra,
+});
+
+const rate = (suffix: string, validFrom: string, hourlyCost: number): RateRecord => ({
+  id: RateRecordId.parse(`rate-${suffix}`),
+  employeeId: EmployeeId.parse('emp-001'),
+  validFrom: IsoDate.parse(validFrom),
+  hourlyCost,
+});
+
+beforeEach(() => {
+  sent = [];
+});
+afterEach(() => {
+  rs.restoreAllMocks();
+});
+
+describe('reads', () => {
+  it('reads the whole collection from the instance under its gateway path and parses every record', async () => {
+    respondWith(
+      200,
+      page([employee('emp-001'), employee('emp-002', { name: 'Lena Okafor', role: 'Frontend Engineer' })]),
+    );
+    const employees = await repository().listEmployees();
+    expect(sent[0]?.path).toBe('/api/people/api/collections/employees/records');
+    // The contract schema drops what PocketBase adds.
+    expect(employees).toEqual([
+      { id: 'emp-001', name: 'Adaeze Okafor', role: 'Tech Lead', weeklyHours: 40 },
+      { id: 'emp-002', name: 'Lena Okafor', role: 'Frontend Engineer', weeklyHours: 40 },
+    ]);
+  });
+
+  it('skips a record that fails its schema and keeps the rest', async () => {
+    const warn = rs.spyOn(console, 'warn').mockImplementation(() => undefined);
+    respondWith(200, page([employee('emp-001'), employee('emp-002', { weeklyHours: 7 }), employee('bad id')]));
+    const employees = await repository().listEmployees();
+    expect(employees.map(({ id }) => id)).toEqual(['emp-001']);
+    expect(warn).toHaveBeenCalledTimes(2);
+  });
+
+  it("reads the load feed from Delivery's instance and maps its empty causer to null", async () => {
+    respondWith(
+      200,
+      page([
+        {
+          collectionName: 'employee_month_loads',
+          id: 'emp-001-2026-03',
+          employeeId: 'emp-001',
+          month: '2026-03',
+          allocatedPersonMonths: 0.5,
+          overCapacity: false,
+          causingAllocationId: '',
+        },
+      ]),
+    );
+    const loads = await repository().listEmployeeMonthLoads();
+    expect(sent[0]?.path).toBe('/api/delivery/api/collections/employee_month_loads/records');
+    expect(loads).toEqual([
+      {
+        employeeId: 'emp-001',
+        month: '2026-03',
+        allocatedPersonMonths: 0.5,
+        overCapacity: false,
+        causingAllocationId: null,
+      },
+    ]);
+  });
+
+  it('fails a read with an ApiError that names the service', async () => {
+    respondWith(502, 'Bad Gateway');
+    await expect(repository().listEmployeeMonthLoads()).rejects.toMatchObject({
+      code: 'unavailable',
+      service: 'delivery',
+    });
+  });
+});
+
+describe('writes', () => {
+  const saved = (record: RateRecord) => ({ collectionName: 'rate_records', collectionId: 'c2', ...record });
+
+  it('sends a change set as one batch, deletes first, then updates, then creates', async () => {
+    const created = rate('new', '2026-11-01', 98);
+    const corrected = rate('old', '2025-01-01', 82);
+    respondWith(200, [
+      { status: 204, body: null },
+      { status: 200, body: saved(corrected) },
+      { status: 200, body: saved(created) },
+    ]);
+    const records = await repository().applyRateChanges({
+      create: [created],
+      update: [corrected],
+      delete: [RateRecordId.parse('rate-gone')],
+    });
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).toMatchObject({ method: 'POST', path: '/api/people/api/batch' });
+    expect(sent[0]?.body).toEqual({
+      requests: [
+        { method: 'DELETE', url: '/api/collections/rate_records/records/rate-gone' },
+        {
+          method: 'PATCH',
+          url: '/api/collections/rate_records/records/rate-old',
+          body: { employeeId: 'emp-001', validFrom: '2025-01-01', hourlyCost: 82 },
+        },
+        { method: 'POST', url: '/api/collections/rate_records/records', body: created },
+      ],
+    });
+    expect(records).toEqual([corrected, created]);
+  });
+
+  it('sends even a single record as a batch, never as a single write (ADR 035)', async () => {
+    const created = rate('one', '2026-11-01', 98);
+    respondWith(200, [{ status: 200, body: saved(created) }]);
+    await repository().applyRateChanges({ ...EMPTY_RATE_CHANGE_SET, create: [created] });
+    expect(sent.map(({ method, path }) => `${method} ${path}`)).toEqual(['POST /api/people/api/batch']);
+  });
+
+  it('sends nothing for an empty change set', async () => {
+    respondWith(200, []);
+    expect(await repository().applyRateChanges(EMPTY_RATE_CHANGE_SET)).toEqual([]);
+    expect(sent).toHaveLength(0);
+  });
+
+  it('maps a unique-index failure of the batch to a conflict', async () => {
+    respondWith(400, {
+      status: 400,
+      message: 'Batch transaction failed.',
+      data: {
+        requests: {
+          '0': {
+            code: 'batch_request_failed',
+            message: 'Batch request failed.',
+            response: {
+              status: 400,
+              message: 'Failed to create record.',
+              data: {
+                employeeId: { code: 'validation_not_unique', message: 'Value must be unique.' },
+                validFrom: { code: 'validation_not_unique', message: 'Value must be unique.' },
+              },
+            },
+          },
+        },
+      },
+    });
+    const write = repository().applyRateChanges({ ...EMPTY_RATE_CHANGE_SET, create: [rate('dup', '2025-01-01', 90)] });
+    await expect(write).rejects.toBeInstanceOf(ApiError);
+    await expect(write).rejects.toMatchObject({ code: 'conflict', service: 'people' });
+  });
+});

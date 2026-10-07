@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from '@rstest/core';
 import { act, render, screen } from '@testing-library/react';
 import App from './App';
 import { mount } from './mount';
-import { testContext } from '../shared/testing';
+import { createFakeRepository, testContext } from '../shared/testing';
 
 function goTo(path: string, { notify }: { notify: boolean }): void {
   window.history.pushState({}, '', path);
@@ -18,7 +18,7 @@ function goTo(path: string, { notify }: { notify: boolean }): void {
 function mountInAct(el: HTMLElement): RemoteHandle {
   let handle: RemoteHandle | undefined;
   act(() => {
-    handle = mount(el, testContext());
+    handle = mount(el, testContext(), createFakeRepository());
   });
   if (!handle) throw new Error('mount did not return a handle');
   return handle;
@@ -33,13 +33,13 @@ describe('People hosted under /people', () => {
   });
 
   it('shows the register at its base path', async () => {
-    render(<App ctx={testContext()} />);
+    render(<App ctx={testContext()} repository={createFakeRepository()} />);
     expect(await screen.findByRole('heading', { name: /register/i })).toBeInTheDocument();
     expect(screen.getByText(/Acting as Demo Planner/)).toBeInTheDocument();
   });
 
   it("re-reads the URL when the shell's navigate dispatches popstate", async () => {
-    render(<App ctx={testContext()} />);
+    render(<App ctx={testContext()} repository={createFakeRepository()} />);
     await screen.findByRole('heading', { name: /register/i });
 
     goTo('/people/emp-003', { notify: true });
@@ -50,7 +50,7 @@ describe('People hosted under /people', () => {
   });
 
   it('does not follow a URL change nobody announced', async () => {
-    render(<App ctx={testContext()} />);
+    render(<App ctx={testContext()} repository={createFakeRepository()} />);
     await screen.findByRole('heading', { name: /register/i });
     goTo('/people/emp-003', { notify: false });
     expect(screen.getByRole('heading', { name: /register/i })).toBeInTheDocument();
