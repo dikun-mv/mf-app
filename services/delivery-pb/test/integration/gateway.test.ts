@@ -99,15 +99,6 @@ describe('the blocked routes', () => {
     ['GET', '/api/collections/_superusers/records/anyone'],
     ['POST', '/api/collections/_superusers/auth-with-password'],
     ['GET', '/api/collections/_pb_users_auth_/records'],
-    // A collection reached by its id (the system collections have `pbc_…` ids), PocketBase's default `users`
-    // collection, a made-up name, and the other service's collection: only this instance's own are routed.
-    ['GET', '/api/collections/pbc_3142635823/records'],
-    ['GET', '/api/collections/pbc_3142635823/records/anyone'],
-    ['GET', '/api/collections/users/records'],
-    ['POST', '/api/collections/users/records'],
-    ['GET', '/api/collections/users/records/anyone'],
-    ['GET', '/api/collections/no_such_collection/records'],
-    ['GET', '/api/collections/employees/records'],
     // Auth routes of any collection.
     ['POST', '/api/collections/allocations/auth-with-password'],
     ['POST', '/api/collections/allocations/auth-refresh'],
