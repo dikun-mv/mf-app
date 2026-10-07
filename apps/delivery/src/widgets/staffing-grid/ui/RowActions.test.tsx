@@ -137,4 +137,18 @@ describe('Row actions', () => {
     );
     expect(await screen.findByRole('rowheader', { name: /Governance/ })).toBeInTheDocument();
   });
+
+  it('moves an item from its row: the tree changes and the status line says where it went', async () => {
+    const { user } = renderGrid();
+    await user.click(await moreOf('Rework'));
+    await user.click(screen.getByRole('button', { name: 'Move…' }));
+    await user.click(await screen.findByRole('radio', { name: 'Ledger migration › Migration' }));
+    await user.click(screen.getByRole('button', { name: 'Move' }));
+
+    expect(await screen.findByText('Moved "Rework" under "Ledger migration › Migration".')).toBeInTheDocument();
+    // Rework's 3.00 now count under Migration, which had 10.35.
+    const migration = (await screen.findAllByRole('rowheader', { name: /^Migration/ }))[0]?.closest('tr');
+    if (migration === null || migration === undefined) throw new Error('No Migration row');
+    expect(within(migration).getAllByRole('cell').at(-1)).toHaveTextContent('13.35');
+  });
 });
