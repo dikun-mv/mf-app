@@ -1,5 +1,6 @@
 import type { BreakdownItemId } from '@baseline/delivery-contract';
 import type { RowActionId } from '@baseline/delivery-domain';
+import { AddChildItem } from '../../../features/add-item';
 import { RenameItem } from '../../../features/rename-item';
 import { useGridActions } from '../model/GridActions';
 import { usePlanState } from '../model/usePlanState';
@@ -23,6 +24,7 @@ export function ChosenAction({ action, itemId, onClose }: ChosenActionProps) {
     case 'rename':
       return <RenameItem {...props} />;
     case 'addChild':
+      return <AddChildItem {...props} />;
     case 'move':
     case 'delete':
     case 'assignPerson':

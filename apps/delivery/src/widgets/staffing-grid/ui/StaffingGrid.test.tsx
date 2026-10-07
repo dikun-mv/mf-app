@@ -108,7 +108,8 @@ describe('StaffingGrid', () => {
     expect(before.months[0]).toBe('0.50');
     expect(before.total).toBe('9.69');
     // The `⋯` buttons are disclosures too, and start closed: only the expand/collapse toggles are open.
-    for (const toggle of screen.getAllByRole('button', { name: (name) => !name.startsWith('Actions for') })) {
+    const grid = screen.getByRole('table');
+    for (const toggle of within(grid).getAllByRole('button', { name: (name) => !name.startsWith('Actions for') })) {
       expect(toggle).toHaveAttribute('aria-expanded', 'true');
     }
     expect(countOf('Design')).toBe(2);
@@ -165,6 +166,8 @@ describe('StaffingGrid', () => {
     for (let step = 0; step < 40; step += 1) {
       await user.tab();
       if (document.activeElement === document.body) break;
+      // The toolbar's button comes before the table; the table is what this test is about.
+      if (!screen.getByRole('table').contains(document.activeElement)) continue;
       reached.push(document.activeElement?.getAttribute('aria-expanded') ?? 'not a toggle');
     }
     expect(reached.length).toBeGreaterThan(0);
