@@ -1,4 +1,10 @@
-import { isEmptyChangeSet, newAllocationId, upsertAllocation, type DomainError } from '@baseline/delivery-domain';
+import {
+  formatUnit,
+  isEmptyChangeSet,
+  newAllocationId,
+  upsertAllocation,
+  type DomainError,
+} from '@baseline/delivery-domain';
 import { IsoDateTime } from '@baseline/host-contract';
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { useAllocations } from '../../../entities/allocation';
@@ -37,9 +43,9 @@ export interface CellEditorProps extends Omit<EditableCellProps, 'adornment'> {
  * realtime change to the cell updates the cache but never the draft (D37). Enter or blur saves, Esc cancels.
  * A draft that can't be saved keeps the editor open with the reason beside it; a draft that changes nothing
  * closes it without a write. The save is optimistic and goes through `useApplyChangeSet` (D26): the cell
- * shows the new value at once, and a failure puts it back and is reported at the top of the grid.
+ * shows the new value at once, and a failure puts it back and is reported at the top of the grid, and a success in the status line.
  */
-export function CellEditor({ row, cell, month, unit, describedById, hasAdornment, onClose }: CellEditorProps) {
+export function CellEditor({ row, cell, month, unit, describedById, report, hasAdornment, onClose }: CellEditorProps) {
   const host = useHost();
   const projects = useProjects();
   const items = useBreakdownItems();
@@ -103,7 +109,18 @@ export function CellEditor({ row, cell, month, unit, describedById, hasAdornment
         setProblem(describeRefusal(changeSet.error));
         return;
       }
-      if (!isEmptyChangeSet(changeSet.value)) write.mutate(changeSet.value);
+      if (!isEmptyChangeSet(changeSet.value)) {
+        // Not `mutate`'s callbacks: they don't fire once this editor has closed, which is at once.
+        const where = items.find(({ id }) => id === row.itemId)?.name ?? 'item';
+        const saved = `Saved ${formatUnit(Math.round(outcome.amount * 100), 'personMonths')} PM for ${row.label}, ${where}, ${month.name}.`;
+        write.mutateAsync(changeSet.value).then(
+          () => {
+            report.done(saved);
+          },
+          // A refused write is shown by `WriteFailedMessage`; the cache has already put the value back.
+          report.failed,
+        );
+      }
     }
     settled.current = true;
     onClose(returnFocus);

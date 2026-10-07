@@ -1,6 +1,6 @@
 import { ProjectId, type Allocation } from '@baseline/delivery-contract';
 import { gridView, type DisplayUnit } from '@baseline/delivery-domain';
-import { describe, expect, it } from '@rstest/core';
+import { describe, expect, it, rs } from '@rstest/core';
 import type { QueryClient } from '@tanstack/react-query';
 import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -52,11 +52,24 @@ function OneCell({ unit, person, month, adornment = null }: Which & { unit: Disp
   const cell = row?.kind === 'person' ? row.cells[position] : undefined;
   if (row?.kind !== 'person' || cell === undefined || monthView === undefined) return null;
   return (
-    <EditableCell row={row} cell={cell} month={monthView} unit={unit} adornment={adornment} describedById="details" />
+    <EditableCell
+      row={row}
+      cell={cell}
+      month={monthView}
+      unit={unit}
+      adornment={adornment}
+      describedById="details"
+      report={announcements}
+    />
   );
 }
 
+/** What the grid's status line would hear. */
+const announcements = { done: rs.fn(), failed: rs.fn() };
+
 function setup(which: Which, unit: DisplayUnit = 'personMonths', data = seedData()) {
+  announcements.done.mockClear();
+  announcements.failed.mockClear();
   const repository = createFakeRepository(data);
   const rendered = renderWithApp(
     <Suspense fallback={null}>
@@ -112,6 +125,29 @@ describe('EditableCell', () => {
     });
     expect(repository.written[0]?.update.allocations.map(({ amount }) => amount)).toEqual([0.3]);
     expect(repository.stored('allocations').some(({ amount }) => amount === 0.3)).toBe(true);
+  });
+
+  it('announces the save for the status line, once the server has it', async () => {
+    const { user } = setup(ANJA_APRIL);
+    await user.click(await cellButton('Anja Keller, Apr 2026, person-months: 0.20'));
+    await user.clear(screen.getByRole('textbox'));
+    await user.type(screen.getByRole('textbox'), '0.3{Enter}');
+    await waitFor(() => {
+      expect(announcements.done).toHaveBeenCalledWith('Saved 0.30 PM for Anja Keller, Design, Apr 2026.');
+    });
+  });
+
+  it('announces nothing for a save the server refused', async () => {
+    const { user, repository } = setup(ANJA_APRIL);
+    const error = new RepositoryError('unavailable', 'delivery');
+    repository.failWrites(error);
+    await user.click(await cellButton('Anja Keller, Apr 2026, person-months: 0.20'));
+    await user.clear(screen.getByRole('textbox'));
+    await user.type(screen.getByRole('textbox'), '0.3{Enter}');
+    await waitFor(() => {
+      expect(announcements.failed).toHaveBeenCalledWith(error);
+    });
+    expect(announcements.done).not.toHaveBeenCalled();
   });
 
   it('saves on blur and leaves the focus where the user moved it', async () => {
