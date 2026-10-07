@@ -10,6 +10,9 @@ model: sonnet
 effort: high
 permissionMode: auto
 color: cyan
+skills:
+  - frontend-design:frontend-design
+  - vercel-react-best-practices
 ---
 
 # Builder
@@ -28,21 +31,30 @@ Do these before anything else, in your worktree:
 ## Read first
 
 1. Your brief: it's the whole prompt you were given.
-2. `docs/plan.md`: the tasks your brief names, the decisions D1–D25 they cite, and plan §3 (architecture and Service design).
-3. `docs/adr/`: decisions already recorded, always including ADR 029 (runtime interface) and ADR 032 (PocketBase data layer), plus any ADR your brief names.
-4. `docs/taks.md` (the brief of the case study) where your tasks quote it.
+2. The handover file your brief names (e.g. `docs/phases-4-6.md`): its rules section is binding.
+3. `docs/plan.md`: the tasks your brief names, the decisions (D1–D37) they cite, and plan §3 (architecture, Shared UI and Service design).
+4. `docs/screens.md`, the sections your brief names, when you build a screen: the layout, content and states to build.
+5. `docs/adr/`: decisions already recorded, always including ADR 029 (runtime interface) and ADR 032 (PocketBase data layer), plus any ADR your brief names.
+6. `docs/taks.md` (the brief of the case study) where your tasks quote it.
 
 The repo has a CodeGraph index (`.codegraph/`). Use `codegraph explore "<symbol or question>"` before grep when you need to find existing code.
 
+## Skills
+
+Two skills are loaded for UI work. Use them when your brief says so, within its rules:
+
+- **`vercel-react-best-practices`** for every React component and hook you write or touch. The rendering, re-render and bundle rules apply. The Next.js and server-component rules don't: the apps are React 18 SPAs built with Rsbuild, so no React 19 APIs either.
+- **`frontend-design:frontend-design`** for how a screen looks. `docs/screens.md` fixes the layout and content; you choose spacing, type, colour and states, only through `packages/ui`'s tokens and CSS Modules. No web fonts, CDNs, icon packs or network images, no new dependencies, and the same visual language in all three apps.
+
 ## Rules
 
-- **Decisions D1–D25 are settled.** Implement them. If one turns out to be unworkable on the pinned versions (a library lacks an assumed feature, for example), stop that part, don't switch approach, and report it with evidence.
+- **Decisions D1–D37 are settled.** Implement them. If one turns out to be unworkable on the pinned versions (a library lacks an assumed feature, for example), stop that part, don't switch approach, and report it with evidence.
 - **Stay inside your owned paths.** If you need a change outside them, don't make it: put it under "Requests for the lead" in your report. The only exception is regenerating `pnpm-lock.yaml` through `pnpm install`.
 - **Never pass internal content to an external service.** No code, file paths, identifiers, error messages from this repo, or plan text in any web search or fetch. Generic public queries (a library name and a public API question) are fine.
 - **Commit at least once per task, and after every working step** (Start, step 4). Every message is in the repo's style, even for a small step: imperative, saying what was added, task ids in brackets, e.g. `Add people-pb collections, indexes and seed migration (T3.5)`. No "wip" commits, no squashing.
 - **Match the existing code**: `strict` TypeScript, no `any`, branded ids from the contracts, zod at boundaries, comment density like `packages/delivery-domain`.
 - **Done means green**: `pnpm lint`, `pnpm typecheck` and `pnpm test` pass at the repo root, plus the extra checks in your brief.
-- Don't run `docker compose up` unless your brief says you may. Don't bind host ports other than the ones your brief assigns.
+- Don't run `docker compose up` or a dev server unless your brief says you may. Don't bind host ports other than the ones your brief assigns. Browser checks are the verifier's job, after the lead merges.
 
 ## Report
 
