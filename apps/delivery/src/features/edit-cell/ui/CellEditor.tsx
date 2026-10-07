@@ -1,10 +1,4 @@
-import {
-  formatUnit,
-  isEmptyChangeSet,
-  newAllocationId,
-  upsertAllocation,
-  type DomainError,
-} from '@baseline/delivery-domain';
+import { isEmptyChangeSet, newAllocationId, upsertAllocation, type DomainError } from '@baseline/delivery-domain';
 import { IsoDateTime } from '@baseline/host-contract';
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from 'react';
 import { useAllocations } from '../../../entities/allocation';
@@ -13,7 +7,7 @@ import { useEmployees } from '../../../entities/employee';
 import { useProjects } from '../../../entities/project';
 import { useRateRecords } from '../../../entities/rate-record';
 import { useApplyChangeSet } from '../../../shared/api';
-import { useAnnounce, useHost } from '../../../shared/lib';
+import { useHost } from '../../../shared/lib';
 import { openingText, resolveEdit } from '../lib/resolveEdit';
 import styles from './EditableCell.module.css';
 import type { EditableCellProps } from './cellProps';
@@ -53,7 +47,6 @@ export function CellEditor({ row, cell, month, unit, describedById, hasAdornment
   const employees = useEmployees().data;
   const rateRecords = useRateRecords().data;
   const write = useApplyChangeSet();
-  const announce = useAnnounce();
 
   const [opened] = useState(() => openingText(unit, cell));
   const [draft, setDraft] = useState(opened);
@@ -109,18 +102,7 @@ export function CellEditor({ row, cell, month, unit, describedById, hasAdornment
         setProblem(describeRefusal(changeSet.error));
         return;
       }
-      if (!isEmptyChangeSet(changeSet.value)) {
-        const itemName = items.find(({ id }) => id === row.itemId)?.name ?? row.itemId;
-        const saved = `${formatUnit(Math.round(outcome.amount * 100), 'personMonths')} PM`;
-        // Said once the server has the write (screens 3.2). The promise outlives this editor, which is gone by
-        // then; a failure is reported by `WriteFailedMessage` and needs nothing here.
-        write.mutateAsync(changeSet.value).then(
-          () => {
-            announce(`Saved ${saved} for ${row.label}, ${itemName}, ${month.name}.`);
-          },
-          () => undefined,
-        );
-      }
+      if (!isEmptyChangeSet(changeSet.value)) write.mutate(changeSet.value);
     }
     settled.current = true;
     onClose(returnFocus);
