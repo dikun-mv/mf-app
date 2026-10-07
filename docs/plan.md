@@ -664,7 +664,7 @@ Phases 4, 5 and 6 run in parallel lanes, each one `builder` in its own worktree,
 
   Not in `ui`, because only one app uses them: `CapacityBadge` (People), the unit radio group, the row-actions disclosure and everything in the grid (Delivery), and the shell's top bar and status strip.
 
-**Exit check:** [screens.md](screens.md) §1 works hosted: nav, currency and user reach both remotes without a remount, a broken remote fails in place with a working retry, and the status strip shows each remote's URL and status. Every `ui` primitive in T4.6 has its test. The exact steps are in [phases-4-6.md](phases-4-6.md) §6.
+**Exit check:** [screens.md](screens.md) §1 works hosted: nav, currency and user reach both remotes without a remount, a broken remote fails in place with a working retry, and the status strip shows each remote's URL and status. Every `ui` primitive in T4.6 has its test. The exact steps are in [phases-4-6.md](phases-4-6.md) §6. **Passed on 2026-10-07.**
 
 ### Phase 5 — People remote
 
