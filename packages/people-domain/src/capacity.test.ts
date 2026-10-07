@@ -51,6 +51,17 @@ describe('capacitySummary', () => {
     });
   });
 
+  it('lists months oldest first from a feed in either order', () => {
+    const months = (feed: ReturnType<typeof load>[]) => {
+      const entry = capacitySummary(feed).get(EmployeeId.parse('emp-002'));
+      return entry?.status === 'over' ? entry.months.map((m) => m.month) : [];
+    };
+    const a = load('emp-002', '2026-05', 1.25, true);
+    const b = load('emp-002', '2026-09', 1.1, true);
+    expect(months([a, b])).toEqual(['2026-05', '2026-09']);
+    expect(months([b, a])).toEqual(['2026-05', '2026-09']);
+  });
+
   it('keeps employees apart and leaves out those with no row', () => {
     const summary = capacitySummary([
       load('emp-001', '2026-03', 0.5, false),
