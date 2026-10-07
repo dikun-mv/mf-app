@@ -107,7 +107,10 @@ describe('StaffingGrid', () => {
     const before = valuesOf(discovery);
     expect(before.months[0]).toBe('0.50');
     expect(before.total).toBe('9.69');
-    for (const toggle of screen.getAllByRole('button')) expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    // The `⋯` buttons are disclosures too, and start closed: only the expand/collapse toggles are open.
+    for (const toggle of screen.getAllByRole('button', { name: (name) => !name.startsWith('Actions for') })) {
+      expect(toggle).toHaveAttribute('aria-expanded', 'true');
+    }
     expect(countOf('Design')).toBe(2);
     // People's employees load apart from Delivery's data, so names appear a moment after the rows.
     expect(await screen.findAllByRole('rowheader', { name: 'Adaeze Okafor' })).toHaveLength(2);
@@ -170,9 +173,12 @@ describe('StaffingGrid', () => {
     expect(within(project).queryByRole('button')).not.toBeInTheDocument();
   });
 
-  it('gives the project row and WBS rows no row actions until a task fills the slot', async () => {
+  it('gives WBS rows a row-actions button, and neither the project row nor the person rows', async () => {
     renderGrid();
-    await screen.findByRole('rowheader', { name: 'Ledger Consolidation' });
-    expect(screen.queryByRole('button', { name: /actions for/i })).not.toBeInTheDocument();
+    const project = await rowOf('Ledger Consolidation');
+    const okafor = await rowOf('Adaeze Okafor');
+    expect(within(await rowOf('Discovery')).getByRole('button', { name: 'Actions for Discovery' })).toBeInTheDocument();
+    expect(within(project).queryByRole('button')).not.toBeInTheDocument();
+    expect(within(okafor).queryByRole('button', { name: /actions for/i })).not.toBeInTheDocument();
   });
 });

@@ -1,10 +1,11 @@
 import type { ProjectId } from '@baseline/delivery-contract';
 import type { DisplayUnit } from '@baseline/delivery-domain';
-import { InlineMessage, Spinner } from '@baseline/ui';
+import { InlineMessage, Spinner, StatusMessage } from '@baseline/ui';
 import { clsx } from 'clsx';
 import { useCallback, useId, useMemo, useState } from 'react';
 import { describeGridError } from '../lib/describeGridError';
 import { visibleRows } from '../lib/visibleRows';
+import { GridActionsProvider, useGridFeedback } from '../model/GridActions';
 import { useFocusedCell } from '../model/useFocusedCell';
 import { useGridView } from '../model/useGridView';
 import { PersonRow, SumRow } from './GridRows';
@@ -38,6 +39,9 @@ export interface StaffingGridProps {
  */
 export function StaffingGrid({ projectId, unit = 'personMonths' }: StaffingGridProps) {
   const { result, units, peopleLoading } = useGridView(projectId, unit);
+  // What the features in the slots report (D33): the status line, and a failed write's message.
+  const { status, failure, report } = useGridFeedback();
+  const actions = useMemo(() => ({ report }), [report]);
   // Keys of the collapsed nodes: empty means everything is open, as on load. Local state (D31).
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set());
   // The row whose actions are open: one at a time, and closed again by choosing an action (D36).
@@ -62,67 +66,78 @@ export function StaffingGrid({ projectId, unit = 'personMonths' }: StaffingGridP
 
   // The toolbar is always there, so the unit can be changed out of a grid that can't be shown.
   const toolbar = Toolbar !== null && <Toolbar projectId={projectId} unit={unit} units={units} />;
+  // A failed write at the top of the widget, the last result in the status line under the toolbar (D33).
+  const failed = failure !== null && <InlineMessage tone={failure.tone}>{failure.text}</InlineMessage>;
+  const statusLine = <StatusMessage>{status}</StatusMessage>;
   if (!result.ok) {
     // Hours and cost wait for People's data (which never suspends, D32), unless it has failed.
     const waiting = result.error.code === 'unitUnavailable' && peopleLoading;
     return (
-      <div className={styles.widget}>
-        {toolbar}
-        {waiting ? (
-          <p className={styles.loading}>
-            <Spinner aria-label="Loading staffing grid" />
-            <span>Loading staffing grid…</span>
-          </p>
-        ) : (
-          <InlineMessage tone="error">{describeGridError(result.error)}</InlineMessage>
-        )}
-      </div>
+      <GridActionsProvider value={actions}>
+        <div className={styles.widget}>
+          {failed}
+          {toolbar}
+          {statusLine}
+          {waiting ? (
+            <p className={styles.loading}>
+              <Spinner aria-label="Loading staffing grid" />
+              <span>Loading staffing grid…</span>
+            </p>
+          ) : (
+            <InlineMessage tone="error">{describeGridError(result.error)}</InlineMessage>
+          )}
+        </div>
+      </GridActionsProvider>
     );
   }
   const view = result.value;
   return (
-    <div className={styles.widget}>
-      {toolbar}
-      <div className={styles.scroll} onFocus={onFocus}>
-        <table className={styles.grid}>
-          <caption className={styles.visuallyHidden}>
-            Staffing grid for {view.project.name}, in {UNIT_NAMES[view.unit]}
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col" className={clsx(styles.head, styles.label)}>
-                Work package / person
-              </th>
-              {view.months.map((month) => (
-                <th key={month.month} scope="col" className={clsx(styles.head, styles.numeric)} title={month.name}>
-                  {month.label}
+    <GridActionsProvider value={actions}>
+      <div className={styles.widget}>
+        {failed}
+        {toolbar}
+        {statusLine}
+        <div className={styles.scroll} onFocus={onFocus}>
+          <table className={styles.grid}>
+            <caption className={styles.visuallyHidden}>
+              Staffing grid for {view.project.name}, in {UNIT_NAMES[view.unit]}
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col" className={clsx(styles.head, styles.label)}>
+                  Work package / person
                 </th>
-              ))}
-              <th scope="col" className={clsx(styles.head, styles.numeric, styles.total)}>
-                Total
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {shown.map(({ row, expandable, expanded }) =>
-              row.kind === 'person' ? (
-                <PersonRow key={row.key} row={row} months={view.months} unit={view.unit} describedById={detailsId} />
-              ) : (
-                <SumRow
-                  key={row.key}
-                  row={row}
-                  expandable={expandable}
-                  expanded={expanded}
-                  actionsOpen={actionsOpen === row.key}
-                  onToggle={toggle}
-                  onToggleActions={toggleActions}
-                />
-              ),
-            )}
-          </tbody>
-        </table>
+                {view.months.map((month) => (
+                  <th key={month.month} scope="col" className={clsx(styles.head, styles.numeric)} title={month.name}>
+                    {month.label}
+                  </th>
+                ))}
+                <th scope="col" className={clsx(styles.head, styles.numeric, styles.total)}>
+                  Total
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {shown.map(({ row, expandable, expanded }) =>
+                row.kind === 'person' ? (
+                  <PersonRow key={row.key} row={row} months={view.months} unit={view.unit} describedById={detailsId} />
+                ) : (
+                  <SumRow
+                    key={row.key}
+                    row={row}
+                    expandable={expandable}
+                    expanded={expanded}
+                    actionsOpen={actionsOpen === row.key}
+                    onToggle={toggle}
+                    onToggleActions={toggleActions}
+                  />
+                ),
+              )}
+            </tbody>
+          </table>
+        </div>
+        {Details !== null && <Details id={detailsId} view={view} focus={focus} />}
       </div>
-      {Details !== null && <Details id={detailsId} view={view} focus={focus} />}
-    </div>
+    </GridActionsProvider>
   );
 }
