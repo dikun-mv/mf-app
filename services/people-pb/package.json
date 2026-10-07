@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "devDependencies": {
-    "eventsource": "^5.1.2",
-    "pocketbase": "^0.28.1"
+    "eventsource": "catalog:",
+    "pocketbase": "catalog:"
   }
 }
