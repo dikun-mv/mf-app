@@ -2,7 +2,7 @@ import { BasePath, type HostContext } from '@baseline/host-contract';
 import { clsx } from 'clsx';
 import { useMemo } from 'react';
 import type { RemoteName } from '../../../shared/config';
-import { useShell, useShellNavigate } from '../../../shared/lib';
+import { useSelection, useShell, useShellNavigate } from '../../../shared/lib';
 import { RemotePanel } from './RemotePanel';
 import styles from './RemoteRoute.module.css';
 
@@ -11,9 +11,13 @@ const BASE_PATHS: Record<RemoteName, BasePath> = {
   delivery: BasePath.parse('/delivery'),
 };
 
-/** A route's remote: builds its `HostContext` from the shell's state and hosts it in a panel. */
+/**
+ * A route's remote: builds its `HostContext` from the shell's state and hosts it in a panel. A new currency
+ * or user gives the panel new props, not a new key, so the remote re-renders in place (T4.2).
+ */
 export function RemoteRoute({ name }: { name: RemoteName }) {
-  const { currency, activeUser, loader, theme } = useShell();
+  const { loader, theme } = useShell();
+  const { currency, activeUser } = useSelection();
   const navigate = useShellNavigate();
   const ctx = useMemo<HostContext>(
     () => ({ currency, activeUser, basePath: BASE_PATHS[name], navigate }),

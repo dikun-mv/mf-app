@@ -3,7 +3,7 @@ import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, Outlet, RouterProvider } from 'react-router';
 import { useShellNavigate } from '../../shared/lib';
-import { TopBar } from '../../widgets/top-bar';
+import { Nav } from '../../widgets/top-bar';
 
 // A stand-in for the mounted remote's router: it re-reads the URL on `popstate`.
 function listenForPopState() {
@@ -23,7 +23,7 @@ function listenForPopState() {
 function Frame() {
   return (
     <>
-      <TopBar />
+      <Nav />
       <Outlet />
     </>
   );

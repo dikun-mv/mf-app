@@ -3,6 +3,7 @@
 interface CssExports {
   bar: string;
   brand: string;
+  switchers: string;
 }
 declare const cssExports: CssExports;
 export default cssExports;
