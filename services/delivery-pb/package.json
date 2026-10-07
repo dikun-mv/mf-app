@@ -1,0 +1,10 @@
+{
+  "name": "@baseline/delivery-pb",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "eventsource": "^5.1.2",
+    "pocketbase": "^0.28.1"
+  }
+}

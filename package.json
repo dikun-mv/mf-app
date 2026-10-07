@@ -15,6 +15,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "rstest run",
+    "test:integration": "rstest run --config rstest.integration.config.ts",
     "test:coverage": "rstest run --coverage"
   },
   "devDependencies": {

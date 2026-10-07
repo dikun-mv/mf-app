@@ -16,7 +16,10 @@ const config = join(repoRoot, '.dependency-cruiser.cjs');
 
 type Files = Record<string, string>;
 
-/** Workspace packages: linked into node_modules the way pnpm links them. */
+/**
+ * Workspace packages: linked into node_modules the way pnpm links them. A service has no `src/`
+ * (PocketBase loads its migrations and hooks itself), so its importable entry is a test file.
+ */
 const workspacePackages: Record<string, string> = {
   '@baseline/host-contract': 'packages/host-contract',
   '@baseline/people-contract': 'packages/people-contract',
@@ -24,11 +27,11 @@ const workspacePackages: Record<string, string> = {
   '@baseline/people-domain': 'packages/people-domain',
   '@baseline/delivery-domain': 'packages/delivery-domain',
   '@baseline/ui': 'packages/ui',
-  '@baseline/people-api': 'services/people-api',
-  '@baseline/delivery-api': 'services/delivery-api',
+  '@baseline/people-pb': 'services/people-pb',
+  '@baseline/delivery-pb': 'services/delivery-pb',
 };
 
-const npmPackages = ['zod', 'react', 'react-dom', 'clsx', 'date-fns', 'hono', 'lodash', '@rstest/core'];
+const npmPackages = ['zod', 'react', 'react-dom', 'clsx', 'date-fns', 'pocketbase', 'lodash', '@rstest/core'];
 
 /** A layout that obeys every rule, including the imports that are allowed to cross teams. */
 const clean: Files = {
@@ -38,22 +41,21 @@ const clean: Files = {
   'packages/people-domain/src/index.ts': `import { EmployeeId } from '@baseline/people-contract';\nexport const rateHistory = EmployeeId;`,
   'packages/delivery-domain/src/index.ts': `import { addDays } from 'date-fns';\nimport { Load } from '@baseline/delivery-contract';\nimport { EmployeeId } from '@baseline/people-contract';\nexport const pricing = [addDays, Load, EmployeeId];`,
   'packages/ui/src/index.ts': `import { createElement } from 'react';\nimport clsx from 'clsx';\nexport const Button = [createElement, clsx];`,
-  'services/people-api/src/index.ts': `import { Hono } from 'hono';\nimport { rateHistory } from '@baseline/people-domain';\nexport type AppType = typeof Hono;\nexport const app = rateHistory;`,
-  'services/delivery-api/src/index.ts': `import { Hono } from 'hono';\nimport { pricing } from '@baseline/delivery-domain';\nexport type AppType = typeof Hono;\nexport const app = pricing;`,
+  // A service's tests may use its own team's domain and contracts, and the SDK.
+  'services/people-pb/test/index.ts': `import PocketBase from 'pocketbase';\nimport { rateHistory } from '@baseline/people-domain';\nimport { Load } from '@baseline/delivery-contract';\nexport const client = [PocketBase, rateHistory, Load];`,
+  'services/delivery-pb/test/index.ts': `import PocketBase from 'pocketbase';\nimport { pricing } from '@baseline/delivery-domain';\nimport { EmployeeId } from '@baseline/people-contract';\nexport const client = [PocketBase, pricing, EmployeeId];`,
   'apps/people/src/index.ts': [
     `import { Button } from '@baseline/ui';`,
     `import { rateHistory } from '@baseline/people-domain';`,
     `import { Load } from '@baseline/delivery-contract';`,
     `import { IsoDate } from '@baseline/host-contract';`,
-    `import type { AppType } from '@baseline/people-api';`,
-    `export const view = [Button, rateHistory, Load, IsoDate] as unknown as AppType;`,
+    `export const view = [Button, rateHistory, Load, IsoDate];`,
   ].join('\n'),
   'apps/delivery/src/index.ts': [
     `import { Button } from '@baseline/ui';`,
     `import { pricing } from '@baseline/delivery-domain';`,
     `import { EmployeeId } from '@baseline/people-contract';`,
-    `import type { AppType } from '@baseline/delivery-api';`,
-    `export const view = [Button, pricing, EmployeeId] as unknown as AppType;`,
+    `export const view = [Button, pricing, EmployeeId];`,
   ].join('\n'),
   'apps/shell/src/index.ts': `import { Button } from '@baseline/ui';\nimport { IsoDate } from '@baseline/host-contract';\nexport const shell = [Button, IsoDate];`,
 };
@@ -72,7 +74,8 @@ function buildRepo(extra: Files): string {
   copyFileSync(join(repoRoot, 'tsconfig.base.json'), join(root, 'tsconfig.base.json'));
 
   for (const [name, dir] of Object.entries(workspacePackages)) {
-    write(root, `${dir}/package.json`, JSON.stringify({ name, exports: { '.': './src/index.ts' } }));
+    const entry = dir.startsWith('services/') ? './test/index.ts' : './src/index.ts';
+    write(root, `${dir}/package.json`, JSON.stringify({ name, exports: { '.': entry } }));
     const link = join(root, 'node_modules', name);
     mkdirSync(dirname(link), { recursive: true });
     symlinkSync(relative(dirname(link), join(root, dir)), link);
@@ -121,7 +124,7 @@ describe('dependency boundary rules', () => {
     {
       rule: 'no-cross-team-internals-people',
       description: 'people service imports the delivery service',
-      files: { 'services/people-api/src/leak.ts': `import '@baseline/delivery-api';` },
+      files: { 'services/people-pb/test/leak.ts': `import '@baseline/delivery-pb';` },
     },
     {
       rule: 'no-cross-team-internals-delivery',
@@ -131,7 +134,7 @@ describe('dependency boundary rules', () => {
     {
       rule: 'no-cross-team-internals-delivery',
       description: 'delivery service imports people-domain',
-      files: { 'services/delivery-api/src/leak.ts': `import '@baseline/people-domain';` },
+      files: { 'services/delivery-pb/test/leak.ts': `import '@baseline/people-domain';` },
     },
     {
       rule: 'shell-no-team-internals',
@@ -142,14 +145,28 @@ describe('dependency boundary rules', () => {
       rule: 'shell-no-team-internals',
       description: 'shell imports a service, even type-only',
       files: {
-        'apps/shell/src/leak.ts': `import type { AppType } from '@baseline/delivery-api';\nexport type { AppType };`,
+        'apps/shell/src/leak.ts': `import type { client } from '@baseline/delivery-pb';\nexport type { client };`,
       },
     },
     {
-      rule: 'app-to-own-service-types-only',
+      rule: 'apps-no-services',
       description: 'app imports its own service at runtime',
       files: {
-        'apps/people/src/leak.ts': `import { app } from '@baseline/people-api';\nexport { app };`,
+        'apps/people/src/leak.ts': `import { client } from '@baseline/people-pb';\nexport { client };`,
+      },
+    },
+    {
+      rule: 'apps-no-services',
+      description: 'app imports its own service, even type-only',
+      files: {
+        'apps/delivery/src/leak.ts': `import type { client } from '@baseline/delivery-pb';\nexport type { client };`,
+      },
+    },
+    {
+      rule: 'apps-no-services',
+      description: "app imports the other team's service",
+      files: {
+        'apps/people/src/leak.ts': `import { client } from '@baseline/delivery-pb';\nexport { client };`,
       },
     },
     {
@@ -185,17 +202,17 @@ describe('dependency boundary rules', () => {
     {
       rule: 'domain-is-framework-free',
       description: 'domain imports a service',
-      files: { 'packages/delivery-domain/src/leak.ts': `import '@baseline/delivery-api';` },
+      files: { 'packages/delivery-domain/src/leak.ts': `import '@baseline/delivery-pb';` },
     },
     {
       rule: 'services-no-ui',
       description: 'service imports ui',
-      files: { 'services/people-api/src/leak.ts': `import '@baseline/ui';` },
+      files: { 'services/people-pb/test/leak.ts': `import '@baseline/ui';` },
     },
     {
       rule: 'services-no-ui',
       description: 'service imports an app',
-      files: { 'services/delivery-api/src/leak.ts': `import '../../../apps/delivery/src/index';` },
+      files: { 'services/delivery-pb/test/leak.ts': `import '../../../apps/delivery/src/index';` },
     },
     {
       rule: 'ui-deps',

@@ -36,9 +36,12 @@ export default defineConfig({
       include: ['packages/*/src/**/*.test.ts', 'apps/*/src/data/**/*.test.ts'],
     },
     {
+      // PocketBase services (ADR 033): `pb_hooks/lib` on its own. Integration tests need the running
+      // stack and have their own config, rstest.integration.config.ts.
       name: 'services',
       testEnvironment: 'node',
-      include: ['services/*/src/**/*.test.ts'],
+      include: ['services/*/test/**/*.test.ts'],
+      exclude: ['services/*/test/integration/**'],
     },
     {
       name: 'tooling',
