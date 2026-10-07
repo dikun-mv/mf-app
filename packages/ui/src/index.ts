@@ -12,4 +12,5 @@ export {
   type InlineMessageTone,
 } from './components/InlineMessage/InlineMessage';
 export { Spinner } from './components/Spinner/Spinner';
+export { TextField, type TextFieldProps } from './components/TextField/TextField';
 export { vars } from './vars';
