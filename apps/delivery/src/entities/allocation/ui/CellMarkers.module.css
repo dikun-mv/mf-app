@@ -1,0 +1,41 @@
+/*
+ * A marker is a glyph that hangs just after the figure, in the cell's right padding. The wrapper has no
+ * width of its own, so it never moves the number it follows. Colour backs the glyph up: the shapes differ
+ * (†, ◐, ○), so nothing depends on telling red from amber.
+ */
+.markers {
+  display: inline-block;
+  inline-size: 0;
+  overflow: visible;
+  white-space: nowrap;
+}
+
+.marker {
+  margin-inline-start: 0.2em;
+  font-weight: var(--bl-weight-strong);
+  line-height: 1;
+  cursor: help;
+}
+
+.overCapacity {
+  color: var(--bl-color-danger);
+}
+
+.partiallyPriced {
+  color: var(--bl-color-warning);
+}
+
+.unpriced {
+  color: var(--bl-color-text-muted);
+}
+
+.visuallyHidden {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
