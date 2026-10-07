@@ -1,6 +1,8 @@
+import type { Allocation, BreakdownItem } from '@baseline/delivery-contract';
 import type { QueryClient } from '@tanstack/react-query';
 import type { CollectionKey, RecordOf } from './collections';
 import { removeRecord, upsertRecord } from './patch';
+import { claimAllocation, claimItem } from './pendingWrites';
 import { collectionKey } from './queries';
 import type { RealtimeEvent } from './repository';
 
@@ -29,13 +31,20 @@ export function patchCollection<K extends CollectionKey>(
   );
 }
 
-/** Applies a realtime event to its collection by id (D29): create and update replace or add, delete removes. */
+/**
+ * Applies a realtime event to its collection by id (D29): create and update replace or add, delete removes.
+ * A record a pending write has changed is not touched: the cache shows that write's value, and the event
+ * (typically the echo of an earlier write) becomes that write's `previous`, so a later undo goes back to it.
+ */
 export function applyRealtimeEvent<K extends CollectionKey>(
   client: QueryClient,
   key: K,
   event: RealtimeEvent<K>,
 ): void {
-  patchCollection(client, key, (records) =>
-    event.action === 'delete' ? removeRecord(records, event.record.id) : upsertRecord(records, event.record),
-  );
+  const { id } = event.record;
+  const record = event.action === 'delete' ? undefined : event.record;
+  // `key` says which entity `record` is; TypeScript can't carry that through the generic.
+  if (key === 'breakdownItems' && claimItem(client, id, record as BreakdownItem | undefined)) return;
+  if (key === 'allocations' && claimAllocation(client, id, record as Allocation | undefined)) return;
+  patchCollection(client, key, (records) => (record ? upsertRecord(records, record) : removeRecord(records, id)));
 }

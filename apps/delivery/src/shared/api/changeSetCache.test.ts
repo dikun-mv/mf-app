@@ -4,7 +4,8 @@ import type { QueryClient } from '@tanstack/react-query';
 import { describe, expect, it } from '@rstest/core';
 import { allocation, item } from '../testing';
 import { applyRealtimeEvent, readCollection } from './cache';
-import { applyOptimistically, beginWrite, rollBack, takeRefetch, writeResult, type Write } from './changeSetCache';
+import { applyOptimistically, rollBack, writeResult } from './changeSetCache';
+import { beginWrite, takeRefetch, type Write } from './pendingWrites';
 import { collectionKey, createQueryClient } from './queries';
 
 const root = item('wbs-1', 'prj-1', null, 'Root');
@@ -161,5 +162,56 @@ describe('several pending writes', () => {
     const change = edit(0.75);
     writeResult(client, make(client, change), change, answer(0.75));
     expect(takeRefetch(client)).toBe(false);
+  });
+});
+
+describe('realtime events while writes are pending', () => {
+  it('does not let the echo of an earlier edit overwrite a later pending edit of the same cell', () => {
+    const client = loaded();
+    const first = edit(0.75);
+    const a = make(client, first);
+    const b = make(client, edit(0.9));
+
+    // A commits: its echo arrives before A's answer, and again after it.
+    const echo = { ...effort, amount: 0.75, editedAt: stamp };
+    applyRealtimeEvent(client, 'allocations', { action: 'update', record: echo });
+    expect(readCollection(client, 'allocations')).toEqual([{ ...effort, amount: 0.9 }]);
+    writeResult(client, a, first, answer(0.75));
+    applyRealtimeEvent(client, 'allocations', { action: 'update', record: echo });
+    expect(readCollection(client, 'allocations')).toEqual([{ ...effort, amount: 0.9 }]);
+
+    // If B now fails, it goes back to what the server has.
+    rollBack(client, b);
+    expect(readCollection(client, 'allocations')).toEqual([echo]);
+  });
+
+  it('does not bring back an item a pending write deleted, and restores the echoed version if that write fails', () => {
+    const client = loaded();
+    const write = make(client, removing(leaf.id));
+    const renamed = { ...leaf, name: 'Renamed elsewhere' };
+
+    applyRealtimeEvent(client, 'breakdownItems', { action: 'update', record: renamed });
+    applyRealtimeEvent(client, 'breakdownItems', { action: 'create', record: renamed });
+    expect(readCollection(client, 'breakdownItems')).toEqual([root]);
+
+    rollBack(client, write);
+    expect(readCollection(client, 'breakdownItems')).toEqual([root, renamed]);
+  });
+
+  it('removes a record the server deleted when the write that edited it fails', () => {
+    const client = loaded();
+    const write = make(client, edit(0.75));
+    applyRealtimeEvent(client, 'allocations', { action: 'delete', record: effort });
+    expect(readCollection(client, 'allocations')).toEqual([{ ...effort, amount: 0.75 }]);
+    rollBack(client, write);
+    expect(readCollection(client, 'allocations')).toEqual([]);
+  });
+
+  it('applies an event for a record no pending write touched', () => {
+    const client = loaded();
+    make(client, edit(0.75));
+    const other = allocation('alloc-2', 'wbs-2', 'emp-002', '2026-03', 1);
+    applyRealtimeEvent(client, 'allocations', { action: 'create', record: other });
+    expect(readCollection(client, 'allocations')).toEqual([{ ...effort, amount: 0.75 }, other]);
   });
 });

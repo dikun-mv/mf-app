@@ -1,7 +1,8 @@
 import type { ChangeSet } from '@baseline/delivery-domain';
 import { useMutation, useQueryClient, type QueryClient, type UseMutationResult } from '@tanstack/react-query';
-import { applyOptimistically, beginWrite, rollBack, takeRefetch, writeResult, type Write } from './changeSetCache';
+import { applyOptimistically, rollBack, writeResult } from './changeSetCache';
 import type { RepositoryError } from './errors';
+import { beginWrite, takeRefetch, type Write } from './pendingWrites';
 import { collectionKey } from './queries';
 import type { ChangeSetResult } from './repository';
 import { useRepository } from './RepositoryContext';
