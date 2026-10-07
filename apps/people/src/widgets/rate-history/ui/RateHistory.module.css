@@ -1,0 +1,48 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bl-space-2);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--bl-text-md);
+  font-weight: var(--bl-weight-strong);
+  line-height: var(--bl-leading-tight);
+}
+
+.empty {
+  padding-block: var(--bl-space-4);
+  color: var(--bl-color-text-muted);
+  text-align: center;
+}
+
+/* The rate in effect today: the one word in the list that is a status, so it gets the only colour. */
+.current {
+  margin-inline-start: var(--bl-space-2);
+  padding: 0 var(--bl-space-2);
+  border-radius: var(--bl-radius);
+  background: color-mix(in srgb, var(--bl-color-success) 12%, var(--bl-color-surface));
+  color: var(--bl-color-success);
+  font-size: var(--bl-text-xs);
+  font-weight: var(--bl-weight-strong);
+}
+
+/* Correct and Remove at the end of the row. */
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--bl-space-2);
+  white-space: nowrap;
+}
+
+/* The actions column has no visible heading; assistive technology still reads one. */
+.hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

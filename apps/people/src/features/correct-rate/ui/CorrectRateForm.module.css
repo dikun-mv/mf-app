@@ -1,0 +1,23 @@
+/* The row the form takes over: a tinted band, so the row being edited stands out from the list. */
+.cell {
+  background: var(--bl-color-surface-muted);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bl-space-2);
+}
+
+.fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--bl-space-2) var(--bl-space-3);
+}
+
+.actions {
+  display: flex;
+  gap: var(--bl-space-2);
+  margin-inline-start: auto;
+}

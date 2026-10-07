@@ -1,6 +1,14 @@
 import { describe, expect, it } from '@rstest/core';
 import { ClientResponseError } from 'pocketbase';
-import { ApiError, describeError, toApiError, type ApiErrorCode } from './errors';
+import {
+  ApiError,
+  CONFLICT_MESSAGE,
+  describeError,
+  describeWriteFailure,
+  isConflictError,
+  toApiError,
+  type ApiErrorCode,
+} from './errors';
 
 // The bodies are the ones ADR 033 (h) recorded from the pinned PocketBase.
 
@@ -117,5 +125,29 @@ describe('describeError', () => {
 
   it('does not guess at an error it does not know', () => {
     expect(describeError(new TypeError('x'))).toBe('something went wrong');
+  });
+});
+
+describe('describeWriteFailure', () => {
+  it('says the change was undone, and to try again when the service did not answer', () => {
+    expect(describeWriteFailure(new ApiError('unavailable', 'people'))).toBe(
+      "Your change wasn't saved: the People service didn't respond. It has been undone. Try again when the connection is back.",
+    );
+  });
+
+  it('does not suggest trying again after an error that the same change would repeat', () => {
+    expect(describeWriteFailure(new ApiError('server', 'people'))).toBe(
+      "Your change wasn't saved: the People service reported an error. It has been undone.",
+    );
+    expect(describeWriteFailure(new TypeError('x'))).toBe(
+      "Your change wasn't saved: something went wrong. It has been undone.",
+    );
+  });
+
+  it('says the data changed for a conflict', () => {
+    const conflict = new ApiError('conflict', 'people');
+    expect(isConflictError(conflict)).toBe(true);
+    expect(isConflictError(new ApiError('server', 'people'))).toBe(false);
+    expect(describeWriteFailure(conflict)).toBe(CONFLICT_MESSAGE);
   });
 });

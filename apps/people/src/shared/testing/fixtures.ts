@@ -1,3 +1,4 @@
+import { EmployeeMonthLoad } from '@baseline/delivery-contract';
 import { IsoDate } from '@baseline/host-contract';
 import { Employee, RateRecord } from '@baseline/people-contract';
 
@@ -28,6 +29,26 @@ export const FUTURE = IsoDate.parse('2099-01-01');
 export const ADAEZE_FIRST_RATE = rate(1, 'emp-001', '2025-01-01', 80);
 
 export const ADAEZE_CURRENT_RATE = rate(2, 'emp-001', '2026-03-12', 95);
+
+const load = (employeeId: string, month: string, allocatedPersonMonths: number, over: boolean): EmployeeMonthLoad =>
+  EmployeeMonthLoad.parse({
+    employeeId,
+    month,
+    allocatedPersonMonths,
+    overCapacity: over,
+    causingAllocationId: over ? 'alloc-1' : null,
+  });
+
+/**
+ * Delivery's load feed for the register above: Adaeze has 0.5 PM in March 2026 (the reference cell, so her
+ * rate from 12 Mar splits the month), Milan is over capacity in June 2026 (118.0%, 1.18 PM), and Lena in
+ * September 2026. Nobody else has a row.
+ */
+export const MONTH_LOADS: readonly EmployeeMonthLoad[] = [
+  load('emp-001', '2026-03', 0.5, false),
+  load('emp-003', '2026-06', 1.18, true),
+  load('emp-002', '2026-09', 1.05, true),
+];
 
 export const RATE_RECORDS: readonly RateRecord[] = [
   ADAEZE_FIRST_RATE,

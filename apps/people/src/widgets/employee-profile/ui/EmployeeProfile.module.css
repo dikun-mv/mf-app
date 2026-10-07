@@ -1,0 +1,14 @@
+.unknown {
+  color: var(--bl-color-text-muted);
+}
+
+/* Under the header, before the rate history. */
+.notice {
+  margin-bottom: var(--bl-space-4);
+}
+
+.notice ul {
+  margin: var(--bl-space-1) 0 0;
+  padding-left: var(--bl-space-4);
+  font-variant-numeric: tabular-nums;
+}

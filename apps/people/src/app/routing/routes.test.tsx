@@ -15,18 +15,18 @@ describe('People routes', () => {
     expect(await screen.findByRole('heading', { name: 'Employees' })).toBeInTheDocument();
 
     await user.click(await screen.findByRole('link', { name: 'Milan Brandt' }));
-    expect(screen.getByRole('heading', { name: /Employee emp-003/ })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Milan Brandt' })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/emp-003');
 
-    await user.click(screen.getByRole('link', { name: /Back to the register/ }));
+    await user.click(screen.getByRole('link', { name: 'All employees' }));
     expect(await screen.findByRole('heading', { name: 'Employees' })).toBeInTheDocument();
     expect(router.state.location.pathname).toBe('/');
   });
 
   it('renders an inline "not found" for an invalid employee id', () => {
     renderAt('/not-an-id');
-    expect(screen.getByText(/not a valid employee id/i)).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: /Employee/ })).not.toBeInTheDocument();
+    expect(screen.getByText('Employee not found: there is no employee "not-an-id".')).toBeInTheDocument();
+    expect(screen.queryByRole('heading')).not.toBeInTheDocument();
   });
 
   it('renders an inline "not found" for an unknown path', () => {

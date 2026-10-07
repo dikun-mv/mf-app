@@ -44,7 +44,7 @@ describe('People hosted under /people', () => {
     await screen.findByRole('heading', { name: 'Employees' });
 
     goTo('/people/emp-003', { notify: true });
-    expect(await screen.findByRole('heading', { name: /Employee emp-003/ })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Milan Brandt' })).toBeInTheDocument();
 
     goTo('/people', { notify: true });
     expect(await screen.findByRole('heading', { name: 'Employees' })).toBeInTheDocument();
@@ -73,13 +73,15 @@ describe('People hosted under /people', () => {
     expect(await within(row).findByText('€96.00/h')).toBeInTheDocument();
   });
 
-  it('subscribes to People’s realtime feed while mounted and lets go of it on unmount', async () => {
+  it('subscribes to People’s and Delivery’s realtime feeds while mounted and lets go of them on unmount', async () => {
     const repository = createFakeRepository();
     const { unmount } = render(<App ctx={testContext()} repository={repository} />);
     await screen.findByRole('heading', { name: 'Employees' });
     expect(repository.openSubscriptions('people')).toBe(1);
+    expect(repository.openSubscriptions('delivery')).toBe(1);
     unmount();
     expect(repository.openSubscriptions('people')).toBe(0);
+    expect(repository.openSubscriptions('delivery')).toBe(0);
   });
 });
 

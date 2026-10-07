@@ -3,7 +3,17 @@ import { RateRecordId, type Employee, type RateRecord } from '@baseline/people-c
 import { describe, expect, it, rs } from '@rstest/core';
 import { act, screen } from '@testing-library/react';
 import { useQuery } from '@tanstack/react-query';
-import { employeeKeys, rateRecordKeys, rateRecordsQuery, useRealtimeStatus, useRepository } from '../shared/api';
+import {
+  ApiError,
+  EMPTY_RATE_CHANGE_SET,
+  applyChangeSetOptions,
+  employeeKeys,
+  employeesQuery,
+  rateRecordKeys,
+  rateRecordsQuery,
+  useRealtimeStatus,
+  useRepository,
+} from '../shared/api';
 import {
   ADAEZE_FIRST_RATE,
   ADAEZE_OKAFOR,
@@ -16,6 +26,12 @@ import { RealtimeProvider } from './RealtimeProvider';
 
 function Status() {
   return <p>People is {useRealtimeStatus('people')}</p>;
+}
+
+/** A reader of the employees, whose refetch a rate write does not cancel. */
+function Employees() {
+  const { data } = useQuery(employeesQuery(useRepository()));
+  return <p>{data?.length ?? 0} employees</p>;
 }
 
 /** A reader of the cache that fetches by itself, as a page does: Adaeze's highest rate (the one that starts in 2099). */
@@ -106,7 +122,7 @@ describe('RealtimeProvider', () => {
     expect(cachedRates(app)).toBe(before);
   });
 
-  it('shows connecting, then live, then down, then live again', () => {
+  it('shows connecting, then live, then down, then live again', async () => {
     const app = renderProvider();
     expect(screen.getByText('People is connecting')).toBeInTheDocument();
     act(() => {
@@ -120,7 +136,208 @@ describe('RealtimeProvider', () => {
     act(() => {
       app.repository.connect('people');
     });
-    expect(screen.getByText('People is live')).toBeInTheDocument();
+    expect(await screen.findByText('People is live')).toBeInTheDocument();
+  });
+
+  it('stays down after a reconnect until the queries have been read again, because the cache is not current before', async () => {
+    const repository = createFakeRepository();
+    renderWithApp(
+      <RealtimeProvider instance="people">
+        <Status />
+        <Adaeze />
+      </RealtimeProvider>,
+      { repository },
+    );
+    expect(await screen.findByText('Adaeze Okafor earns 120 an hour')).toBeInTheDocument();
+    act(() => {
+      repository.connect('people');
+    });
+    expect(await screen.findByText('People is live')).toBeInTheDocument();
+    act(() => {
+      repository.disconnect('people');
+    });
+    expect(screen.getByText('People is down')).toBeInTheDocument();
+
+    const release = repository.holdReads();
+    act(() => {
+      repository.connect('people');
+    });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.getByText('People is down')).toBeInTheDocument();
+
+    release();
+    expect(await screen.findByText('People is live')).toBeInTheDocument();
+  });
+
+  it('does not go live on a refetch that started before a drop, when the reconnect waits for a write', async () => {
+    const repository = createFakeRepository();
+    const app = renderWithApp(
+      <RealtimeProvider instance="people">
+        <Status />
+        <Employees />
+        <Adaeze />
+      </RealtimeProvider>,
+      { repository },
+    );
+    expect(await screen.findByText('Adaeze Okafor earns 120 an hour')).toBeInTheDocument();
+
+    // The first connect starts a refetch whose read is slow.
+    const releaseReads = repository.holdReads();
+    act(() => {
+      repository.connect('people');
+    });
+    // The connection drops and returns while a rate write is in flight, so the new refetch has to wait for it.
+    act(() => {
+      repository.disconnect('people');
+    });
+    const releaseWrites = repository.holdWrites();
+    const write = app.queryClient
+      .getMutationCache()
+      .build(app.queryClient, applyChangeSetOptions(app.queryClient, repository))
+      .execute({ ...EMPTY_RATE_CHANGE_SET, create: [newRate] });
+    await rs.waitFor(() => {
+      expect(cachedRates(app)).toContainEqual(newRate);
+    });
+    act(() => {
+      repository.connect('people');
+    });
+
+    // The first refetch answers now, from before the outage: that must not say the cache is current.
+    releaseReads();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.getByText('People is down')).toBeInTheDocument();
+
+    releaseWrites();
+    await write;
+    expect(await screen.findByText('People is live')).toBeInTheDocument();
+  });
+
+  describe('a reconnect read that did not bring new data', () => {
+    /** Reconnects the instance at the moment it matters: the rates are loaded, the connection has dropped. */
+    async function droppedConnection() {
+      const repository = createFakeRepository();
+      const app = renderWithApp(
+        <RealtimeProvider instance="people">
+          <Status />
+          <Adaeze />
+        </RealtimeProvider>,
+        { repository },
+      );
+      expect(await screen.findByText('Adaeze Okafor earns 120 an hour')).toBeInTheDocument();
+      act(() => {
+        repository.connect('people');
+      });
+      expect(await screen.findByText('People is live')).toBeInTheDocument();
+      act(() => {
+        repository.disconnect('people');
+      });
+      return { repository, app };
+    }
+    const settle = () => new Promise((resolve) => setTimeout(resolve, 50));
+    const bumpRates = (repository: ReturnType<typeof createFakeRepository>) => {
+      repository.setRateRecordsSilently(RATE_RECORDS.map((r) => ({ ...r, hourlyCost: r.hourlyCost + 1 })));
+    };
+
+    it('stays down when a write cancelled the read, and goes live once the read it owed has run', async () => {
+      const { repository, app } = await droppedConnection();
+      const release = repository.holdReads();
+      act(() => {
+        repository.connect('people');
+      });
+      // A write starts while the reconnect read is running: its first step cancels that read.
+      const write = app.queryClient
+        .getMutationCache()
+        .build(app.queryClient, applyChangeSetOptions(app.queryClient, repository))
+        .execute({ ...EMPTY_RATE_CHANGE_SET, create: [newRate] });
+      await settle();
+      expect(screen.getByText('People is down')).toBeInTheDocument();
+
+      // The write has committed; the read it owes then sees the server as it is now.
+      bumpRates(repository);
+      release();
+      await write;
+      expect(await screen.findByText('People is live')).toBeInTheDocument();
+      expect(await screen.findByText('Adaeze Okafor earns 121 an hour')).toBeInTheDocument();
+    });
+
+    it('does not count a first fetch that was already running at the reconnect, only the read that follows it', async () => {
+      const repository = createFakeRepository();
+      // The page's first fetch is slow: it is still running across a drop and a reconnect.
+      const releaseFirst = repository.holdReads();
+      renderWithApp(
+        <RealtimeProvider instance="people">
+          <Status />
+          <Adaeze />
+        </RealtimeProvider>,
+        { repository },
+      );
+      act(() => {
+        repository.connect('people');
+        repository.disconnect('people');
+        repository.connect('people');
+      });
+      expect(screen.getByText('People is down')).toBeInTheDocument();
+
+      // The first fetch ends, and the read that follows it is slow too.
+      releaseFirst();
+      const releaseFollowUp = repository.holdReads();
+      expect(await screen.findByText('Adaeze Okafor earns 120 an hour')).toBeInTheDocument();
+      await settle();
+      expect(screen.getByText('People is down')).toBeInTheDocument();
+
+      releaseFollowUp();
+      expect(await screen.findByText('People is live')).toBeInTheDocument();
+    });
+
+    it('reads again by itself after a failed read while connected, and goes live when the retry succeeds', async () => {
+      const { repository } = await droppedConnection();
+      repository.failReads(new ApiError('unavailable', 'people'));
+      act(() => {
+        repository.connect('people');
+      });
+      await settle();
+      expect(screen.getByText('People is down')).toBeInTheDocument();
+
+      // The service is back; nobody reconnects, and the first retry comes a second after the failure.
+      repository.failReads(null);
+      bumpRates(repository);
+      expect(await screen.findByText('People is live', {}, { timeout: 4000 })).toBeInTheDocument();
+      expect(await screen.findByText('Adaeze Okafor earns 121 an hour')).toBeInTheDocument();
+    });
+
+    it('stops retrying when the connection drops', async () => {
+      const { repository } = await droppedConnection();
+      repository.failReads(new ApiError('unavailable', 'people'));
+      act(() => {
+        repository.connect('people');
+      });
+      await settle();
+      act(() => {
+        repository.disconnect('people');
+      });
+      const reads = rs.spyOn(repository, 'listRateRecords');
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      expect(reads).not.toHaveBeenCalled();
+    });
+
+    it('stays down when the read failed, and goes live at the next reconnect that succeeds', async () => {
+      const { repository } = await droppedConnection();
+      repository.failReads(new ApiError('unavailable', 'people'));
+      act(() => {
+        repository.connect('people');
+      });
+      await settle();
+      expect(screen.getByText('People is down')).toBeInTheDocument();
+
+      repository.failReads(null);
+      bumpRates(repository);
+      act(() => {
+        repository.disconnect('people');
+        repository.connect('people');
+      });
+      expect(await screen.findByText('People is live')).toBeInTheDocument();
+      expect(await screen.findByText('Adaeze Okafor earns 121 an hour')).toBeInTheDocument();
+    });
   });
 
   it('refetches everything after a reconnect, because missed events are not replayed', () => {
@@ -188,6 +405,67 @@ describe('RealtimeProvider', () => {
     });
     expect(await screen.findByText('Adaeze Okafor earns 121 an hour')).toBeInTheDocument();
     app.unmount();
+  });
+
+  describe('while a rate write is in flight', () => {
+    /** Starts a write the fake holds, and waits until its optimistic change is in the cache. */
+    async function startWrite(app: ReturnType<typeof renderProvider>) {
+      const release = app.repository.holdWrites();
+      const write = app.queryClient
+        .getMutationCache()
+        .build(app.queryClient, applyChangeSetOptions(app.queryClient, app.repository))
+        .execute({ ...EMPTY_RATE_CHANGE_SET, create: [newRate] });
+      await rs.waitFor(() => {
+        expect(cachedRates(app)).toContainEqual(newRate);
+      });
+      return { release, write };
+    }
+
+    it('waits to refetch at connect until the write has settled, so older server data cannot replace it', async () => {
+      const app = renderProvider();
+      const { release, write } = await startWrite(app);
+      const invalidate = rs.spyOn(app.queryClient, 'invalidateQueries');
+
+      act(() => {
+        app.repository.connect('people');
+      });
+      expect(screen.getByText('People is live')).toBeInTheDocument();
+      expect(invalidate).not.toHaveBeenCalled();
+
+      release();
+      await write;
+      expect(invalidate).toHaveBeenCalledTimes(1);
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: ['people'] });
+    });
+
+    it('refetches once for several connects', async () => {
+      const app = renderProvider();
+      const { release, write } = await startWrite(app);
+      const invalidate = rs.spyOn(app.queryClient, 'invalidateQueries');
+
+      act(() => {
+        app.repository.connect('people');
+        app.repository.disconnect('people');
+        app.repository.connect('people');
+      });
+      release();
+      await write;
+      expect(invalidate).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not refetch after it was unmounted', async () => {
+      const app = renderProvider();
+      const { release, write } = await startWrite(app);
+      const invalidate = rs.spyOn(app.queryClient, 'invalidateQueries');
+
+      act(() => {
+        app.repository.connect('people');
+      });
+      app.unmount();
+      release();
+      await write;
+      expect(invalidate).not.toHaveBeenCalled();
+    });
   });
 
   it('refetches at the first connect when an earlier attempt failed', () => {

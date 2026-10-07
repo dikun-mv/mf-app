@@ -3,6 +3,7 @@
 interface CssExports {
   count: string;
   empty: string;
+  plain: string;
   register: string;
   toolbar: string;
 }

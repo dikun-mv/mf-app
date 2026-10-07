@@ -22,6 +22,11 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* "unknown" while Delivery can't be reached: a plain word, quieter than the badge. */
+.plain {
+  color: var(--bl-color-text-muted);
+}
+
 .empty {
   padding-block: var(--bl-space-4);
   color: var(--bl-color-text-muted);

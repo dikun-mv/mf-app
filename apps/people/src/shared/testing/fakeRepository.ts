@@ -8,7 +8,7 @@ import {
   type RealtimeHandlers,
   type RecordEvent,
 } from '../api';
-import { EMPLOYEES, RATE_RECORDS } from './fixtures';
+import { EMPLOYEES, MONTH_LOADS, RATE_RECORDS } from './fixtures';
 
 export interface FakeRepositoryData {
   readonly employees?: readonly Employee[];
@@ -28,10 +28,20 @@ export interface FakeRepository extends PeopleRepository {
   openSubscriptions(instance: Instance): number;
   /** Makes every read reject with `error` until called with `null`. */
   failReads(error: Error | null): void;
+  /** Makes only the read of Delivery's load feed reject with `error` until called with `null`. */
+  failLoads(error: Error | null): void;
+  /** Makes only the next write that reaches the server reject with `error`. */
+  failNextWrite(error: Error): void;
   /** Makes every write reject with `error` until called with `null`. */
   failWrites(error: Error | null): void;
   /** Holds reads until the returned function is called. */
   holdReads(): () => void;
+  /** Holds only the read of Delivery's load feed until the returned function is called. */
+  holdLoads(): () => void;
+  /** Holds writes (the server has not answered, nor committed) until the returned function is called. */
+  holdWrites(): () => void;
+  /** Changes the stored load rows without telling any subscriber, as an edit made while the connection was down. */
+  setMonthLoadsSilently(loads: readonly EmployeeMonthLoad[]): void;
   /** Changes the stored rates without telling any subscriber, as an edit made while no subscription was live. */
   setRateRecordsSilently(records: readonly RateRecord[]): void;
   /** Delivers an event to the open subscriptions, as the server would after a commit. */
@@ -44,17 +54,22 @@ export interface FakeRepository extends PeopleRepository {
 export function createFakeRepository(data: FakeRepositoryData = {}): FakeRepository {
   const employees = [...(data.employees ?? EMPLOYEES)];
   let rateRecords = [...(data.rateRecords ?? RATE_RECORDS)];
-  const employeeMonthLoads = [...(data.employeeMonthLoads ?? [])];
+  let employeeMonthLoads = [...(data.employeeMonthLoads ?? MONTH_LOADS)];
   const writes: RateChangeSet[] = [];
   const subscribers: Record<Instance, Set<RealtimeHandlers>> = { people: new Set(), delivery: new Set() };
   let readError: Error | null = null;
   let writeError: Error | null = null;
+  let loadError: Error | null = null;
+  let nextWriteError: Error | null = null;
   let gate: Promise<void> = Promise.resolve();
+  let writeGate: Promise<void> = Promise.resolve();
+  let loadGate: Promise<void> = Promise.resolve();
 
-  const read = async <T>(records: readonly T[]): Promise<T[]> => {
+  // The records are read when the server answers, after any hold: a read held while the data changes sees the change.
+  const read = async <T>(records: () => readonly T[]): Promise<T[]> => {
     await gate;
     if (readError) throw readError;
-    return [...records];
+    return [...records()];
   };
 
   const emit = (event: RecordEvent): void => {
@@ -66,11 +81,21 @@ export function createFakeRepository(data: FakeRepositoryData = {}): FakeReposit
     get writes() {
       return writes;
     },
-    listEmployees: () => read(employees),
-    listRateRecords: () => read(rateRecords),
-    listEmployeeMonthLoads: () => read(employeeMonthLoads),
-    applyRateChanges: (changes) => {
-      if (writeError) return Promise.reject(writeError);
+    listEmployees: () => read(() => employees),
+    listRateRecords: () => read(() => rateRecords),
+    listEmployeeMonthLoads: async () => {
+      await loadGate;
+      if (loadError) throw loadError;
+      return read(() => employeeMonthLoads);
+    },
+    applyRateChanges: async (changes) => {
+      await writeGate;
+      if (writeError) throw writeError;
+      if (nextWriteError) {
+        const error = nextWriteError;
+        nextWriteError = null;
+        throw error;
+      }
       writes.push(changes);
       const before = rateRecords;
       rateRecords = applyRateChangeSet(rateRecords, changes);
@@ -80,7 +105,7 @@ export function createFakeRepository(data: FakeRepositoryData = {}): FakeReposit
       }
       for (const record of changes.update) emit({ collection: 'rateRecords', action: 'update', record });
       for (const record of changes.create) emit({ collection: 'rateRecords', action: 'create', record });
-      return Promise.resolve([...changes.update, ...changes.create]);
+      return [...changes.update, ...changes.create];
     },
     subscribe: (instance, handlers) => {
       subscribers[instance].add(handlers);
@@ -91,6 +116,12 @@ export function createFakeRepository(data: FakeRepositoryData = {}): FakeReposit
     openSubscriptions: (instance) => subscribers[instance].size,
     failReads: (error) => {
       readError = error;
+    },
+    failLoads: (error) => {
+      loadError = error;
+    },
+    failNextWrite: (error) => {
+      nextWriteError = error;
     },
     failWrites: (error) => {
       writeError = error;
@@ -104,6 +135,29 @@ export function createFakeRepository(data: FakeRepositoryData = {}): FakeReposit
         release();
         gate = Promise.resolve();
       };
+    },
+    holdWrites: () => {
+      let release: () => void = () => undefined;
+      writeGate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      return () => {
+        release();
+        writeGate = Promise.resolve();
+      };
+    },
+    holdLoads: () => {
+      let release: () => void = () => undefined;
+      loadGate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      return () => {
+        release();
+        loadGate = Promise.resolve();
+      };
+    },
+    setMonthLoadsSilently: (loads) => {
+      employeeMonthLoads = [...loads];
     },
     setRateRecordsSilently: (records) => {
       rateRecords = [...records];
