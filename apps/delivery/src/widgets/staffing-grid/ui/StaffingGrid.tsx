@@ -1,8 +1,9 @@
 import type { ProjectId } from '@baseline/delivery-contract';
 import type { DisplayUnit } from '@baseline/delivery-domain';
-import { InlineMessage } from '@baseline/ui';
+import { InlineMessage, Spinner } from '@baseline/ui';
 import { clsx } from 'clsx';
 import { useCallback, useId, useMemo, useState } from 'react';
+import { describeGridError } from '../lib/describeGridError';
 import { visibleRows } from '../lib/visibleRows';
 import { useFocusedCell } from '../model/useFocusedCell';
 import { useGridView } from '../model/useGridView';
@@ -36,7 +37,7 @@ export interface StaffingGridProps {
  * (`ui/slots/`, see the widget's `index.ts`).
  */
 export function StaffingGrid({ projectId, unit = 'personMonths' }: StaffingGridProps) {
-  const { result, units } = useGridView(projectId, unit);
+  const { result, units, peopleLoading } = useGridView(projectId, unit);
   // Keys of the collapsed nodes: empty means everything is open, as on load. Local state (D31).
   const [collapsed, setCollapsed] = useState<ReadonlySet<string>>(() => new Set());
   // The row whose actions are open: one at a time, and closed again by choosing an action (D36).
@@ -59,13 +60,29 @@ export function StaffingGrid({ projectId, unit = 'personMonths' }: StaffingGridP
   const rows = result.ok ? result.value.rows : null;
   const shown = useMemo(() => (rows === null ? [] : visibleRows(rows, collapsed)), [rows, collapsed]);
 
+  // The toolbar is always there, so the unit can be changed out of a grid that can't be shown.
+  const toolbar = Toolbar !== null && <Toolbar projectId={projectId} unit={unit} units={units} />;
   if (!result.ok) {
-    return <InlineMessage tone="error">The grid can&apos;t be shown ({result.error.code}).</InlineMessage>;
+    // Hours and cost wait for People's data (which never suspends, D32), unless it has failed.
+    const waiting = result.error.code === 'unitUnavailable' && peopleLoading;
+    return (
+      <div className={styles.widget}>
+        {toolbar}
+        {waiting ? (
+          <p className={styles.loading}>
+            <Spinner aria-label="Loading staffing grid" />
+            <span>Loading staffing grid…</span>
+          </p>
+        ) : (
+          <InlineMessage tone="error">{describeGridError(result.error)}</InlineMessage>
+        )}
+      </div>
+    );
   }
   const view = result.value;
   return (
     <div className={styles.widget}>
-      {Toolbar !== null && <Toolbar projectId={projectId} unit={view.unit} units={units} />}
+      {toolbar}
       <div className={styles.scroll} onFocus={onFocus}>
         <table className={styles.grid}>
           <caption className={styles.visuallyHidden}>

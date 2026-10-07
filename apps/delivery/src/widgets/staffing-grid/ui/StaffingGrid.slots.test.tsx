@@ -1,9 +1,11 @@
 import { ProjectId } from '@baseline/delivery-contract';
+import type { DisplayUnit } from '@baseline/delivery-domain';
 import { describe, expect, it, rs } from '@rstest/core';
-import { screen, within } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import { Suspense } from 'react';
+import { RepositoryError } from '../../../shared/api';
 import { createFakeRepository, renderWithApp, seedData } from '../../../shared/testing';
-import type { CellAdornmentSlotProps, DetailsSlotProps } from './slots/types';
+import type { CellAdornmentSlotProps, DetailsSlotProps, ToolbarSlotProps } from './slots/types';
 import { StaffingGrid } from './StaffingGrid';
 
 // The slots with something wired in, as a later task would: the default cell renderer stays, so these
@@ -19,12 +21,18 @@ rs.mock('./slots/details', () => ({
   ),
 }));
 
-const renderGrid = () =>
+rs.mock('./slots/toolbar', () => ({
+  toolbarSlot: ({ unit, units }: ToolbarSlotProps) => (
+    <div data-testid="toolbar">{`${unit} of ${units.join(',')}`}</div>
+  ),
+}));
+
+const renderGrid = (unit?: DisplayUnit, repository = createFakeRepository(seedData())) =>
   renderWithApp(
     <Suspense fallback={null}>
-      <StaffingGrid projectId={ProjectId.parse('prj-1')} />
+      <StaffingGrid projectId={ProjectId.parse('prj-1')} {...(unit === undefined ? {} : { unit })} />
     </Suspense>,
-    { repository: createFakeRepository(seedData()) },
+    { repository },
   );
 
 describe('StaffingGrid slots', () => {
@@ -46,5 +54,31 @@ describe('StaffingGrid slots', () => {
     expect(marked.length).toBeGreaterThan(1);
     for (const element of marked) expect(element).toHaveAttribute('aria-describedby', panel.id);
     expect(panel.id).not.toBe('');
+  });
+
+  it('keeps the toolbar when the grid can’t be shown, so the unit can be changed', async () => {
+    const repository = createFakeRepository(seedData());
+    repository.failReads('employees', new RepositoryError('server', 'people'));
+    renderGrid('hours', repository);
+
+    // People can't be reached: a sentence, never the error's code, and the toolbar offers the other units.
+    expect(await screen.findByText(/People's data can't be reached/)).toBeInTheDocument();
+    expect(screen.queryByText(/unitUnavailable/)).not.toBeInTheDocument();
+    expect(screen.getByTestId('toolbar')).toHaveTextContent('hours of personMonths,percent');
+  });
+
+  it('waits for People’s data instead of reporting hours as unavailable, then shows the grid', async () => {
+    const repository = createFakeRepository(seedData());
+    const release = repository.holdReads('employees');
+    renderGrid('hours', repository);
+
+    expect(await screen.findByText('Loading staffing grid…')).toBeInTheDocument();
+    expect(screen.queryByText(/can't be reached/)).not.toBeInTheDocument();
+    expect(screen.getByTestId('toolbar')).toBeInTheDocument();
+
+    act(() => {
+      release();
+    });
+    expect(await screen.findByRole('table', { name: /in hours/ })).toBeInTheDocument();
   });
 });

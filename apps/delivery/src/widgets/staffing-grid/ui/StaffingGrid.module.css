@@ -10,6 +10,14 @@
   gap: var(--bl-space-3);
 }
 
+.loading {
+  display: flex;
+  align-items: center;
+  gap: var(--bl-space-2);
+  margin: 0;
+  color: var(--bl-color-text-muted);
+}
+
 .scroll {
   /* The box the visually hidden texts are placed in, so they can't reach outside it and widen the page. */
   position: relative;

@@ -20,6 +20,8 @@ export interface GridModel {
   readonly result: Result<GridView, GridViewError>;
   /** The units that can be shown now: all four, or person-months and % while People's data is missing. */
   readonly units: readonly DisplayUnit[];
+  /** People's employees or rates are still on their first load (not failed), so hours and cost may yet work. */
+  readonly peopleLoading: boolean;
 }
 
 /**
@@ -31,8 +33,10 @@ export function useGridView(projectId: ProjectId, unit: DisplayUnit): GridModel 
   const projects = useProjects();
   const items = useBreakdownItems();
   const allocations = useAllocations();
-  const employees = useEmployees().data;
-  const rates = useRateRecords().data;
+  const employeesQuery = useEmployees();
+  const ratesQuery = useRateRecords();
+  const employees = employeesQuery.data;
+  const rates = ratesQuery.data;
   const { currency } = useHost();
 
   const people = useMemo<PeopleData | null>(
@@ -44,5 +48,6 @@ export function useGridView(projectId: ProjectId, unit: DisplayUnit): GridModel 
     [projects, items, allocations, people, projectId, unit, currency],
   );
   const units = useMemo(() => availableUnits(people), [people]);
-  return { result, units };
+  const peopleLoading = employeesQuery.isPending || ratesQuery.isPending;
+  return { result, units, peopleLoading };
 }

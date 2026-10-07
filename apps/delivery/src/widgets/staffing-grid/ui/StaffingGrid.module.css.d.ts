@@ -6,6 +6,7 @@ interface CssExports {
   head: string;
   label: string;
   labelContent: string;
+  loading: string;
   name: string;
   node: string;
   numeric: string;

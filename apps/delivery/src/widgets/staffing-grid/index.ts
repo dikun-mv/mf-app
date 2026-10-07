@@ -19,7 +19,9 @@
 //               Rendered after the name in the label cell of every WBS row (not the project row, not
 //               person rows). The grid owns which row is open (`open`, `onToggle`). Default: none. T6.3.
 //   toolbar     `ui/slots/toolbar.ts`     `toolbarSlot: ComponentType<ToolbarSlotProps> | null`
-//               Above the table: the project, the unit and the units available. Default: none. T6.5.
+//               Above the table, always drawn, also when the grid can't be shown (hours or cost without
+//               People's data), so the unit can be changed out of that state. Gets the project, the
+//               unit and the units available. Default: none. T6.5.
 //   details     `ui/slots/details.ts`     `detailsSlot: ComponentType<DetailsSlotProps> | null`
 //               Below the table: the `GridView` and the cell that last had focus (row key and month
 //               position). Set the `id` it receives on the panel: it is what `describedById` names.
