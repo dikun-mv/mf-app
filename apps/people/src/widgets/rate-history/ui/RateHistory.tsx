@@ -45,8 +45,9 @@ export function RateHistory({ employee }: { employee: Employee }) {
   const failed = useCallback((error: unknown) => {
     setFailure({ error });
   }, []);
-  const stopEditing = useCallback(() => {
-    setEditing(null);
+  // Closes the form of rate `id` only: a result that lands late must not close the form of another rate.
+  const stopEditing = useCallback((id: RateRecord['id']) => {
+    setEditing((open) => (open?.id === id ? null : open));
   }, []);
   const stopRemoving = useCallback(() => {
     setRemoving(null);
@@ -87,7 +88,9 @@ export function RateHistory({ employee }: { employee: Employee }) {
                   opened={editing}
                   stored={history.find(({ id }) => id === rate.id)}
                   history={history}
-                  onDone={stopEditing}
+                  onDone={() => {
+                    stopEditing(rate.id);
+                  }}
                   onStart={started}
                   onSaved={saved}
                   onFailed={failed}

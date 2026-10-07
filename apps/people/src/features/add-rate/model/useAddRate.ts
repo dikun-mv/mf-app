@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import type { EmployeeId, RateRecord } from '@baseline/people-contract';
 import { addRate, formatDate, newRateRecordId } from '@baseline/people-domain';
-import { useMemo, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, type FormEvent } from 'react';
 import { useForm } from 'react-hook-form';
 import { rateFormSchema, refusalOf, type RateFormFields, type RateFormValues } from '../../../entities/rate-record';
 import { CONFLICT_MESSAGE, EMPTY_RATE_CHANGE_SET, isConflictError, useApplyChangeSet } from '../../../shared/api';
@@ -28,6 +28,13 @@ interface AddRateOptions {
 export function useAddRate({ employeeId, history, onStart, onSaved, onFailed }: AddRateOptions) {
   const { currency } = useHost();
   const write = useApplyChangeSet();
+  const mounted = useRef(false);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
   const schema = useMemo(() => rateFormSchema(currency), [currency]);
   const form = useForm<RateFormFields, unknown, RateFormValues>({
     resolver: zodResolver(schema),
@@ -47,7 +54,8 @@ export function useAddRate({ employeeId, history, onStart, onSaved, onFailed }: 
     try {
       await write.mutateAsync({ ...EMPTY_RATE_CHANGE_SET, create: [record] });
     } catch (error) {
-      if (isConflictError(error)) form.setError('root.server', { message: CONFLICT_MESSAGE });
+      // A form that has gone (cancelled, replaced, remounted) can't show a conflict, so the widget does.
+      if (isConflictError(error) && mounted.current) form.setError('root.server', { message: CONFLICT_MESSAGE });
       else onFailed(error);
       return;
     }

@@ -354,6 +354,50 @@ describe('going from one employee to another', () => {
   });
 });
 
+describe('a correction whose result lands after its form has gone', () => {
+  async function saveCorrectionOf12March(user: ReturnType<typeof userEvent.setup>) {
+    await user.click(screen.getByRole('button', { name: 'Correct the rate from 12 Mar 2026' }));
+    const cost = correctRow().getByLabelText('Hourly cost (EUR)');
+    await user.clear(cost);
+    await user.type(cost, '97');
+    await user.click(screen.getByRole('button', { name: 'Save' }));
+  }
+
+  it('still reports a conflict, in the widget, when the form was cancelled while the write was on its way', async () => {
+    const repository = createFakeRepository();
+    const { user } = await openEmployee({ repository });
+    const release = repository.holdWrites();
+    repository.failWrites(new ApiError('conflict', 'people'));
+    await saveCorrectionOf12March(user);
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+    expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument();
+
+    release();
+    expect(
+      await screen.findByText('This data was changed elsewhere and has been reloaded. Check it and try again.'),
+    ).toBeInTheDocument();
+    expect(listedRates()).toContain('12 Mar 2026 €95.00/hcurrent');
+  });
+
+  it('does not close the form of another rate when the result lands, and still reports it', async () => {
+    const repository = createFakeRepository();
+    const { user } = await openEmployee({ repository });
+    const release = repository.holdWrites();
+    await saveCorrectionOf12March(user);
+
+    // While that write is on its way, the user opens another rate and starts a draft.
+    await user.click(screen.getByRole('button', { name: 'Correct the rate from 1 Jan 2025' }));
+    const cost = correctRow().getByLabelText('Hourly cost (EUR)');
+    await user.clear(cost);
+    await user.type(cost, '82');
+
+    release();
+    expect(await screen.findByText('Rate from 12 Mar 2026 corrected.')).toBeInTheDocument();
+    expect(correctRow().getByLabelText('Hourly cost (EUR)')).toHaveValue('82');
+    expect(screen.getAllByRole('button', { name: 'Save' })).toHaveLength(1);
+  });
+});
+
 describe('a write that fails', () => {
   it('undoes the change and says so at the top, keeping the draft for another try', async () => {
     const repository = createFakeRepository();
