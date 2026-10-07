@@ -1,21 +1,32 @@
 import { InlineMessage } from '@baseline/ui';
-import { useMutationState } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
 import { describeError, RepositoryError } from '../../../shared/api';
 
 /**
- * The message at the top of the grid when the last write didn't reach the server (screens 4, D33). The
- * optimistic change has already been undone by `useApplyChangeSet`; this tells the user. It stays until
- * the next write starts, then goes: that write is the user trying again.
+ * The message at the top of the grid when a write didn't reach the server (screens 4, D33). The optimistic
+ * change has already been undone by `useApplyChangeSet`; this tells the user. It is the failure of any
+ * write, also one that failed while a later write waited behind it, and it stays until the user starts the
+ * next write: that is them trying again.
  *
- * It reads the app's mutations rather than a mutation of its own, because the cell that wrote has long
- * since turned back into a button. Every mutation in Delivery is a change set, so the newest one is the
- * last write. A refusal that never left the browser is shown beside its cell instead (`CellEditor`).
+ * The failure is kept in state, taken from the mutation cache as it happens. The cache drops a failed
+ * mutation once nothing observes it, and the cell that wrote has long since turned back into a button, so
+ * reading it from the cache later would let the message vanish by itself. A refusal that never left the
+ * browser is shown beside its cell instead (`CellEditor`).
  */
 export function WriteFailedMessage() {
-  const writes = useMutationState({ select: ({ state }) => ({ status: state.status, error: state.error }) });
-  const last = writes.at(-1);
-  if (last?.status !== 'error') return null;
-  const { error } = last;
+  const client = useQueryClient();
+  const [failure, setFailure] = useState<{ readonly error: unknown } | null>(null);
+  useEffect(
+    () =>
+      client.getMutationCache().subscribe((event) => {
+        if (event.type === 'added') setFailure(null);
+        else if (event.type === 'updated' && event.action.type === 'error') setFailure({ error: event.action.error });
+      }),
+    [client],
+  );
+  if (failure === null) return null;
+  const { error } = failure;
   // A conflict means someone else's change got there first; the collections were reloaded (D33).
   if (error instanceof RepositoryError && error.code === 'conflict') {
     return (
