@@ -1,9 +1,8 @@
 import { BasePath, type HostContext } from '@baseline/host-contract';
 import { clsx } from 'clsx';
 import { useMemo } from 'react';
-import type { RemoteName } from '../config/schema';
-import { useShellNavigate } from '../routing/navigation';
-import { useShell } from '../ShellContext';
+import type { RemoteName } from '../../../shared/config';
+import { useShell, useShellNavigate } from '../../../shared/lib';
 import { RemotePanel } from './RemotePanel';
 import styles from './RemoteRoute.module.css';
 

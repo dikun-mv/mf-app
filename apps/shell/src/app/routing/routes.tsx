@@ -1,7 +1,7 @@
 import { Navigate, type RouteObject } from 'react-router';
-import { Layout } from '../layout/Layout';
-import { NotFound } from '../layout/NotFound';
-import { RemoteRoute } from '../remotes/RemoteRoute';
+import { NotFound } from '../../pages/not-found';
+import { RemoteRoute } from '../../widgets/remote-panel';
+import { Layout } from '../Layout';
 
 // Elements are hoisted: they never change, so React can skip re-creating them.
 const layout = <Layout />;

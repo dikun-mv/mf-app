@@ -1,7 +1,6 @@
 import type { RemoteAppProps } from '@baseline/host-contract';
 import type { ComponentType } from 'react';
-import type { RemoteName } from '../config/schema';
-import { REMOTE_NAMES } from '../config/schema';
+import { REMOTE_NAMES, type RemoteName } from '../config';
 
 export type RemoteApp = ComponentType<RemoteAppProps>;
 export type RemoteStatus = 'idle' | 'loading' | 'ready' | 'failed';

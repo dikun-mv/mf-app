@@ -1,7 +1,7 @@
 import { clsx } from 'clsx';
 import type { MouseEvent } from 'react';
 import { useLocation } from 'react-router';
-import { useShellNavigate } from '../routing/navigation';
+import { useShellNavigate } from '../../../shared/lib';
 import styles from './Nav.module.css';
 
 const ITEMS = [

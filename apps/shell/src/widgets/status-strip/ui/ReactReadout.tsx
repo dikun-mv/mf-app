@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
-import { useShell } from '../ShellContext';
-import { probeRows } from './reactProbe';
+import { probeRows } from '../../../shared/debug';
+import { useShell } from '../../../shared/lib';
 import styles from './ReactReadout.module.css';
 
 /**

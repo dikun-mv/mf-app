@@ -1,8 +1,8 @@
 import type { HostContext, RemoteAppProps } from '@baseline/host-contract';
 import { Button, ErrorBoundary, InlineMessage, Spinner } from '@baseline/ui';
 import { lazy, Suspense, useState, type ComponentType } from 'react';
-import type { RemoteName } from '../config/schema';
-import type { RemoteLoader } from './remoteLoader';
+import type { RemoteName } from '../../../shared/config';
+import type { RemoteLoader } from '../../../shared/federation';
 import styles from './RemotePanel.module.css';
 
 const LABELS: Record<RemoteName, string> = { people: 'People', delivery: 'Delivery' };

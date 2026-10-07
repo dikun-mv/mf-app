@@ -2,9 +2,9 @@ import type { RemoteAppProps } from '@baseline/host-contract';
 import { describe, expect, it, rs } from '@rstest/core';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { testContext } from '../testing/hostContext';
+import type { RemoteApp, RemoteLoader } from '../../../shared/federation';
+import { testContext } from '../../../shared/testing';
 import { RemotePanel } from './RemotePanel';
-import type { RemoteApp, RemoteLoader } from './remoteLoader';
 
 function FakeApp({ ctx }: RemoteAppProps) {
   return <p>Remote running for {ctx.activeUser.name}</p>;

@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it, rs } from '@rstest/core';
 import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { createMemoryRouter, Outlet, RouterProvider } from 'react-router';
-import { Nav } from '../layout/Nav';
-import { useShellNavigate } from './navigation';
+import { useShellNavigate } from '../../shared/lib';
+import { Nav } from '../../widgets/top-bar';
 
 // A stand-in for the mounted remote's router: it re-reads the URL on `popstate`.
 function listenForPopState() {

@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react';
-import type { Selection } from './config/selection';
-import type { RemoteLoader } from './remotes/remoteLoader';
+import type { Selection } from '../config';
+import type { RemoteLoader } from '../federation';
 
 export interface ShellState extends Selection {
   readonly loader: RemoteLoader;

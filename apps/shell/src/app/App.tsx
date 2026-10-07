@@ -2,14 +2,11 @@ import '@baseline/ui/tokens.css';
 import { InlineMessage, Spinner } from '@baseline/ui';
 import { useEffect, useState } from 'react';
 import { RouterProvider } from 'react-router/dom';
-import { initialSelection } from './config/selection';
-import { loadConfig } from './config/loadConfig';
-import { reportShellReact } from './debug/reactProbe';
-import { federation } from './remotes/federation';
-import { createRemoteLoader } from './remotes/remoteLoader';
-import { REMOTE_NAMES } from './config/schema';
+import { initialSelection, loadConfig, REMOTE_NAMES } from '../shared/config';
+import { reportShellReact } from '../shared/debug';
+import { createRemoteLoader, federation } from '../shared/federation';
+import { ShellContext, type ShellState } from '../shared/lib';
 import { router } from './routing/router';
-import { ShellContext, type ShellState } from './ShellContext';
 import styles from './App.module.css';
 
 /** How long a remote has to load before its panel shows an error (T2.5). */

@@ -1,6 +1,6 @@
 import { Outlet } from 'react-router';
-import { ReactReadout } from '../debug/ReactReadout';
-import { Nav } from './Nav';
+import { ReactReadout } from '../widgets/status-strip';
+import { Nav } from '../widgets/top-bar';
 import styles from './Layout.module.css';
 
 // The outlet never changes, so it is created once.
