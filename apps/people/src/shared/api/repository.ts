@@ -8,7 +8,11 @@ import type { Employee, RateRecord, RateRecordId } from '@baseline/people-contra
 /** The two PocketBase instances People reads: its own, and Delivery's `employee_month_loads` feed. */
 export type Instance = 'people' | 'delivery';
 
-/** `connecting` until the first connect, `live` while connected, `down` after a disconnect (D29). */
+/**
+ * `connecting` until the first connect, `down` after a disconnect, and `live` while connected. After a
+ * disconnect `live` returns only once the instance's queries have been read again, so `live` means the cache is
+ * current, not just that the connection is up (D29).
+ */
 export type RealtimeStatus = 'connecting' | 'live' | 'down';
 
 export type RealtimeAction = 'create' | 'update' | 'delete';

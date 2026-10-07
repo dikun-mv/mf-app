@@ -15,15 +15,16 @@ import {
  * restarts only a fetch that has data), and the server may have read its answer before the subscription
  * went live, so it is refetched once it settles. Queries nobody observes are only marked stale.
  */
-function refetchInstance(queryClient: QueryClient, instance: Instance): void {
+function refetchInstance(queryClient: QueryClient, instance: Instance): Promise<void> {
   const queryKey = instanceKey(instance);
   const loading = queryClient.getQueryCache().findAll({ queryKey, fetchStatus: 'fetching' });
-  void queryClient.invalidateQueries({ queryKey });
+  const invalidating = queryClient.invalidateQueries({ queryKey });
   const firstFetches = loading.filter(({ state }) => state.data === undefined);
-  if (firstFetches.length === 0) return;
-  void Promise.allSettled(firstFetches.map((query) => query.fetch())).then(() =>
+  if (firstFetches.length === 0) return invalidating;
+  const settled = Promise.allSettled(firstFetches.map((query) => query.fetch())).then(() =>
     queryClient.invalidateQueries({ queryKey, predicate: (query) => firstFetches.includes(query) }),
   );
+  return Promise.all([invalidating, settled]).then(() => undefined);
 }
 
 /**
@@ -45,28 +46,47 @@ export function RealtimeProvider({ instance, children }: { instance: Instance; c
   useEffect(() => {
     // A refetch waiting for rate writes to settle (`afterWrites`); one wait covers any number of connects.
     let waiting: (() => void) | null = null;
+    let connected = false;
+    // The connection has dropped since the cache was last read, so what it holds may be out of date.
+    let lost = false;
+    // Names the latest refetch, so only the last of several (a drop in the middle of one) says the cache is current.
+    let latest = 0;
+    const refetch = (): void => {
+      const mine = ++latest;
+      void refetchInstance(queryClient, instance).then(() => {
+        if (mine !== latest || !connected) return;
+        lost = false;
+        setStatus('live');
+      });
+    };
     const stop = repository.subscribe(instance, {
       onEvent: (event) => {
         patchCollection(queryClient, event);
       },
       onConnect: () => {
-        setStatus('live');
+        connected = true;
+        // After a drop the status stays `down` until the refetch has settled: `live` promises a cache that is
+        // current, and until then it holds what was true before the outage.
+        if (!lost) setStatus('live');
         // A refetch that read the server before a write committed would put the old rates back over the
         // write's result, so People's refetch waits until no write is in flight. Other instances hold no writes.
         if (instance !== 'people') {
-          refetchInstance(queryClient, instance);
+          refetch();
         } else if (waiting === null) {
           waiting = afterWrites(queryClient, () => {
             waiting = null;
-            refetchInstance(queryClient, instance);
+            refetch();
           });
         }
       },
       onDisconnect: () => {
+        connected = false;
+        lost = true;
         setStatus('down');
       },
     });
     return () => {
+      connected = false;
       waiting?.();
       stop();
       void queryClient.cancelQueries({ queryKey: instanceKey(instance) });

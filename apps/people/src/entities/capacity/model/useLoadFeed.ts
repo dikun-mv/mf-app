@@ -18,9 +18,9 @@ const UNKNOWN: LoadFeed = { status: 'unknown' };
 
 /**
  * Delivery's `employee_month_loads` as a plain read (D32, T5.5). The feed is unknown when its read failed or
- * its realtime connection is down (D29): rows cached before the loss may be stale, and showing them as
- * current would be worse than saying capacity is unknown. It is known again as soon as a read succeeds and
- * the connection is back.
+ * its realtime status is `down` (D29): rows cached before the loss may be stale, and showing
+ * them as current would be worse than saying capacity is unknown. The provider holds the status at `down`
+ * after a reconnect until the instance has been read again, so it is known again only with fresh rows.
  */
 export function useLoadFeed(): LoadFeed {
   const { data, isError } = useQuery(employeeMonthLoadsQuery(useRepository()));

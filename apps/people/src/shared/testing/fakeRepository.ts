@@ -40,6 +40,8 @@ export interface FakeRepository extends PeopleRepository {
   holdLoads(): () => void;
   /** Holds writes (the server has not answered, nor committed) until the returned function is called. */
   holdWrites(): () => void;
+  /** Changes the stored load rows without telling any subscriber, as an edit made while the connection was down. */
+  setMonthLoadsSilently(loads: readonly EmployeeMonthLoad[]): void;
   /** Changes the stored rates without telling any subscriber, as an edit made while no subscription was live. */
   setRateRecordsSilently(records: readonly RateRecord[]): void;
   /** Delivers an event to the open subscriptions, as the server would after a commit. */
@@ -52,7 +54,7 @@ export interface FakeRepository extends PeopleRepository {
 export function createFakeRepository(data: FakeRepositoryData = {}): FakeRepository {
   const employees = [...(data.employees ?? EMPLOYEES)];
   let rateRecords = [...(data.rateRecords ?? RATE_RECORDS)];
-  const employeeMonthLoads = [...(data.employeeMonthLoads ?? MONTH_LOADS)];
+  let employeeMonthLoads = [...(data.employeeMonthLoads ?? MONTH_LOADS)];
   const writes: RateChangeSet[] = [];
   const subscribers: Record<Instance, Set<RealtimeHandlers>> = { people: new Set(), delivery: new Set() };
   let readError: Error | null = null;
@@ -152,6 +154,9 @@ export function createFakeRepository(data: FakeRepositoryData = {}): FakeReposit
         release();
         loadGate = Promise.resolve();
       };
+    },
+    setMonthLoadsSilently: (loads) => {
+      employeeMonthLoads = [...loads];
     },
     setRateRecordsSilently: (records) => {
       rateRecords = [...records];

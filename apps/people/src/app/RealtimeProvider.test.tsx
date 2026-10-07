@@ -114,7 +114,7 @@ describe('RealtimeProvider', () => {
     expect(cachedRates(app)).toBe(before);
   });
 
-  it('shows connecting, then live, then down, then live again', () => {
+  it('shows connecting, then live, then down, then live again', async () => {
     const app = renderProvider();
     expect(screen.getByText('People is connecting')).toBeInTheDocument();
     act(() => {
@@ -128,7 +128,37 @@ describe('RealtimeProvider', () => {
     act(() => {
       app.repository.connect('people');
     });
-    expect(screen.getByText('People is live')).toBeInTheDocument();
+    expect(await screen.findByText('People is live')).toBeInTheDocument();
+  });
+
+  it('stays down after a reconnect until the queries have been read again, because the cache is not current before', async () => {
+    const repository = createFakeRepository();
+    renderWithApp(
+      <RealtimeProvider instance="people">
+        <Status />
+        <Adaeze />
+      </RealtimeProvider>,
+      { repository },
+    );
+    expect(await screen.findByText('Adaeze Okafor earns 120 an hour')).toBeInTheDocument();
+    act(() => {
+      repository.connect('people');
+    });
+    expect(await screen.findByText('People is live')).toBeInTheDocument();
+    act(() => {
+      repository.disconnect('people');
+    });
+    expect(screen.getByText('People is down')).toBeInTheDocument();
+
+    const release = repository.holdReads();
+    act(() => {
+      repository.connect('people');
+    });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.getByText('People is down')).toBeInTheDocument();
+
+    release();
+    expect(await screen.findByText('People is live')).toBeInTheDocument();
   });
 
   it('refetches everything after a reconnect, because missed events are not replayed', () => {

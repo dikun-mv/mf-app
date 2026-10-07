@@ -3,7 +3,7 @@ import { describe, expect, it } from '@rstest/core';
 import { act, screen, within } from '@testing-library/react';
 import { EmployeeScreen } from '../pages/employee';
 import { RegisterScreen } from '../pages/register';
-import { renderWithApp } from '../shared/testing';
+import { MONTH_LOADS, renderWithApp } from '../shared/testing';
 import { RealtimeProvider } from './RealtimeProvider';
 
 /** Delivery's feed reaches the screens through the app's `RealtimeProvider` for the `delivery` instance (D29). */
@@ -77,5 +77,35 @@ describe('capacity follows Delivery’s feed', () => {
     });
     expect(await screen.findByText('Over capacity · Jun 2026')).toBeInTheDocument();
     expect(screen.queryByText('Capacity unknown:')).not.toBeInTheDocument();
+  });
+
+  it('stays unknown after a reconnect until the feed has been read again, never showing the months from before the outage', async () => {
+    const { repository } = renderWithApp(
+      <RealtimeProvider instance="delivery">
+        <RegisterScreen />
+      </RealtimeProvider>,
+    );
+    expect(await screen.findByText('Over capacity · Jun 2026')).toBeInTheDocument();
+
+    act(() => {
+      repository.disconnect('delivery');
+    });
+    expect(await screen.findByText('Capacity unknown:')).toBeInTheDocument();
+
+    // While the connection was down Milan stopped being over capacity; the read after the reconnect is slow.
+    repository.setMonthLoadsSilently(MONTH_LOADS.filter(({ employeeId }) => employeeId !== 'emp-003'));
+    const release = repository.holdLoads();
+    act(() => {
+      repository.connect('delivery');
+    });
+    // The cache still holds the old rows: they must not be shown as current.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(screen.getByText('Capacity unknown:')).toBeInTheDocument();
+    expect(screen.queryByText('Over capacity · Jun 2026')).not.toBeInTheDocument();
+
+    release();
+    expect(await screen.findByText('Over capacity · Sep 2026')).toBeInTheDocument();
+    expect(screen.queryByText('Capacity unknown:')).not.toBeInTheDocument();
+    expect(screen.queryByText('Over capacity · Jun 2026')).not.toBeInTheDocument();
   });
 });
