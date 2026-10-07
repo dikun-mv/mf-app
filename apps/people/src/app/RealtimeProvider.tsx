@@ -11,6 +11,10 @@ import {
 } from '../shared/api';
 import { watchReads } from './watchReads';
 
+/** The delays between tries of a read that failed: 1 s, 2 s, 4 s … never more than 30 s. */
+const RETRY_BASE_MS = 1000;
+const RETRY_MAX_MS = 30_000;
+
 /**
  * Refetches what the instance's queries hold. A first fetch still in flight can't be restarted (TanStack
  * restarts only a fetch that has data), and the server may have read its answer before the subscription
@@ -54,11 +58,29 @@ export function RealtimeProvider({ instance, children }: { instance: Instance; c
     let lost = false;
     // Names the latest refetch, so only the last of several (a drop in the middle of one) says the cache is current.
     let latest = 0;
+    // A read that fails is tried again while connected, with a growing delay: the data never goes stale on its own
+    // (D26), so nothing else would, and the status would stay `down` with the service back.
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    let failures = 0;
     // `live` after a drop needs more than a refetch that resolved: every active query must have succeeded again.
-    const reads = watchReads(queryClient, instance, () => {
-      if (!connected) return;
-      lost = false;
-      setStatus('live');
+    const reads = watchReads(queryClient, instance, {
+      onAllRead: () => {
+        failures = 0;
+        clearTimeout(retryTimer);
+        retryTimer = undefined;
+        if (!connected) return;
+        lost = false;
+        setStatus('live');
+      },
+      onFailed: () => {
+        if (!connected || retryTimer !== undefined) return;
+        const delay = Math.min(RETRY_BASE_MS * 2 ** failures, RETRY_MAX_MS);
+        failures += 1;
+        retryTimer = setTimeout(() => {
+          retryTimer = undefined;
+          if (connected) sync();
+        }, delay);
+      },
     });
     const refetch = (): void => {
       const mine = ++latest;
@@ -67,6 +89,18 @@ export function RealtimeProvider({ instance, children }: { instance: Instance; c
         if (mine === latest) reads.check();
       });
     };
+    // A refetch that read the server before a write committed would put the old rates back over the write's
+    // result, so People's refetch waits until no write is in flight. Other instances hold no writes.
+    function sync(): void {
+      if (instance !== 'people') {
+        refetch();
+      } else if (waiting === null) {
+        waiting = afterWrites(queryClient, () => {
+          waiting = null;
+          refetch();
+        });
+      }
+    }
     const stop = repository.subscribe(instance, {
       onEvent: (event) => {
         patchCollection(queryClient, event);
@@ -76,16 +110,7 @@ export function RealtimeProvider({ instance, children }: { instance: Instance; c
         // After a drop the status stays `down` until the refetch has settled: `live` promises a cache that is
         // current, and until then it holds what was true before the outage.
         if (!lost) setStatus('live');
-        // A refetch that read the server before a write committed would put the old rates back over the
-        // write's result, so People's refetch waits until no write is in flight. Other instances hold no writes.
-        if (instance !== 'people') {
-          refetch();
-        } else if (waiting === null) {
-          waiting = afterWrites(queryClient, () => {
-            waiting = null;
-            refetch();
-          });
-        }
+        sync();
       },
       onDisconnect: () => {
         connected = false;
@@ -93,10 +118,14 @@ export function RealtimeProvider({ instance, children }: { instance: Instance; c
         // A refetch already running started before the drop and may have read pre-outage data: it no longer counts.
         latest += 1;
         reads.drop();
+        clearTimeout(retryTimer);
+        retryTimer = undefined;
+        failures = 0;
         setStatus('down');
       },
     });
     return () => {
+      clearTimeout(retryTimer);
       connected = false;
       waiting?.();
       reads.stop();

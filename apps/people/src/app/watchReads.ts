@@ -12,9 +12,16 @@ import { instanceKey, type Instance } from '../shared/api';
  * have read the server before the subscription was live. Its end, successful or not, is let go by, and the
  * follow-up read the provider makes after it is the one that counts.
  *
+ * A query being waited for that fails is reported with `onFailed`, so the caller can read again: nothing else
+ * will, because the data never goes stale on its own (D26).
+ *
  * A query nobody observes is not waited for: a refetch only marks it stale, and it is read when it is next used.
  */
-export function watchReads(queryClient: QueryClient, instance: Instance, onAllRead: () => void) {
+export function watchReads(
+  queryClient: QueryClient,
+  instance: Instance,
+  { onAllRead, onFailed }: { onAllRead: () => void; onFailed: () => void },
+) {
   let pending: Set<string> | null = null;
   // The queries in `pending` whose fetch in flight at `begin()` has not ended yet.
   let inFlight = new Set<string>();
@@ -31,6 +38,7 @@ export function watchReads(queryClient: QueryClient, instance: Instance, onAllRe
       event.type === 'updated' &&
       (event.action.type === 'error' || (event.action.type === 'success' && !event.action.manual));
     if (ended && inFlight.delete(event.query.queryHash)) return;
+    if (event.type === 'updated' && event.action.type === 'error' && pending.has(event.query.queryHash)) onFailed();
     const read = ended && event.action.type === 'success';
     if (read || event.type === 'removed') {
       inFlight.delete(event.query.queryHash);

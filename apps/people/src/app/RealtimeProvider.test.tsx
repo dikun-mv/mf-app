@@ -289,6 +289,37 @@ describe('RealtimeProvider', () => {
       expect(await screen.findByText('People is live')).toBeInTheDocument();
     });
 
+    it('reads again by itself after a failed read while connected, and goes live when the retry succeeds', async () => {
+      const { repository } = await droppedConnection();
+      repository.failReads(new ApiError('unavailable', 'people'));
+      act(() => {
+        repository.connect('people');
+      });
+      await settle();
+      expect(screen.getByText('People is down')).toBeInTheDocument();
+
+      // The service is back; nobody reconnects, and the first retry comes a second after the failure.
+      repository.failReads(null);
+      bumpRates(repository);
+      expect(await screen.findByText('People is live', {}, { timeout: 4000 })).toBeInTheDocument();
+      expect(await screen.findByText('Adaeze Okafor earns 121 an hour')).toBeInTheDocument();
+    });
+
+    it('stops retrying when the connection drops', async () => {
+      const { repository } = await droppedConnection();
+      repository.failReads(new ApiError('unavailable', 'people'));
+      act(() => {
+        repository.connect('people');
+      });
+      await settle();
+      act(() => {
+        repository.disconnect('people');
+      });
+      const reads = rs.spyOn(repository, 'listRateRecords');
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      expect(reads).not.toHaveBeenCalled();
+    });
+
     it('stays down when the read failed, and goes live at the next reconnect that succeeds', async () => {
       const { repository } = await droppedConnection();
       repository.failReads(new ApiError('unavailable', 'people'));
