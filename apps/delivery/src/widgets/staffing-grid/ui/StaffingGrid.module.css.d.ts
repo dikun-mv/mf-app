@@ -17,6 +17,7 @@ interface CssExports {
   twisty: string;
   value: string;
   visuallyHidden: string;
+  widget: string;
 }
 declare const cssExports: CssExports;
 export default cssExports;

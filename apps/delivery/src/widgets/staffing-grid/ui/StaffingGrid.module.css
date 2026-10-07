@@ -4,6 +4,12 @@
  * (the only rows that hold allocations) sit on the page's own ground. The label and Total columns are
  * sticky, so every row keeps its name and its total in view while the months scroll.
  */
+.widget {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bl-space-3);
+}
+
 .scroll {
   overflow-x: auto;
   border: 1px solid var(--bl-color-border);
