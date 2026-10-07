@@ -1,0 +1,16 @@
+.loading {
+  display: flex;
+  align-items: center;
+  gap: var(--bl-space-2);
+  margin: var(--bl-space-3) 0;
+  color: var(--bl-color-text-muted);
+}
+
+/* The message, with its retry at the far end (screens 4). */
+.failed {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--bl-space-2) var(--bl-space-4);
+}

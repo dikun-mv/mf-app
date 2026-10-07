@@ -1,0 +1,29 @@
+.register {
+  display: flex;
+  flex-direction: column;
+  gap: var(--bl-space-3);
+}
+
+/* The search sits where the eye starts, and the count at the far end of the same line (screens 2.1). */
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--bl-space-2) var(--bl-space-4);
+}
+
+.count {
+  margin: 0;
+  min-height: var(--bl-control-height);
+  display: flex;
+  align-items: center;
+  color: var(--bl-color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.empty {
+  padding-block: var(--bl-space-4);
+  color: var(--bl-color-text-muted);
+  text-align: center;
+}
