@@ -10,9 +10,13 @@
   },
   "dependencies": {
     "@baseline/delivery-contract": "workspace:^",
+    "@baseline/delivery-domain": "workspace:^",
     "@baseline/host-contract": "workspace:^",
+    "@baseline/people-contract": "workspace:^",
     "@baseline/ui": "workspace:^",
+    "@tanstack/react-query": "^5.104.1",
     "clsx": "^2.1.1",
+    "pocketbase": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
     "react-router": "^7.0.0",
