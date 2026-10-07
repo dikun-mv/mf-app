@@ -7,3 +7,4 @@ export * from './ids';
 export * from './pricingImpact';
 export * from './rateHistory';
 export * from './result';
+export * from './search';
