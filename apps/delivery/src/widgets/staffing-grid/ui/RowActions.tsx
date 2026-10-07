@@ -1,6 +1,7 @@
 import { rowActions, type RowActionId } from '@baseline/delivery-domain';
-import { useId } from 'react';
+import { useId, useState } from 'react';
 import { usePlanState } from '../model/usePlanState';
+import { ChosenAction } from './ChosenAction';
 import styles from './RowActions.module.css';
 import type { RowActionsSlotProps } from './slots/types';
 
@@ -13,6 +14,7 @@ import type { RowActionsSlotProps } from './slots/types';
  * The data is read only while the list or an action is showing: a closed row costs a button.
  */
 export function RowActions({ row, open, onToggle }: RowActionsSlotProps) {
+  const [chosen, setChosen] = useState<RowActionId | null>(null);
   const listId = useId();
   const { itemId } = row;
   if (itemId === null) return null;
@@ -32,8 +34,18 @@ export function RowActions({ row, open, onToggle }: RowActionsSlotProps) {
         <ActionList
           id={listId}
           itemId={itemId}
-          onChoose={() => {
+          onChoose={(action) => {
+            setChosen(action);
             onToggle();
+          }}
+        />
+      )}
+      {chosen !== null && (
+        <ChosenAction
+          action={chosen}
+          itemId={itemId}
+          onClose={() => {
+            setChosen(null);
           }}
         />
       )}

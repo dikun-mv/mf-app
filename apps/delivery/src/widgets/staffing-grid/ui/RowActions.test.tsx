@@ -3,6 +3,7 @@ import { describe, expect, it } from '@rstest/core';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Suspense } from 'react';
+import { RepositoryError } from '../../../shared/api';
 import { createFakeRepository, renderWithApp, seedData } from '../../../shared/testing';
 import { StaffingGrid } from './StaffingGrid';
 
@@ -64,5 +65,32 @@ describe('Row actions', () => {
     await user.click(await moreOf('Discovery'));
     expect(screen.getByRole('button', { name: 'Assign person…' })).toBeDisabled();
     expect(screen.getByText(/Discovery has sub-items, and people are assigned to leaves/)).toBeInTheDocument();
+  });
+
+  it('renames in place: the new name shows in the grid and the status line says so', async () => {
+    const { user } = renderGrid();
+    await user.click(await moreOf('Rework'));
+    await user.click(screen.getByRole('button', { name: 'Rename' }));
+    // The list closed on choosing; the field took its place.
+    expect(screen.queryByRole('button', { name: 'Rename' })).not.toBeInTheDocument();
+    await user.keyboard('Rework 2{Enter}');
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Renamed "Rework" to "Rework 2".');
+    expect(await screen.findByRole('rowheader', { name: /Rework 2/ })).toBeInTheDocument();
+    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+  });
+
+  it('puts a refused write at the top of the widget and undoes the new name', async () => {
+    const { user, repository } = renderGrid();
+    repository.failWrites(new RepositoryError('unavailable', 'delivery'));
+    await user.click(await moreOf('Rework'));
+    await user.click(screen.getByRole('button', { name: 'Rename' }));
+    await user.keyboard('Rework 2{Enter}');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      "Your change wasn't saved: the Delivery service didn't respond. It has been undone. Try again when the connection is back.",
+    );
+    expect(await screen.findByRole('rowheader', { name: /Rework/ })).not.toHaveTextContent('Rework 2');
+    expect(screen.getByRole('status')).toBeEmptyDOMElement();
   });
 });
