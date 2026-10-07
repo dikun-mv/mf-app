@@ -1,0 +1,69 @@
+# ADR 035: `delivery-pb`, Delivery's data service (T3.2, T3.6, T3.9)
+
+Status: accepted
+
+## Context
+
+[ADR 032](032-pocketbase-data-layer.md) gave Delivery a stock PocketBase, and [ADR 033](033-pocketbase-runtime-and-checks.md) fixed the runtime and what the checks found. [phase-3.md](../phase-3.md) §4 lists Delivery's collections and its two hooks: `editedAt` (D18) and the capacity load row (D8). This ADR records what was built from it, and where the result differs.
+
+## Decision
+
+**Three migrations, two hooks.** `services/delivery-pb/pb_migrations/` holds `001_settings.js` (the runtime's batch settings), `002_collections.js` (130 lines) and `003_seed.js` (49 lines). `pb_hooks/` holds `allocations.pb.js` (42 lines, the two hooks' wiring) and `lib/`: `load.js` (34 lines, the rule), `refresh.js` (52 lines, the only file that reads and writes) and `load.d.ts` (the hand-written types for the tests). There are no other hooks, no custom routes and no wrappers.
+
+**Collections** (`002_collections.js`, as phase-3.md §4):
+
+| Collection             | Fields                                                                                                                                                                                                                       | Indexes                                                              | List, view | Create, update, delete |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------- | ---------------------- |
+| `projects`             | `name` (text, required); `startDate`, `endDate` (text, required, `^\d{4}-\d{2}-\d{2}$`)                                                                                                                                      | none                                                                 | public     | locked                 |
+| `breakdown_items`      | `projectId` (relation to `projects`, required, single); `parentId` (relation to itself, optional, single); `name` (text, required). No cascade                                                                               | `(projectId)`                                                        | public     | public                 |
+| `allocations`          | `breakdownItemId` (relation, required, single, no cascade); `employeeId` (text, required, `^emp-[a-z0-9-]+$`); `month` (text, required, `Month` pattern); `amount` (number, min 0); `editedAt` (text, `IsoDateTime` pattern) | unique `(breakdownItemId, employeeId, month)`; `(employeeId, month)` | public     | public                 |
+| `employee_month_loads` | `employeeId`, `month` (text); `allocatedPersonMonths` (number); `overCapacity` (bool); `causingAllocationId` (text, empty when not over capacity). Record id `<employeeId>-<month>`                                          | unique `(employeeId, month)`                                         | public     | locked                 |
+
+Each collection widens its `id` field after its first save, with the snippet from ADR 033 (a). `breakdown_items.parentId` is added in a second save, since a relation to itself needs the collection to exist (ADR 033 g). The create, update and delete rules of `employee_month_loads` stay locked; the hook still writes, because a hook's `e.app.save` skips API rules.
+
+**The `editedAt` hook (D18).** `onRecordCreateRequest` sets `editedAt` to `new Date().toISOString()`. `onRecordUpdateRequest` sets it to now when `amount` differs from `e.record.original()`, and otherwise back to the stored value, whatever the client sent. A move (a new `breakdownItemId`), a D9 re-point and a change of `month` keep it. The request hooks fire once per batch item (ADR 033 c).
+
+**The load hook (D8).** `onRecordCreate`, `onRecordUpdate` and `onRecordDelete` on `allocations` call `e.next()`, then `refreshLoad(e.app, employeeId, month)`. `refreshLoad` reads the pair's allocations through the `app` it is given, calls `loadOf`, and upserts the row by id or deletes it when `loadOf` returns `null` (no effort left). An update that changed the employee or the month refreshes the old pair too; the old pair is read from `e.record.original()` _before_ `e.next()`. Because `e.app` is the write's transaction, a rolled-back batch leaves no load change (tested). `refreshLoad` skips the save when the three values are already what the row holds, so a move inside one pair sends no realtime event.
+
+**`load.js`.** One pure CommonJS function, `loadOf(contributions)`, returning `{ allocatedPersonMonths, overCapacity, causingAllocationId }` or `null`. It is delivery-domain's `loadsOf` for one group: contributors are `amount > 0`, summed in id order, `overCapacity` when the sum is above `1 + 1e-9`, and the causer the latest `(editedAt, id)` among them, named only when over capacity. PocketBase has no null, so the causer is `""` when there is none. A fast-check property test (`test/load.test.ts`, the `services` Rstest project) holds it equal to `loadsOf` over random allocations for one pair, 1000 runs, drawing ids from six values and `editedAt` from three, so ties are common. It writes its own arbitraries and does not import delivery-domain's `testing/` folder. Flipping the tie-break in `load.js` makes it fail.
+
+**Seed** (`003_seed.js`): reads `/pb/seed/data.json` and saves the 4 projects, the 90 breakdown items (the file lists a parent before its children) and the 720 allocations, keeping the ids, with `editedAt = 2026-01-01T00:00:00.000Z` on each allocation. Model hooks fire for migration saves (ADR 033 d), so the allocations are saved through `app.unsafeWithoutHooks()`, and each of the 482 load rows is written once, by `loadOf` over its pair's allocations in memory. The six over-capacity rows name the higher id of each pair as the causer (alloc-293, -073, -043, -101, -613, -421), as plan §1 and D18 say.
+
+**`delivery-contract` v1** (`packages/delivery-contract`): `DELIVERY_BASE_PATH` (`/api/delivery`), `DELIVERY_COLLECTIONS` (`employeeMonthLoads: 'employee_month_loads'`, which is also the realtime topic `employee_month_loads/*`) and `EmployeeMonthLoadRecord`, which parses a load row into the existing `EmployeeMonthLoad`: it needs `collectionName` to be the right collection, maps `causingAllocationId: ""` to `null`, and drops `id`, `collectionId` and `collectionName`. Only this collection is published; Delivery's own collections are parsed by its app adapter (T3.7). The header comment of `delivery-domain`'s `capacity.ts` no longer names `delivery-api`'s /load and says `load.js` is the one mirror.
+
+**Integration tests** (`services/delivery-pb/test/integration/`, through the gateway with the SDK): `setup.ts` (the `eventsource` polyfill, a client, error helpers copied from People's, and a `Scratch` helper that removes what a test wrote: allocations first, then items, children before parents), and three files:
+
+- `seed.test.ts`: 4, 90 and 720 records; every seed allocation has the seed `editedAt`; exactly 6 over-capacity rows with the causers of plan §1; and the 482 load rows equal `loadsOf` over the live allocations.
+- `allocations.test.ts`: `editedAt` is stamped on create and on an amount edit (a client-sent value is ignored) and kept otherwise; the edited allocation becomes the causer; a user allocation beats the seed rows as causer in a seed pair, and deleting it gives the seed causer back; the row follows create, update, delete and a change of month; a move keeps `editedAt` and the load; a D9 batch (create a child under a leaf, re-point the leaf's allocation to it) commits as one and keeps both; a batch with a bad operation leaves no allocation and no load change; a duplicate `(breakdownItemId, employeeId, month)` fails with `validation_not_unique` on all three columns.
+- `loads.test.ts`: create, update and delete on `employee_month_loads` (also inside a batch) are refused with 403; an allocation edit reaches a subscriber on `employee_month_loads`, as create, update and delete events of the row; every load row parses with `EmployeeMonthLoadRecord`, and its id is `<employeeId>-<month>`.
+
+Each test works on an (employee, month) pair with no seed effort and removes what it adds, so the suite can run twice without a reset. The one test that touches a seed pair adds an allocation and deletes it again.
+
+## What differed from phase-3.md
+
+- **`amount` is not a `required` field.** phase-3.md says "number required, min 0". PocketBase treats 0 as blank on a required number (ADR 034 found it for `hourlyCost`), which would refuse an amount of 0. 0 is a valid amount: `loadOf` and `loadsOf` both treat it as "no contribution", and the grid can set a cell to 0. The field has `min: 0` and is not required, so an omitted `amount` is stored as 0. The adapter always sends it.
+- **`editedAt` is not required either.** The hook always sets it before the record is validated, so the field doesn't need the flag; it keeps the `IsoDateTime` pattern, so a value that is set must be well-formed.
+- **`pb_hooks/package.json`** (`{ "type": "commonjs" }`). The service package is `"type": "module"`, which would make Node and Rstest read `load.js` as an ES module and fail on `module.exports`. The nested file makes the hooks folder CommonJS for them. PocketBase ignores it.
+- **The service's `package.json` grew** from the skeleton: a `typecheck` script (added with the first test, as the runtime brief said), `@baseline/delivery-domain` (the property test and the seed comparison), `@baseline/delivery-contract`, `@baseline/host-contract` and `@baseline/people-contract` (the contract's ids), and `zod`. `fast-check` is the root's. No new npm package.
+- **`refreshLoad` skips a save that would change nothing.** Not in phase-3.md: without it, a move or an update inside one pair would send a realtime event for an unchanged row.
+- **Not implemented: the `max(now, lastIssued)` guard** D18 lists as optional. Two edits in one millisecond are ordered by id, as D18 documents.
+
+## Alternatives
+
+- **Let the hook write the seed's load rows** (ADR 033 d's simplest option): 720 refreshes, each rewriting a row, against one write per row.
+- **A `required` amount with a sentinel for 0:** the client would send 0 as something else. A plain non-required field is simpler and honest.
+- **`load.cjs`** instead of a `package.json` in `pb_hooks`: it works in Node, but the plan, phase-3.md and ADR 033 all name `pb_hooks/lib/load.js`.
+- **A `require` of `load.js` inside `refreshLoad`:** not needed. A module loaded with `require` from a handler keeps its own top-level scope, so `refresh.js` requires `load.js` at its top (the handler-scope rule of ADR 033 f is about the top level of a `*.pb.js`).
+
+## Why
+
+Two short hooks and a pure function are the whole server logic, and the function is proved equal to the domain rule by a property test, so the rule has one definition and one mirror that cannot drift silently. The load row changes in the allocation's transaction, so a reader never sees a stale flag after a committed edit, and People reads and subscribes to a collection and never sees an allocation.
+
+## Costs and limits
+
+- **The server does not re-check the tree and allocation rules.** A hand-made call can put an allocation on a non-leaf, outside the project's span, or create a cycle; only the domain package and the invariant checker (T1.12b) know those rules. `employeeId` only has to look like `emp-…`: nothing checks that the employee exists in People's instance.
+- **`allocations` and `breakdown_items` writes are public.** There is no auth (plan §1).
+- **Each allocation write re-reads its pair.** A D9 batch with N allocations does N small queries inside the transaction. The pair has at most a handful of rows (one per leaf and month), so this is cheap at this size.
+- **Deleting a parent before its children** is silently allowed by PocketBase for the optional `parentId` (ADR 033 g) and leaves orphan roots; "children first" stays the adapter's rule.
+- **The server patterns are looser than the contract schemas**, as in ADR 034: `startDate` only has to look like a date, and an `id` only has to match the widened pattern. The app adapter parses per record.
+- **A seed allocation's `editedAt` is one shared time.** The six seed conflicts are resolved by id alone, the higher one winning, until someone edits one of the two allocations.

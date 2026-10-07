@@ -1,5 +1,15 @@
 import { describe, expect, it } from '@rstest/core';
-import { Allocation, AllocationId, BreakdownItem, EmployeeMonthLoad, Project, ProjectId } from './index';
+import {
+  Allocation,
+  AllocationId,
+  BreakdownItem,
+  DELIVERY_BASE_PATH,
+  DELIVERY_COLLECTIONS,
+  EmployeeMonthLoad,
+  EmployeeMonthLoadRecord,
+  Project,
+  ProjectId,
+} from './index';
 
 describe('delivery ids', () => {
   it('accept seed and client-generated forms', () => {
@@ -54,5 +64,51 @@ describe('EmployeeMonthLoad', () => {
         causingAllocationId: null,
       }).success,
     ).toBe(true);
+  });
+});
+
+describe('published names', () => {
+  it('are the gateway path and the one published collection', () => {
+    expect(DELIVERY_BASE_PATH).toBe('/api/delivery');
+    expect(DELIVERY_COLLECTIONS).toEqual({ employeeMonthLoads: 'employee_month_loads' });
+  });
+});
+
+describe('EmployeeMonthLoadRecord', () => {
+  const row = {
+    id: 'emp-003-2026-06',
+    collectionId: 'pbc_123',
+    collectionName: 'employee_month_loads',
+    employeeId: 'emp-003',
+    month: '2026-06',
+    allocatedPersonMonths: 1.2,
+    overCapacity: true,
+    causingAllocationId: 'alloc-073',
+  };
+
+  it('parses a row into an EmployeeMonthLoad and drops the PocketBase fields', () => {
+    expect(EmployeeMonthLoadRecord.parse(row)).toEqual({
+      employeeId: 'emp-003',
+      month: '2026-06',
+      allocatedPersonMonths: 1.2,
+      overCapacity: true,
+      causingAllocationId: 'alloc-073',
+    });
+  });
+
+  it('reads an empty causer as null', () => {
+    const parsed = EmployeeMonthLoadRecord.parse({
+      ...row,
+      allocatedPersonMonths: 0.8,
+      overCapacity: false,
+      causingAllocationId: '',
+    });
+    expect(parsed.causingAllocationId).toBeNull();
+    expect(EmployeeMonthLoad.safeParse(parsed).success).toBe(true);
+  });
+
+  it('refuses a record of another collection and a malformed causer', () => {
+    expect(EmployeeMonthLoadRecord.safeParse({ ...row, collectionName: 'allocations' }).success).toBe(false);
+    expect(EmployeeMonthLoadRecord.safeParse({ ...row, causingAllocationId: 'nope' }).success).toBe(false);
   });
 });

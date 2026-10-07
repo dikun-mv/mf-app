@@ -2,7 +2,11 @@ import { IsoDate, IsoDateTime, Month, entityId } from '@baseline/host-contract';
 import { EmployeeId } from '@baseline/people-contract';
 import { z } from 'zod';
 
-// Delivery's published types (T1.1). T3.2 adds the `load.changed` event.
+// Delivery's published contract (T1.1, T3.2): the entity types, where Delivery's PocketBase instance is
+// served (base path), and the one collection it publishes, `employee_month_loads` (D8), with the schema
+// that parses its records. Delivery's own collections (projects, breakdown_items, allocations) are not
+// published: its app adapter parses them (T3.7). Clients use PocketBase's own SDK for REST, batch and
+// realtime, and each app writes its own adapter from what is published here.
 
 export const ProjectId = entityId('prj', 'ProjectId');
 export type ProjectId = z.infer<typeof ProjectId>;
@@ -56,3 +60,26 @@ export const EmployeeMonthLoad = z.object({
   causingAllocationId: AllocationId.nullable(),
 });
 export type EmployeeMonthLoad = z.infer<typeof EmployeeMonthLoad>;
+
+/** Where Delivery's PocketBase is served: the gateway cuts this prefix. The SDK's base URL is the origin plus this. */
+export const DELIVERY_BASE_PATH = '/api/delivery';
+
+/**
+ * Delivery's published collections: only the capacity load (D8). The name is also its realtime topic:
+ * `pb.collection(name).subscribe('*', …)` listens to every row (PocketBase's topic `<name>/*`). Anyone may
+ * read and subscribe; nobody writes it through the API, since the allocation hook keeps it (ADR 035).
+ */
+export const DELIVERY_COLLECTIONS = { employeeMonthLoads: 'employee_month_loads' } as const;
+export type DeliveryCollection = (typeof DELIVERY_COLLECTIONS)[keyof typeof DELIVERY_COLLECTIONS];
+
+/**
+ * A record of `employee_month_loads`, parsed into an `EmployeeMonthLoad`. The record must say it came from
+ * that collection. PocketBase has no null, so a row that isn't over capacity has `causingAllocationId: ""`,
+ * which becomes `null`. Everything else PocketBase adds (`id`, which is `<employeeId>-<month>`,
+ * `collectionId`, `collectionName`) is dropped. There is no row for a pair with no effort.
+ */
+export const EmployeeMonthLoadRecord = EmployeeMonthLoad.extend({
+  collectionName: z.literal(DELIVERY_COLLECTIONS.employeeMonthLoads),
+  causingAllocationId: z.union([z.literal('').transform((): null => null), AllocationId]),
+}).transform(({ collectionName: _collectionName, ...load }): EmployeeMonthLoad => load);
+export type EmployeeMonthLoadRecord = z.infer<typeof EmployeeMonthLoadRecord>;
