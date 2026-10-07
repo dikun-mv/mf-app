@@ -711,8 +711,8 @@ Build the screens in [screens.md](screens.md) §3. The grid, cells, tree column,
 - [ ] **T6.3** ([screens.md](screens.md) §3.4) Build the WBS tree UI: create (under a node, and *Add top-level item*), rename in place, move (with a parent picker, no DnD library needed) and delete, reached from each row's minimal `⋯` disclosure (D36). Disabled actions and move targets show the reasons from T6.0's `rowActions` and `moveTargets`. Add child warns before it moves allocations (D9); delete counts the items and allocations it removes. Show messages for refused or moved allocations so nothing is lost silently.
   - The parent picker offers only nodes in the same project (D15).
 - [x] **T6.4** ([screens.md](screens.md) §3.2) Build the staffing grid: a project row on top, then WBS nodes with person rows under each leaf, columns are months plus a Total, and cells are hand-rolled table markup, with D36's keyboard and accessibility model. The rows and values come from `gridView` (D35). Nodes expand and collapse (all expanded on load, D31); a collapsed node keeps its sums. The label and Total columns stay in place while the months scroll sideways. Leave the slots the parallel tasks fill (plan §4, *Parallel lanes*): cell renderer, row actions, toolbar and details panel.
-- [ ] **T6.5** ([screens.md](screens.md) §3.2, §3.3) Add a unit switcher (Hours / PM / % / Cost), a native radio group. Display goes through `roundGrid` (T6.10) and then `formatUnit`. Switching never writes. The unit lives in `?unit=` (D31).
-- [ ] **T6.6** ([screens.md](screens.md) §3.2, §3.3, §4) Make cells editable in any unit:
+- [x] **T6.5** ([screens.md](screens.md) §3.2, §3.3) Add a unit switcher (Hours / PM / % / Cost), a native radio group. Display goes through `roundGrid` (T6.10) and then `formatUnit`. Switching never writes. The unit lives in `?unit=` (D31).
+- [x] **T6.6** ([screens.md](screens.md) §3.2, §3.3, §4) Make cells editable in any unit:
   - parse with `delivery-domain`'s `parseAmount` (D34), convert to PM, save through `useApplyChangeSet` (D26). The cell keeps a local draft, not a react-hook-form form (D27); realtime changes don't overwrite it (D37)
   - in `partiallyPriced` and `unpriced` cells, € editing is disabled with the reason shown inline; hours, PM and % stay editable (D17)
   - outline the cell while it's being edited
@@ -733,7 +733,7 @@ Build the screens in [screens.md](screens.md) §3. The grid, cells, tree column,
   - the working days per rate slice, and the blended rate at 4 dp (`€89.5455/h`)
   - the full text of the cell's markers: the over-capacity causer (project › item path, D18), and the D17 partial or unpriced reason. The markers point at it with `aria-describedby` (D36).
   - Its content comes from `gridView` (D35), so it is tested in `delivery-domain` without React. Derived cells aren't focusable (D36), so they have no details.
-- [ ] **T6.13** ([screens.md](screens.md) §3.6) **Grid with People unreachable** (D32): Delivery's own data still loads; an `InlineMessage` says People's data can't be reached; Hours and Cost are disabled in the unit switcher; person rows show employee ids; PM and % stay editable. It clears by itself when People's realtime reconnects (D29). T7.4 verifies it.
+- [x] **T6.13** ([screens.md](screens.md) §3.6) **Grid with People unreachable** (D32): Delivery's own data still loads; an `InlineMessage` says People's data can't be reached; Hours and Cost are disabled in the unit switcher; person rows show employee ids; PM and % stay editable. It clears by itself when People's realtime reconnects (D29). T7.4 verifies it.
 
 **Exit check:** every state in [screens.md](screens.md) §3 works hosted, the main ones also standalone; the reference cell shows €7,880.00 in Cost and the details panel shows all five reference numbers; edits in all four units, and every tree operation, survive a reload and a restart of `delivery-pb`. The exact steps are in [phases-4-6.md](phases-4-6.md) §6.
 
