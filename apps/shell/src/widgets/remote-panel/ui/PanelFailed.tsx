@@ -13,8 +13,16 @@ interface PanelFailedProps {
   onRetry: () => void;
 }
 
-function reason(error: unknown): string {
-  if (error instanceof RemoteLoadTimeoutError) return 'timed out';
+/**
+ * A short, plain reason for a failed load. The Federation runtime's own message (an error code, a JSON of
+ * arguments, a docs link) is too long and means nothing to a user, so it is never shown in the text; it stays
+ * in the `title` and in the console.
+ */
+function loadReason(error: unknown): string {
+  return error instanceof RemoteLoadTimeoutError ? 'timed out' : 'not found or not reachable';
+}
+
+function rawMessage(error: unknown): string {
   return error instanceof Error ? error.message : 'unknown error';
 }
 
@@ -24,10 +32,10 @@ export function PanelFailed({ label, entry, error, loadFailed, onRetry }: PanelF
     <InlineMessage tone="error" className={styles.failed}>
       <div className={styles.text}>
         <p className={styles.title}>{loadFailed ? `${label} couldn't load` : `${label} stopped working`}</p>
-        <p className={styles.detail}>
+        <p className={styles.detail} title={rawMessage(error)}>
           {loadFailed
-            ? `${displayUrl(entry, window.location.origin)} didn't load (${reason(error)}).`
-            : `It hit an error while showing this page (${reason(error)}).`}{' '}
+            ? `${displayUrl(entry, window.location.origin)} didn't load (${loadReason(error)}).`
+            : `It hit an error while showing this page (${rawMessage(error)}).`}{' '}
           The rest of Baseline still works.
         </p>
       </div>
