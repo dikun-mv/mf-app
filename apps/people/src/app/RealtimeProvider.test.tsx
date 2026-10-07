@@ -260,6 +260,35 @@ describe('RealtimeProvider', () => {
       expect(await screen.findByText('Adaeze Okafor earns 121 an hour')).toBeInTheDocument();
     });
 
+    it('does not count a first fetch that was already running at the reconnect, only the read that follows it', async () => {
+      const repository = createFakeRepository();
+      // The page's first fetch is slow: it is still running across a drop and a reconnect.
+      const releaseFirst = repository.holdReads();
+      renderWithApp(
+        <RealtimeProvider instance="people">
+          <Status />
+          <Adaeze />
+        </RealtimeProvider>,
+        { repository },
+      );
+      act(() => {
+        repository.connect('people');
+        repository.disconnect('people');
+        repository.connect('people');
+      });
+      expect(screen.getByText('People is down')).toBeInTheDocument();
+
+      // The first fetch ends, and the read that follows it is slow too.
+      releaseFirst();
+      const releaseFollowUp = repository.holdReads();
+      expect(await screen.findByText('Adaeze Okafor earns 120 an hour')).toBeInTheDocument();
+      await settle();
+      expect(screen.getByText('People is down')).toBeInTheDocument();
+
+      releaseFollowUp();
+      expect(await screen.findByText('People is live')).toBeInTheDocument();
+    });
+
     it('stays down when the read failed, and goes live at the next reconnect that succeeds', async () => {
       const { repository } = await droppedConnection();
       repository.failReads(new ApiError('unavailable', 'people'));
