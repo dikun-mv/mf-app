@@ -23,8 +23,8 @@ export type EmployeeRates = Pick<EmployeeMonth, 'weeklyHours' | 'rates'>;
 
 export interface EditInput {
   readonly draft: string;
-  /** The text the editor opened with (`openingText`). */
-  readonly opened: string;
+  /** Whether the user has changed the input since the editor opened. An untouched draft is never saved. */
+  readonly touched: boolean;
   readonly unit: DisplayUnit;
   /** The cell as it is now, not as it was when the editor opened: realtime may have changed it (D37). */
   readonly cell: EditedCell;
@@ -58,18 +58,18 @@ const COST_REFUSED = "Can't edit the cost here. Switch to Hours, Person-months o
 const NEEDS_PEOPLE = "Hours and cost need People's data, which can't be reached. Switch to Person-months or %.";
 
 /**
- * Decides what to do with a finished draft. A draft that is the text the editor opened with was never
- * touched, so it is unchanged: a cell shown rounded isn't rewritten with its rounding, and a value that
- * changed elsewhere meanwhile isn't overwritten by a draft nobody edited. Any other draft is compared only
- * with what is stored at this moment, which is what D37 means by comparing at save time.
+ * Decides what to do with a finished draft. An untouched draft is unchanged, however the cell moved under
+ * it meanwhile: a value changed elsewhere isn't overwritten by a draft nobody edited (D37). A touched draft
+ * is compared only with what is stored at this moment, which is what D37 means by comparing at save time:
+ * it is unchanged when it is the text the cell shows now (so a cell shown rounded isn't rewritten with its
+ * rounding) or the same number. Typing the old text back over a remote change is a real edit.
  * A € edit in a partly priced or unpriced month is refused with the cell's own reason (D17).
  */
-export function resolveEdit({ draft, opened, unit, cell, employee, perEur }: EditInput): EditOutcome {
-  if (draft.trim() === opened.trim()) return { kind: 'unchanged' };
+export function resolveEdit({ draft, touched, unit, cell, employee, perEur }: EditInput): EditOutcome {
+  if (!touched || draft.trim() === openingText(unit, cell)) return { kind: 'unchanged' };
   const parsed = parseAmount(draft);
   if (!parsed.ok) return { kind: 'rejected', message: AMOUNT_PROBLEMS[parsed.error] };
-  // A touched draft is compared with what is stored now, in the unit it was typed in: the exact value
-  // `cell.exact`, to within float noise (7880 typed back over a cost of 7880.0000000001 is no edit).
+  // Compared with what is stored now, in the unit it was typed in: the exact value `cell.exact`, to within float noise (7880 typed back over a cost of 7880.0000000001 is no edit).
   if (Math.abs(parsed.value - cell.exact) <= NOISE * Math.max(1, Math.abs(cell.exact))) return { kind: 'unchanged' };
 
   let amount: PersonMonths;

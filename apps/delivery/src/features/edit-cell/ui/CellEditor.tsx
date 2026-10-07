@@ -50,6 +50,7 @@ export function CellEditor({ row, cell, month, unit, describedById, hasAdornment
 
   const [opened] = useState(() => openingText(unit, cell));
   const [draft, setDraft] = useState(opened);
+  const touched = useRef(false);
   const [problem, setProblem] = useState<string | null>(null);
   // Set once the editor has been settled by a key, so the blur that follows its removal does nothing.
   const settled = useRef(false);
@@ -70,7 +71,7 @@ export function CellEditor({ row, cell, month, unit, describedById, hasAdornment
     const employee = employees?.find(({ id }) => id === row.employeeId);
     const outcome = resolveEdit({
       draft,
-      opened,
+      touched: touched.current,
       unit,
       cell,
       employee:
@@ -137,6 +138,7 @@ export function CellEditor({ row, cell, month, unit, describedById, hasAdornment
           aria-describedby={describedBy === '' ? undefined : describedBy}
           value={draft}
           onChange={(event) => {
+            touched.current = true;
             setDraft(event.target.value);
             setProblem(null);
           }}

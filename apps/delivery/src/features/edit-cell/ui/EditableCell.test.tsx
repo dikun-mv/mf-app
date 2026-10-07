@@ -1,6 +1,7 @@
-import { ProjectId } from '@baseline/delivery-contract';
+import { ProjectId, type Allocation } from '@baseline/delivery-contract';
 import { gridView, type DisplayUnit } from '@baseline/delivery-domain';
 import { describe, expect, it } from '@rstest/core';
+import type { QueryClient } from '@tanstack/react-query';
 import { act, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Suspense, useState, type ReactNode } from 'react';
@@ -9,7 +10,7 @@ import { useBreakdownItems } from '../../../entities/breakdown-item';
 import { useEmployees } from '../../../entities/employee';
 import { useProjects } from '../../../entities/project';
 import { useRateRecords } from '../../../entities/rate-record';
-import { RepositoryError } from '../../../shared/api';
+import { collectionKey, RepositoryError } from '../../../shared/api';
 import { useHost } from '../../../shared/lib';
 import { createFakeRepository, renderWithApp, seedData } from '../../../shared/testing';
 import { EditableCell } from './EditableCell';
@@ -69,6 +70,17 @@ function setup(which: Which, unit: DisplayUnit = 'personMonths', data = seedData
 
 const ANJA_APRIL = { person: 'Anja Keller', month: '2026-04' };
 const ADAEZE_MARCH = { person: 'Adaeze Okafor', month: '2026-03' };
+
+/** What the realtime echo of another user's edit does to the cache: Anja's April cell takes a new amount. */
+function changeElsewhere(queryClient: QueryClient, amount: number): void {
+  act(() => {
+    queryClient.setQueryData(collectionKey('allocations'), (current: readonly Allocation[] | undefined) =>
+      current?.map((stored) =>
+        stored.employeeId === 'emp-016' && stored.month === '2026-04' ? { ...stored, amount } : stored,
+      ),
+    );
+  });
+}
 
 const cellButton = (name: string) => screen.findByRole('button', { name });
 const allocationOf = (repository: ReturnType<typeof createFakeRepository>, person: string, month: string) =>
@@ -261,16 +273,12 @@ describe('EditableCell', () => {
   });
 
   it('does not overwrite the draft when the cell changes elsewhere while it is open (D37)', async () => {
-    const { user, repository } = setup(ANJA_APRIL);
+    const { user, queryClient } = setup(ANJA_APRIL);
     await user.click(await cellButton('Anja Keller, Apr 2026, person-months: 0.20'));
     await user.clear(screen.getByRole('textbox'));
     await user.type(screen.getByRole('textbox'), '0.3');
 
-    const stored = repository.stored('allocations').find(({ amount }) => amount === 0.2);
-    if (stored === undefined) throw new Error('No 0.20 allocation in the seed');
-    act(() => {
-      repository.emit('allocations', 'update', { ...stored, amount: 0.9 });
-    });
+    changeElsewhere(queryClient, 0.9);
 
     expect(screen.getByRole('textbox')).toHaveValue('0.3');
     await user.keyboard('{Enter}');
@@ -315,6 +323,26 @@ describe('EditableCell', () => {
     expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Switch unit' })).toHaveFocus();
     expect(repository.written).toHaveLength(0);
+  });
+
+  it('writes the exact text the editor opened with when it is typed over a remote change, and nothing for an untouched draft', async () => {
+    const { user, repository, queryClient } = setup(ANJA_APRIL);
+    const name = 'Anja Keller, Apr 2026, person-months: 0.20';
+    // Untouched: the other change stands.
+    await user.click(await cellButton(name));
+    changeElsewhere(queryClient, 0.9);
+    await user.keyboard('{Enter}');
+    await cellButton('Anja Keller, Apr 2026, person-months: 0.90');
+    expect(repository.written).toHaveLength(0);
+
+    // Touched, with the very text it opened with: a real edit back to 0.20.
+    await user.click(screen.getByRole('button', { name: 'Anja Keller, Apr 2026, person-months: 0.90' }));
+    await user.clear(screen.getByRole('textbox'));
+    await user.type(screen.getByRole('textbox'), '0.20{Enter}');
+    await cellButton(name);
+    await waitFor(() => {
+      expect(repository.written).toHaveLength(1);
+    });
   });
 
   it('points the button at the details panel when markers sit beside the value', async () => {
