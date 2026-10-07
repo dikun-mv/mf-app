@@ -18,7 +18,8 @@ import {
   rate,
 } from './units';
 
-const WORKING_DAYS_PER_WEEK = 5;
+/** A person-month is weekly hours × (working days ÷ this). */
+export const WORKING_DAYS_PER_WEEK = 5;
 
 /** One employee in one month: the inputs every conversion between the four units needs. */
 export interface EmployeeMonth {
