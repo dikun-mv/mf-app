@@ -2,6 +2,7 @@ import { useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   RealtimeStatusContext,
+  afterWrites,
   instanceKey,
   patchCollection,
   useRepository,
@@ -42,19 +43,31 @@ export function RealtimeProvider({ instance, children }: { instance: Instance; c
   const [status, setStatus] = useState<RealtimeStatus>('connecting');
 
   useEffect(() => {
+    // A refetch waiting for rate writes to settle (`afterWrites`); one wait covers any number of connects.
+    let waiting: (() => void) | null = null;
     const stop = repository.subscribe(instance, {
       onEvent: (event) => {
         patchCollection(queryClient, event);
       },
       onConnect: () => {
-        refetchInstance(queryClient, instance);
         setStatus('live');
+        // A refetch that read the server before a write committed would put the old rates back over the
+        // write's result, so People's refetch waits until no write is in flight. Other instances hold no writes.
+        if (instance !== 'people') {
+          refetchInstance(queryClient, instance);
+        } else if (waiting === null) {
+          waiting = afterWrites(queryClient, () => {
+            waiting = null;
+            refetchInstance(queryClient, instance);
+          });
+        }
       },
       onDisconnect: () => {
         setStatus('down');
       },
     });
     return () => {
+      waiting?.();
       stop();
       void queryClient.cancelQueries({ queryKey: instanceKey(instance) });
     };

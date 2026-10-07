@@ -5,45 +5,16 @@ import { patchList } from './patch';
 import { rateRecordKeys } from './queryKeys';
 import { applyRateChangeSet, touchedRateIds } from './rateChangeSet';
 import type { PeopleRepository, RateChangeSet } from './repository';
+import { absorbServerRecord, finishWrite, touchedByOthers, writesFor } from './writes';
 
 /**
  * What `onMutate` keeps to undo an optimistic write: each touched record as it was, or `undefined` if it was
- * new, and a token that names this write among the ones in flight.
+ * new, and a token that names this write among the ones in flight. The map is the write's own entry in the
+ * registry (`writes.ts`), which keeps it current while the write is on its way.
  */
 interface Rollback {
-  readonly previous: ReadonlyMap<RateRecordId, RateRecord | undefined>;
+  readonly previous: Map<RateRecordId, RateRecord | undefined>;
   readonly token: symbol;
-}
-
-/**
- * The writes of one app that have started (`onMutate` ran) and not settled, with the ids each touches.
- * TanStack Query runs `onMutate` at once even for a write queued behind another in its scope, so while a
- * write is in flight others may already have applied their changes to the cache.
- */
-interface Writes {
-  readonly inFlight: Map<symbol, ReadonlySet<RateRecordId>>;
-  /** A write failed and the collection has not been refetched since. */
-  failed: boolean;
-}
-
-const writesOf = new WeakMap<QueryClient, Writes>();
-
-function writesFor(queryClient: QueryClient): Writes {
-  let writes = writesOf.get(queryClient);
-  if (!writes) {
-    writes = { inFlight: new Map(), failed: false };
-    writesOf.set(queryClient, writes);
-  }
-  return writes;
-}
-
-/** The ids touched by every in-flight write except `token`'s. */
-function touchedByOthers(writes: Writes, token: symbol): Set<RateRecordId> {
-  const ids = new Set<RateRecordId>();
-  for (const [other, touched] of writes.inFlight) {
-    if (other !== token) for (const id of touched) ids.add(id);
-  }
-  return ids;
 }
 
 /** Replaces records by id and appends the unknown ones. The same array comes back when nothing differs. */
@@ -74,32 +45,43 @@ export function applyChangeSetOptions(
     onMutate: async (changes) => {
       const token = Symbol('write');
       const writes = writesFor(queryClient);
-      writes.inFlight.set(token, new Set(touchedRateIds(changes)));
+      const touched = touchedRateIds(changes);
+      // `previous` stays empty until the cache has been read, so a realtime event that lands before then
+      // goes into the cache and is part of what is read.
+      const previous = new Map<RateRecordId, RateRecord | undefined>();
+      writes.inFlight.set(token, { touched: new Set(touched), previous });
       try {
         await queryClient.cancelQueries({ queryKey: rateRecordKeys.all });
         const cached = queryClient.getQueryData<readonly RateRecord[]>(rateRecordKeys.all);
-        const previous = new Map<RateRecordId, RateRecord | undefined>(
-          touchedRateIds(changes).map((id) => [id, cached?.find((record) => record.id === id)]),
-        );
+        for (const id of touched)
+          previous.set(
+            id,
+            cached?.find((record) => record.id === id),
+          );
         // Nothing cached means nothing to show yet; the write still goes to the server.
         if (cached) queryClient.setQueryData(rateRecordKeys.all, applyRateChangeSet(cached, changes));
         return { previous, token };
       } catch (error) {
         // `onSettled` gets no context when `onMutate` throws, so this write must leave the set here, or no
         // failed write would ever refetch again.
-        writes.inFlight.delete(token);
+        finishWrite(writes, token);
         throw error;
       }
     },
-    onSuccess: (records, changes) => {
-      const deleted = new Set<string>(changes.delete);
+    onSuccess: (records, changes, rollback) => {
+      // A record a later write in flight has changed keeps that write's value, as for a realtime event: what
+      // this write saved becomes what the later one's failure restores.
+      const later = touchedByOthers(writesFor(queryClient), rollback.token);
+      for (const record of records) if (later.has(record.id)) absorbServerRecord(queryClient, 'update', record);
+      const deleted = new Set<string>(changes.delete.filter((id) => !later.has(id)));
+      const saved = records.filter(({ id }) => !later.has(id));
       queryClient.setQueryData<readonly RateRecord[]>(
         rateRecordKeys.all,
         (old) =>
           old &&
           upsertAll(
             old.filter(({ id }) => !deleted.has(id)),
-            records,
+            saved,
           ),
       );
     },
@@ -118,7 +100,7 @@ export function applyChangeSetOptions(
     },
     onSettled: async (_records, _error, _changes, rollback) => {
       const writes = writesFor(queryClient);
-      if (rollback) writes.inFlight.delete(rollback.token);
+      if (rollback) finishWrite(writes, rollback.token);
       if (writes.inFlight.size === 0 && writes.failed) {
         writes.failed = false;
         await queryClient.invalidateQueries({ queryKey: rateRecordKeys.all });

@@ -18,3 +18,4 @@ export {
   type RecordEvent,
 } from './repository';
 export { applyChangeSetOptions, useApplyChangeSet } from './useApplyChangeSet';
+export { afterWrites } from './writes';

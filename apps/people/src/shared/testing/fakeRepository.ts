@@ -32,6 +32,8 @@ export interface FakeRepository extends PeopleRepository {
   failWrites(error: Error | null): void;
   /** Holds reads until the returned function is called. */
   holdReads(): () => void;
+  /** Holds writes (the server has not answered, nor committed) until the returned function is called. */
+  holdWrites(): () => void;
   /** Changes the stored rates without telling any subscriber, as an edit made while no subscription was live. */
   setRateRecordsSilently(records: readonly RateRecord[]): void;
   /** Delivers an event to the open subscriptions, as the server would after a commit. */
@@ -50,6 +52,7 @@ export function createFakeRepository(data: FakeRepositoryData = {}): FakeReposit
   let readError: Error | null = null;
   let writeError: Error | null = null;
   let gate: Promise<void> = Promise.resolve();
+  let writeGate: Promise<void> = Promise.resolve();
 
   const read = async <T>(records: readonly T[]): Promise<T[]> => {
     await gate;
@@ -69,8 +72,9 @@ export function createFakeRepository(data: FakeRepositoryData = {}): FakeReposit
     listEmployees: () => read(employees),
     listRateRecords: () => read(rateRecords),
     listEmployeeMonthLoads: () => read(employeeMonthLoads),
-    applyRateChanges: (changes) => {
-      if (writeError) return Promise.reject(writeError);
+    applyRateChanges: async (changes) => {
+      await writeGate;
+      if (writeError) throw writeError;
       writes.push(changes);
       const before = rateRecords;
       rateRecords = applyRateChangeSet(rateRecords, changes);
@@ -80,7 +84,7 @@ export function createFakeRepository(data: FakeRepositoryData = {}): FakeReposit
       }
       for (const record of changes.update) emit({ collection: 'rateRecords', action: 'update', record });
       for (const record of changes.create) emit({ collection: 'rateRecords', action: 'create', record });
-      return Promise.resolve([...changes.update, ...changes.create]);
+      return [...changes.update, ...changes.create];
     },
     subscribe: (instance, handlers) => {
       subscribers[instance].add(handlers);
@@ -103,6 +107,16 @@ export function createFakeRepository(data: FakeRepositoryData = {}): FakeReposit
       return () => {
         release();
         gate = Promise.resolve();
+      };
+    },
+    holdWrites: () => {
+      let release: () => void = () => undefined;
+      writeGate = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      return () => {
+        release();
+        writeGate = Promise.resolve();
       };
     },
     setRateRecordsSilently: (records) => {

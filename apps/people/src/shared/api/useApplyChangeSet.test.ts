@@ -5,7 +5,9 @@ import { ApiError } from './errors';
 import { createQueryClient } from './queryClient';
 import { rateRecordKeys } from './queryKeys';
 import { EMPTY_RATE_CHANGE_SET, type PeopleRepository, type RateChangeSet } from './repository';
+import { patchCollection } from './patch';
 import { applyChangeSetOptions } from './useApplyChangeSet';
+import { afterWrites } from './writes';
 
 const rate = (n: number, validFrom: string, hourlyCost: number): RateRecord => ({
   id: RateRecordId.parse(`rate-${String(n)}`),
@@ -243,5 +245,165 @@ describe('useApplyChangeSet with writes queued behind each other', () => {
     (await reached(0)).reject(new ApiError('unavailable', 'people'));
     await expect(next).rejects.toBeInstanceOf(ApiError);
     expect(refetch).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('useApplyChangeSet and realtime events for a record a write has changed', () => {
+  function queued() {
+    const answers: ReturnType<typeof deferred>[] = [];
+    const app = setup(() => {
+      const answer = deferred();
+      answers.push(answer);
+      return answer.promise;
+    });
+    const reached = async (n: number) => {
+      await rs.waitFor(() => {
+        expect(answers.length).toBeGreaterThan(n);
+      });
+      return answers[n] ?? deferred();
+    };
+    const emit = (action: 'create' | 'update' | 'delete', record: RateRecord) => {
+      patchCollection(app.client, { collection: 'rateRecords', action, record });
+    };
+    return { ...app, reached, emit };
+  }
+
+  const first = { ...current, hourlyCost: 120 };
+  const second = { ...current, hourlyCost: 130 };
+
+  it('keeps the later write’s value when the echo of an earlier one arrives', async () => {
+    const { run, cached, reached, emit } = queued();
+    const a = run({ ...EMPTY_RATE_CHANGE_SET, update: [first] });
+    const b = run({ ...EMPTY_RATE_CHANGE_SET, update: [second] });
+    await rs.waitFor(() => {
+      expect(cached()).toEqual([old, second]);
+    });
+
+    (await reached(0)).resolve([first]);
+    await a;
+    emit('update', first);
+    expect(cached()).toEqual([old, second]);
+
+    (await reached(1)).resolve([second]);
+    await b;
+    expect(cached()).toEqual([old, second]);
+  });
+
+  it('shows the later write’s value when the earlier one is confirmed, and restores the confirmed one if it fails', async () => {
+    const { run, cached, reached } = queued();
+    const a = run({ ...EMPTY_RATE_CHANGE_SET, update: [first] });
+    const b = run({ ...EMPTY_RATE_CHANGE_SET, update: [second] });
+    await rs.waitFor(() => {
+      expect(cached()).toEqual([old, second]);
+    });
+
+    (await reached(0)).resolve([first]);
+    await a;
+    expect(cached()).toEqual([old, second]);
+
+    (await reached(1)).reject(new ApiError('unavailable', 'people'));
+    await expect(b).rejects.toBeInstanceOf(ApiError);
+    expect(cached()).toEqual([old, first]);
+  });
+
+  it('puts back what the server last said, not what was cached before, when the later write fails', async () => {
+    const { run, cached, reached, emit } = queued();
+    const a = run({ ...EMPTY_RATE_CHANGE_SET, update: [first] });
+    const b = run({ ...EMPTY_RATE_CHANGE_SET, update: [second] });
+    await rs.waitFor(() => {
+      expect(cached()).toEqual([old, second]);
+    });
+
+    (await reached(0)).resolve([first]);
+    await a;
+    // Another tab sets the same rate to 125; the cache still shows our pending 130.
+    const elsewhere = { ...current, hourlyCost: 125 };
+    emit('update', elsewhere);
+    expect(cached()).toEqual([old, second]);
+
+    (await reached(1)).reject(new ApiError('unavailable', 'people'));
+    await expect(b).rejects.toBeInstanceOf(ApiError);
+    expect(cached()).toEqual([old, elsewhere]);
+  });
+
+  it('keeps a record removed by the write removed when an older update arrives, and restores it as it is on failure', async () => {
+    const { run, cached, reached, emit } = queued();
+    const removal = run({ ...EMPTY_RATE_CHANGE_SET, delete: [current.id] });
+    await rs.waitFor(() => {
+      expect(cached()).toEqual([old]);
+    });
+
+    emit('update', first);
+    expect(cached()).toEqual([old]);
+
+    (await reached(0)).reject(new ApiError('unavailable', 'people'));
+    await expect(removal).rejects.toBeInstanceOf(ApiError);
+    expect(cached()).toEqual([old, first]);
+  });
+
+  it('applies an event for a record no write has changed as usual', async () => {
+    const { run, cached, reached, emit } = queued();
+    const pending = run({ ...EMPTY_RATE_CHANGE_SET, update: [first] });
+    await rs.waitFor(() => {
+      expect(cached()).toEqual([old, first]);
+    });
+
+    const elsewhere = { ...old, hourlyCost: 82 };
+    emit('update', elsewhere);
+    expect(cached()).toEqual([elsewhere, first]);
+
+    (await reached(0)).resolve([first]);
+    await pending;
+  });
+});
+
+describe('afterWrites', () => {
+  it('runs at once when no write is in flight', () => {
+    const { client } = setup(() => Promise.resolve([]));
+    const run = rs.fn();
+    expect(afterWrites(client, run)).toBeNull();
+    expect(run).toHaveBeenCalledTimes(1);
+  });
+
+  it('waits for the last write in flight to settle, whichever way', async () => {
+    const answers: ReturnType<typeof deferred>[] = [];
+    const { client, run: write } = setup(() => {
+      const answer = deferred();
+      answers.push(answer);
+      return answer.promise;
+    });
+    const a = write({ ...EMPTY_RATE_CHANGE_SET, delete: [old.id] });
+    const b = write({ ...EMPTY_RATE_CHANGE_SET, delete: [current.id] });
+    await rs.waitFor(() => {
+      expect(answers).toHaveLength(1);
+    });
+
+    const run = rs.fn();
+    expect(afterWrites(client, run)).toBeTypeOf('function');
+    answers[0]?.resolve([]);
+    await a;
+    expect(run).not.toHaveBeenCalled();
+
+    await rs.waitFor(() => {
+      expect(answers).toHaveLength(2);
+    });
+    answers[1]?.reject(new ApiError('unavailable', 'people'));
+    await expect(b).rejects.toBeInstanceOf(ApiError);
+    expect(run).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not run once the wait is dropped', async () => {
+    const answer = deferred();
+    const { client, run: write } = setup(() => answer.promise);
+    const pending = write({ ...EMPTY_RATE_CHANGE_SET, delete: [old.id] });
+    await rs.waitFor(() => {
+      expect(client.getQueryData<RateRecord[]>(rateRecordKeys.all)).toEqual([current]);
+    });
+
+    const run = rs.fn();
+    afterWrites(client, run)?.();
+    answer.resolve([]);
+    await pending;
+    expect(run).not.toHaveBeenCalled();
   });
 });

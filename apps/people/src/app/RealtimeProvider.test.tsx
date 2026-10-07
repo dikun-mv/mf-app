@@ -3,7 +3,15 @@ import { RateRecordId, type Employee, type RateRecord } from '@baseline/people-c
 import { describe, expect, it, rs } from '@rstest/core';
 import { act, screen } from '@testing-library/react';
 import { useQuery } from '@tanstack/react-query';
-import { employeeKeys, rateRecordKeys, rateRecordsQuery, useRealtimeStatus, useRepository } from '../shared/api';
+import {
+  EMPTY_RATE_CHANGE_SET,
+  applyChangeSetOptions,
+  employeeKeys,
+  rateRecordKeys,
+  rateRecordsQuery,
+  useRealtimeStatus,
+  useRepository,
+} from '../shared/api';
 import {
   ADAEZE_FIRST_RATE,
   ADAEZE_OKAFOR,
@@ -188,6 +196,67 @@ describe('RealtimeProvider', () => {
     });
     expect(await screen.findByText('Adaeze Okafor earns 121 an hour')).toBeInTheDocument();
     app.unmount();
+  });
+
+  describe('while a rate write is in flight', () => {
+    /** Starts a write the fake holds, and waits until its optimistic change is in the cache. */
+    async function startWrite(app: ReturnType<typeof renderProvider>) {
+      const release = app.repository.holdWrites();
+      const write = app.queryClient
+        .getMutationCache()
+        .build(app.queryClient, applyChangeSetOptions(app.queryClient, app.repository))
+        .execute({ ...EMPTY_RATE_CHANGE_SET, create: [newRate] });
+      await rs.waitFor(() => {
+        expect(cachedRates(app)).toContainEqual(newRate);
+      });
+      return { release, write };
+    }
+
+    it('waits to refetch at connect until the write has settled, so older server data cannot replace it', async () => {
+      const app = renderProvider();
+      const { release, write } = await startWrite(app);
+      const invalidate = rs.spyOn(app.queryClient, 'invalidateQueries');
+
+      act(() => {
+        app.repository.connect('people');
+      });
+      expect(screen.getByText('People is live')).toBeInTheDocument();
+      expect(invalidate).not.toHaveBeenCalled();
+
+      release();
+      await write;
+      expect(invalidate).toHaveBeenCalledTimes(1);
+      expect(invalidate).toHaveBeenCalledWith({ queryKey: ['people'] });
+    });
+
+    it('refetches once for several connects', async () => {
+      const app = renderProvider();
+      const { release, write } = await startWrite(app);
+      const invalidate = rs.spyOn(app.queryClient, 'invalidateQueries');
+
+      act(() => {
+        app.repository.connect('people');
+        app.repository.disconnect('people');
+        app.repository.connect('people');
+      });
+      release();
+      await write;
+      expect(invalidate).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not refetch after it was unmounted', async () => {
+      const app = renderProvider();
+      const { release, write } = await startWrite(app);
+      const invalidate = rs.spyOn(app.queryClient, 'invalidateQueries');
+
+      act(() => {
+        app.repository.connect('people');
+      });
+      app.unmount();
+      release();
+      await write;
+      expect(invalidate).not.toHaveBeenCalled();
+    });
   });
 
   it('refetches at the first connect when an earlier attempt failed', () => {
