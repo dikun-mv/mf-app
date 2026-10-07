@@ -10,7 +10,10 @@ import {
 } from 'react';
 import styles from './Dialog.module.css';
 
-export interface DialogProps extends Omit<ComponentPropsWithoutRef<'dialog'>, 'open' | 'title' | 'onClose'> {
+export interface DialogProps extends Omit<
+  ComponentPropsWithoutRef<'dialog'>,
+  'open' | 'title' | 'onClose' | 'onCancel'
+> {
   /** Shown modally while true. The parent owns this state: `onClose` asks it to become false. */
   open: boolean;
   title: ReactNode;

@@ -1,5 +1,7 @@
-import { act, createRef } from 'react';
-import { click, getByRole, queryByRole, render, type } from '../../testing/dom';
+import { describe, expect, it, rs } from '@rstest/core';
+import { fireEvent, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { createRef } from 'react';
 import { Dialog } from './Dialog';
 
 const actions = <button>Remove rate</button>;
@@ -13,8 +15,8 @@ describe('Dialog', () => {
       </Dialog>,
     );
     expect(ref.current?.open).toBe(false);
-    expect(queryByRole('dialog')).toBeNull();
-    expect(queryByRole('button', { name: 'Remove rate' })).toBeNull();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Remove rate' })).not.toBeInTheDocument();
   });
 
   it('opens modally while open is true, named by its title, with body and actions', () => {
@@ -24,15 +26,15 @@ describe('Dialog', () => {
         <p>The next rate starts on 12 Mar 2026.</p>
       </Dialog>,
     );
-    const dialog = getByRole('dialog', { name: 'Remove the rate?' });
+    const dialog = screen.getByRole('dialog', { name: 'Remove the rate?' });
     expect(dialog).toBe(ref.current);
     expect(ref.current?.open).toBe(true);
-    expect(getByRole('heading', { name: 'Remove the rate?' })).toBeTruthy();
-    expect(dialog.textContent).toContain('The next rate starts on 12 Mar 2026.');
-    expect(getByRole('button', { name: 'Remove rate' })).toBeTruthy();
+    expect(screen.getByRole('heading', { name: 'Remove the rate?' })).toBeInTheDocument();
+    expect(dialog).toHaveTextContent('The next rate starts on 12 Mar 2026.');
+    expect(screen.getByRole('button', { name: 'Remove rate' })).toBeInTheDocument();
   });
 
-  it('asks the parent to close from the close button, and stays open until told', () => {
+  it('asks the parent to close from the close button, and stays open until told', async () => {
     const onClose = rs.fn();
     const ref = createRef<HTMLDialogElement>();
     const { rerender } = render(
@@ -40,7 +42,7 @@ describe('Dialog', () => {
         Body
       </Dialog>,
     );
-    click(getByRole('button', { name: 'Close' }));
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Close' }));
     expect(onClose).toHaveBeenCalledTimes(1);
     expect(ref.current?.open).toBe(true);
 
@@ -62,12 +64,10 @@ describe('Dialog', () => {
         Body
       </Dialog>,
     );
-    const esc = new Event('cancel', { cancelable: true });
-    act(() => {
-      ref.current?.dispatchEvent(esc);
-    });
+    // fireEvent returns false when a listener called preventDefault.
+    const notPrevented = fireEvent(screen.getByRole('dialog'), new Event('cancel', { cancelable: true }));
+    expect(notPrevented).toBe(false);
     expect(onClose).toHaveBeenCalledTimes(1);
-    expect(esc.defaultPrevented).toBe(true);
     expect(ref.current?.open).toBe(true);
   });
 
@@ -79,22 +79,20 @@ describe('Dialog', () => {
         Body
       </Dialog>,
     );
-    act(() => {
-      ref.current?.close();
-    });
+    ref.current?.close();
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it('starts its body fresh each time it opens', () => {
+  it('starts its body fresh each time it opens', async () => {
     const element = (open: boolean) => (
       <Dialog open={open} title="Add item" onClose={rs.fn()}>
         <input aria-label="Name" />
       </Dialog>
     );
     const { rerender } = render(element(true));
-    type(getByRole('textbox', { name: 'Name' }) as HTMLInputElement, 'Reconciliation');
+    await userEvent.setup().type(screen.getByRole('textbox', { name: 'Name' }), 'Reconciliation');
     rerender(element(false));
     rerender(element(true));
-    expect((getByRole('textbox', { name: 'Name' }) as HTMLInputElement).value).toBe('');
+    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('');
   });
 });

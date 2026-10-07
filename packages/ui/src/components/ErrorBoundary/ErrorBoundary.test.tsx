@@ -1,4 +1,6 @@
-import { click, getByRole, getByText, render } from '../../testing/dom';
+import { afterEach, beforeEach, describe, expect, it, rs } from '@rstest/core';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { ErrorBoundary } from './ErrorBoundary';
 
 function Faulty({ broken }: { broken: { current: boolean } }) {
@@ -21,7 +23,7 @@ describe('ErrorBoundary', () => {
         <p>Child</p>
       </ErrorBoundary>,
     );
-    expect(getByText('Child')).toBeTruthy();
+    expect(screen.getByText('Child')).toBeInTheDocument();
   });
 
   it('shows the fallback with the error and reports it through onError', () => {
@@ -35,11 +37,11 @@ describe('ErrorBoundary', () => {
         <Faulty broken={broken} />
       </ErrorBoundary>,
     );
-    expect(getByRole('alert').textContent).toBe('boom');
+    expect(screen.getByRole('alert')).toHaveTextContent('boom');
     expect(onError).toHaveBeenCalledTimes(1);
   });
 
-  it('renders the children again after reset', () => {
+  it('renders the children again after reset', async () => {
     const broken = { current: true };
     render(
       <ErrorBoundary
@@ -57,7 +59,7 @@ describe('ErrorBoundary', () => {
         <Faulty broken={broken} />
       </ErrorBoundary>,
     );
-    click(getByRole('button', { name: 'Try again' }));
-    expect(getByText('All good')).toBeTruthy();
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Try again' }));
+    expect(screen.getByText('All good')).toBeInTheDocument();
   });
 });

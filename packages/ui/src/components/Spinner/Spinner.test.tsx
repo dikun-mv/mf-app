@@ -1,14 +1,15 @@
-import { getByRole, render } from '../../testing/dom';
+import { describe, expect, it } from '@rstest/core';
+import { render, screen } from '@testing-library/react';
 import { Spinner } from './Spinner';
 
 describe('Spinner', () => {
   it('is a status named "Loading" by default', () => {
     render(<Spinner />);
-    expect(getByRole('status', { name: 'Loading' })).toBeTruthy();
+    expect(screen.getByRole('status', { name: 'Loading' })).toBeInTheDocument();
   });
 
   it('takes the name assistive technology reads from aria-label', () => {
     render(<Spinner aria-label="Loading People" />);
-    expect(getByRole('status', { name: 'Loading People' })).toBeTruthy();
+    expect(screen.getByRole('status', { name: 'Loading People' })).toBeInTheDocument();
   });
 });

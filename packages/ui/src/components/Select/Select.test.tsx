@@ -1,5 +1,7 @@
+import { describe, expect, it, rs } from '@rstest/core';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { createRef } from 'react';
-import { accessibleDescription, getByLabelText, getByRole, render, type } from '../../testing/dom';
 import { Select } from './Select';
 
 function currencies() {
@@ -15,22 +17,22 @@ function currencies() {
 describe('Select', () => {
   it('labels the select, so the label is its accessible name', () => {
     render(<Select label="Currency">{currencies()}</Select>);
-    const select = getByRole('combobox', { name: 'Currency' });
-    expect(select).toBe(getByLabelText('Currency'));
-    expect(select.querySelectorAll('option')).toHaveLength(3);
+    const select = screen.getByRole('combobox', { name: 'Currency' });
+    expect(select).toBe(screen.getByLabelText('Currency'));
+    expect(screen.getAllByRole('option')).toHaveLength(3);
   });
 
-  it('reports the chosen option through onChange', () => {
+  it('reports the chosen option through onChange', async () => {
     const onChange = rs.fn();
     render(
       <Select label="Currency" defaultValue="EUR" onChange={onChange}>
         {currencies()}
       </Select>,
     );
-    const select = getByRole('combobox', { name: 'Currency' }) as HTMLSelectElement;
-    type(select, 'USD');
+    const select = screen.getByRole('combobox', { name: 'Currency' });
+    await userEvent.setup().selectOptions(select, 'USD');
     expect(onChange).toHaveBeenCalledTimes(1);
-    expect(select.value).toBe('USD');
+    expect(select).toHaveValue('USD');
   });
 
   it('describes the select by its hint and marks it invalid with an error', () => {
@@ -39,9 +41,9 @@ describe('Select', () => {
         <option value="">Choose…</option>
       </Select>,
     );
-    const select = getByRole('combobox', { name: 'Employee' });
-    expect(select.getAttribute('aria-invalid')).toBe('true');
-    expect(accessibleDescription(select)).toBe('Choose an employee. Only people not yet on this item.');
+    const select = screen.getByRole('combobox', { name: 'Employee' });
+    expect(select).toBeInvalid();
+    expect(select).toHaveAccessibleDescription('Choose an employee. Only people not yet on this item.');
   });
 
   it('keeps the label for assistive technology when hideLabel is set', () => {
@@ -50,7 +52,7 @@ describe('Select', () => {
         <option>Demo Planner</option>
       </Select>,
     );
-    expect(getByRole('combobox', { name: 'User' })).toBeTruthy();
+    expect(screen.getByRole('combobox', { name: 'User' })).toBeInTheDocument();
   });
 
   it('forwards its ref to the select and passes attributes on', () => {
@@ -60,9 +62,9 @@ describe('Select', () => {
         {currencies()}
       </Select>,
     );
-    const select = getByRole('combobox', { name: 'Employee' });
+    const select = screen.getByRole('combobox', { name: 'Employee' });
     expect(ref.current).toBe(select);
-    expect(select.getAttribute('name')).toBe('employee');
-    expect((select as HTMLSelectElement).disabled).toBe(true);
+    expect(select).toHaveAttribute('name', 'employee');
+    expect(select).toBeDisabled();
   });
 });

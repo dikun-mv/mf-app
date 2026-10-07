@@ -1,5 +1,7 @@
+import { expect, describe, it, rs } from '@rstest/core';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { createRef } from 'react';
-import { click, getByRole, render } from '../../testing/dom';
 import { Button } from './Button';
 
 describe('Button', () => {
@@ -13,13 +15,14 @@ describe('Button', () => {
         <Button>Save</Button>
       </form>,
     );
-    expect(getByRole('button', { name: 'Save' }).getAttribute('type')).toBe('button');
+    expect(screen.getByRole('button', { name: 'Save' })).toHaveAttribute('type', 'button');
   });
 
-  it('calls onClick, but not while disabled', () => {
+  it('calls onClick, but not while disabled', async () => {
+    const user = userEvent.setup();
     const onClick = rs.fn();
     const { rerender } = render(<Button onClick={onClick}>Save</Button>);
-    click(getByRole('button', { name: 'Save' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(onClick).toHaveBeenCalledTimes(1);
 
     rerender(
@@ -27,7 +30,7 @@ describe('Button', () => {
         Save
       </Button>,
     );
-    click(getByRole('button', { name: 'Save' }));
+    await user.click(screen.getByRole('button', { name: 'Save' }));
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
@@ -38,7 +41,7 @@ describe('Button', () => {
         Add rate
       </Button>,
     );
-    expect(ref.current).toBe(getByRole('button', { name: 'Add rate' }));
-    expect(ref.current?.type).toBe('submit');
+    expect(ref.current).toBe(screen.getByRole('button', { name: 'Add rate' }));
+    expect(ref.current).toHaveAttribute('type', 'submit');
   });
 });

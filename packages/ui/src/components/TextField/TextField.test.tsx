@@ -1,25 +1,27 @@
+import { describe, expect, it, rs } from '@rstest/core';
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { createRef } from 'react';
-import { accessibleDescription, getByLabelText, getByRole, render, type } from '../../testing/dom';
 import { TextField } from './TextField';
 
 describe('TextField', () => {
   it('labels the input, so the label is its accessible name', () => {
     render(<TextField label="Hourly cost (EUR)" defaultValue="95.00" />);
-    const input = getByRole('textbox', { name: 'Hourly cost (EUR)' });
-    expect(input).toBe(getByLabelText('Hourly cost (EUR)'));
-    expect((input as HTMLInputElement).value).toBe('95.00');
+    const input = screen.getByRole('textbox', { name: 'Hourly cost (EUR)' });
+    expect(input).toBe(screen.getByLabelText('Hourly cost (EUR)'));
+    expect(input).toHaveValue('95.00');
   });
 
   it('keeps the label for assistive technology when hideLabel is set', () => {
     render(<TextField label="Search name or role" hideLabel type="search" />);
-    expect(getByRole('searchbox', { name: 'Search name or role' })).toBeTruthy();
+    expect(screen.getByRole('searchbox', { name: 'Search name or role' })).toBeInTheDocument();
   });
 
   it('describes the input by its hint', () => {
     render(<TextField label="Valid from" hint="A rate runs until the next one starts." />);
-    const input = getByRole('textbox', { name: 'Valid from' });
-    expect(accessibleDescription(input)).toBe('A rate runs until the next one starts.');
-    expect(input.getAttribute('aria-invalid')).toBeNull();
+    const input = screen.getByRole('textbox', { name: 'Valid from' });
+    expect(input).toHaveAccessibleDescription('A rate runs until the next one starts.');
+    expect(input).not.toHaveAttribute('aria-invalid');
   });
 
   it('marks the input invalid and describes it by the error first, then the hint', () => {
@@ -30,9 +32,9 @@ describe('TextField', () => {
         error="Another rate already starts on 12 Mar 2026."
       />,
     );
-    const input = getByRole('textbox', { name: 'Valid from' });
-    expect(input.getAttribute('aria-invalid')).toBe('true');
-    expect(accessibleDescription(input)).toBe('Another rate already starts on 12 Mar 2026. Past dates are allowed.');
+    const input = screen.getByRole('textbox', { name: 'Valid from' });
+    expect(input).toBeInvalid();
+    expect(input).toHaveAccessibleDescription('Another rate already starts on 12 Mar 2026. Past dates are allowed.');
   });
 
   it('keeps a describedby the caller sets', () => {
@@ -42,7 +44,7 @@ describe('TextField', () => {
         <TextField label="Hourly cost" error="Enter an amount." aria-describedby="extra" />
       </>,
     );
-    expect(accessibleDescription(getByRole('textbox', { name: 'Hourly cost' }))).toBe(
+    expect(screen.getByRole('textbox', { name: 'Hourly cost' })).toHaveAccessibleDescription(
       'Enter an amount. Entered in the display currency.',
     );
   });
@@ -50,17 +52,18 @@ describe('TextField', () => {
   it('forwards its ref to the input and passes input attributes on, as register needs', () => {
     const ref = createRef<HTMLInputElement>();
     render(<TextField ref={ref} label="Amount" name="amount" inputMode="decimal" />);
-    const input = getByRole('textbox', { name: 'Amount' });
+    const input = screen.getByRole('textbox', { name: 'Amount' });
     expect(ref.current).toBe(input);
-    expect(input.getAttribute('name')).toBe('amount');
-    expect(input.getAttribute('inputmode')).toBe('decimal');
+    expect(input).toHaveAttribute('name', 'amount');
+    expect(input).toHaveAttribute('inputmode', 'decimal');
   });
 
-  it('reports typing through onChange', () => {
+  it('reports typing through onChange', async () => {
     const onChange = rs.fn();
     render(<TextField label="Name" onChange={onChange} />);
-    type(getByRole('textbox', { name: 'Name' }) as HTMLInputElement, 'Reconciliation');
-    expect(onChange).toHaveBeenCalledTimes(1);
+    await userEvent.setup().type(screen.getByRole('textbox', { name: 'Name' }), 'Hi');
+    expect(onChange).toHaveBeenCalledTimes(2);
+    expect(screen.getByRole('textbox', { name: 'Name' })).toHaveValue('Hi');
   });
 
   it('uses the id it is given, and a generated one otherwise', () => {
@@ -70,12 +73,12 @@ describe('TextField', () => {
         <TextField label="Second" />
       </>,
     );
-    expect(getByRole('textbox', { name: 'First' }).id).toBe('first');
-    expect(getByRole('textbox', { name: 'Second' }).id).not.toBe('');
+    expect(screen.getByRole('textbox', { name: 'First' })).toHaveAttribute('id', 'first');
+    expect(screen.getByRole('textbox', { name: 'Second' }).id).not.toBe('');
   });
 
   it('can be disabled', () => {
     render(<TextField label="Name" disabled />);
-    expect((getByRole('textbox', { name: 'Name' }) as HTMLInputElement).disabled).toBe(true);
+    expect(screen.getByRole('textbox', { name: 'Name' })).toBeDisabled();
   });
 });
