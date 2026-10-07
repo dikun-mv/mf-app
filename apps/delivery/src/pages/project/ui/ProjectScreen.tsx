@@ -3,6 +3,7 @@ import { formatDate } from '@baseline/delivery-domain';
 import { InlineMessage, PageHeader } from '@baseline/ui';
 import { Link, useParams } from 'react-router';
 import { useProject } from '../../../entities/project';
+import { useUnit } from '../../../features/switch-unit';
 import { PageBoundary } from '../../../shared/ui';
 import { StaffingGrid } from '../../../widgets/staffing-grid';
 import styles from './ProjectScreen.module.css';
@@ -30,6 +31,7 @@ function ProjectNotFound({ id }: { id: string }) {
  */
 function ProjectPage({ id }: { id: ProjectId }) {
   const project = useProject(id);
+  const [unit] = useUnit();
   if (!project) return <ProjectNotFound id={id} />;
   return (
     <>
@@ -40,7 +42,7 @@ function ProjectPage({ id }: { id: ProjectId }) {
       />
       <PageBoundary subject="Staffing grid">
         {/* Keyed by project: its collapsed nodes, open actions and focused cell are not carried to the next one. */}
-        <StaffingGrid key={id} projectId={id} />
+        <StaffingGrid key={id} projectId={id} unit={unit} />
       </PageBoundary>
     </>
   );

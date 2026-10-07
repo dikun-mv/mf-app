@@ -22,7 +22,7 @@ const UNIT_NAMES: Record<DisplayUnit, string> = {
 
 export interface StaffingGridProps {
   projectId: ProjectId;
-  /** What the cells show. Person-months until the unit switcher exists (T6.5). */
+  /** What the cells show. Person-months unless given; the project page passes the unit from `?unit=` (T6.5). */
   unit?: DisplayUnit;
 }
 

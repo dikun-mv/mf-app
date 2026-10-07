@@ -7,8 +7,9 @@
 // widget (a feature can't import a widget).
 //
 //   cell        `ui/slots/cell.ts`        `cellSlot: ComponentType<CellSlotProps>`
-//               What goes inside a person cell's `<td>`. Default: the displayed value as text, or `·`
-//               where nothing is stored. T6.6 wires the editor. Besides the cell it gets `adornment`
+//               What goes inside a person cell's `<td>`. Wired to the editor of `features/edit-cell`
+//               (T6.6): a button with the value that becomes an input. `ui/DefaultCell.tsx` is the
+//               read-only version, kept as the model for a renderer. Besides the cell it gets `adornment`
 //               (the node the next slot returned, to place beside the value) and `describedById` (to
 //               set as `aria-describedby` on its focusable element); `ui/DefaultCell.tsx` shows both.
 //   adornment   `ui/slots/cellAdornment.ts` `cellAdornmentSlot: ComponentType<CellAdornmentSlotProps> | null`
@@ -21,12 +22,12 @@
 //   toolbar     `ui/slots/toolbar.ts`     `toolbarSlot: ComponentType<ToolbarSlotProps> | null`
 //               Above the table, always drawn, also when the grid can't be shown (hours or cost without
 //               People's data), so the unit can be changed out of that state. Gets the project, the
-//               unit and the units available. Default: none. T6.5.
+//               unit and the units available. Wired to `ui/Toolbar.tsx` (T6.5, T6.6, T6.13): the unit switcher and
+//               its messages.
 //   details     `ui/slots/details.ts`     `detailsSlot: ComponentType<DetailsSlotProps> | null`
 //               Below the table: the `GridView` and the cell that last had focus (row key and month
 //               position). Set the `id` it receives on the panel: it is what `describedById` names.
 //               Default: none. T6.12.
 //
-// What the grid does not do yet: it shows person-months unless given `unit`; the unit switcher (T6.5)
-// will read `?unit=` and pass it from the page.
+// The grid shows person-months unless given `unit`; the project page reads `?unit=` (T6.5) and passes it.
 export { StaffingGrid, type StaffingGridProps } from './ui/StaffingGrid';

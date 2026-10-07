@@ -1,0 +1,40 @@
+/*
+ * The unit switcher reads as one line of the toolbar: the word "Unit", then the four choices. The
+ * radios are the browser's own, so the group's keyboard behaviour and focus ring come with them; the
+ * accent colour only tints the selected one.
+ */
+.group {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--bl-space-1) var(--bl-space-3);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: var(--bl-text-sm);
+}
+
+.legend {
+  float: inline-start;
+  margin-inline-end: var(--bl-space-3);
+  padding: 0;
+  color: var(--bl-color-text-muted);
+  font-weight: var(--bl-weight-medium);
+}
+
+.option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--bl-space-2);
+  cursor: pointer;
+}
+
+.option input {
+  margin: 0;
+  accent-color: var(--bl-color-primary);
+}
+
+.unavailable {
+  color: var(--bl-color-text-muted);
+  cursor: not-allowed;
+}
