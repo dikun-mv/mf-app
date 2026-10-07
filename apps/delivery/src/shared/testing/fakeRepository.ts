@@ -38,8 +38,8 @@ export interface FakeRepository extends Repository {
   setConnection(instance: Instance, event: ConnectionEvent): void;
   /** Makes reads of a collection fail with `error` until called with `null`. */
   failReads(key: CollectionKey, error: RepositoryError | null): void;
-  /** Makes writes fail with `error` (nothing is kept) until called with `null`. */
-  failWrites(error: RepositoryError | null): void;
+  /** Makes the next `times` writes (all, by default) fail with `error`, keeping nothing; `null` stops it. */
+  failWrites(error: RepositoryError | null, times?: number): void;
   /** Makes subscribing to an instance fail, as when its service is down, until called with `null`. */
   failSubscribe(instance: Instance, error: RepositoryError | null): void;
   /** Keeps reads of a collection pending until the returned function is called. */
@@ -82,6 +82,7 @@ export function createFakeRepository(data: FakeData = {}): FakeRepository {
   const gates = new Map<CollectionKey, Promise<void>>();
   let writeGate: Promise<void> | undefined;
   let writeFailure: RepositoryError | null = null;
+  let writeFailuresLeft = 0;
 
   /** Updates the stored record and tells the subscribers, like a committed write. */
   function emit<K extends CollectionKey>(key: K, action: RealtimeEvent<K>['action'], record: RecordOf<K>): void {
@@ -113,8 +114,9 @@ export function createFakeRepository(data: FakeData = {}): FakeRepository {
       if (error) readFailures.set(key, error);
       else readFailures.delete(key);
     },
-    failWrites: (error) => {
+    failWrites: (error, times = Infinity) => {
       writeFailure = error;
+      writeFailuresLeft = times;
     },
     failSubscribe: (instance, error) => {
       if (error) subscribeFailures.set(instance, error);
@@ -147,7 +149,10 @@ export function createFakeRepository(data: FakeData = {}): FakeRepository {
 
     async applyChangeSet(changeSet): Promise<ChangeSetResult> {
       await writeGate;
-      if (writeFailure) throw writeFailure;
+      if (writeFailure && writeFailuresLeft > 0) {
+        writeFailuresLeft -= 1;
+        throw writeFailure;
+      }
       const before = { projects: records.projects, items: records.breakdownItems, allocations: records.allocations };
       try {
         // A change set that updates a record that isn't there was made against another state: refused whole.
