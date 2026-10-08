@@ -84,8 +84,8 @@ export function StaffingGrid({ projectId, unit = 'personMonths' }: StaffingGridP
     return (
       <GridActionsProvider value={actions}>
         <div className={styles.widget}>
-          {toolbar}
           {statusLine}
+          {toolbar}
           {waiting ? (
             <p className={styles.loading}>
               <Spinner aria-label="Loading staffing grid" />
@@ -102,8 +102,8 @@ export function StaffingGrid({ projectId, unit = 'personMonths' }: StaffingGridP
   return (
     <GridActionsProvider value={actions}>
       <div className={styles.widget}>
-        {toolbar}
         {statusLine}
+        {toolbar}
         <div className={styles.scroll} onFocus={onFocus}>
           <table className={styles.grid}>
             <caption className={styles.visuallyHidden}>

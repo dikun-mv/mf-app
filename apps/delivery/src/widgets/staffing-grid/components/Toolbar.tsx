@@ -19,8 +19,8 @@ export function Toolbar({ projectId, unit, units }: ToolbarSlotProps) {
     <>
       <WriteFailedMessage />
       <PeopleUnreachableMessage unit={unit} units={units} />
-      <UnitSwitcher unit={unit} units={units} />
-      <div className={styles.add}>
+      <div className={styles.group}>
+        <UnitSwitcher unit={unit} units={units} />
         <AddTopLevelItem state={state} projectId={projectId} report={report} />
       </div>
     </>

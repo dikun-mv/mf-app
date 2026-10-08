@@ -1,4 +1,6 @@
-/* "+ Add top-level item" keeps its own size in the widget's column. */
-.add {
+.group {
   display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
 }
