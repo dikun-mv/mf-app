@@ -102,17 +102,24 @@ describe('Row actions', () => {
     expect(screen.getByRole('button', { name: 'Assign person' })).toBeDisabled();
   });
 
-  it('renames in place: the new name shows in the grid and the status line says so', async () => {
+  it('renames in a dialog: the new name shows in the grid and the status line says so', async () => {
     const { user } = renderGrid();
     await user.click(await moreOf('Rework'));
     await user.click(screen.getByRole('button', { name: 'Rename' }));
-    // The list closed on choosing; the field took its place.
-    expect(screen.queryByRole('button', { name: 'Rename' })).not.toBeInTheDocument();
+    // The list closed on choosing; the dialog took its place.
+    expect(screen.queryByRole('button', { name: 'Move' })).not.toBeInTheDocument();
+    const dialog = await screen.findByRole('dialog', { name: 'Rename "Rework"' });
+    expect(within(dialog).getByRole('textbox', { name: 'Name' })).toHaveValue('Rework');
+    await waitFor(() => {
+      expect(within(dialog).getByRole('textbox', { name: 'Name' })).toHaveFocus();
+    });
     await user.keyboard('Rework 2{Enter}');
 
     expect(await screen.findByRole('status')).toHaveTextContent('Renamed "Rework" to "Rework 2".');
     expect(await screen.findByRole('rowheader', { name: /Rework 2/ })).toBeInTheDocument();
-    expect(screen.queryByRole('textbox')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
   });
 
   it('puts a refused write at the top of the widget and undoes the new name', async () => {
@@ -120,6 +127,10 @@ describe('Row actions', () => {
     repository.failWrites(new RepositoryError('unavailable', 'delivery'));
     await user.click(await moreOf('Rework'));
     await user.click(screen.getByRole('button', { name: 'Rename' }));
+    const dialog = await screen.findByRole('dialog', { name: 'Rename "Rework"' });
+    await waitFor(() => {
+      expect(within(dialog).getByRole('textbox', { name: 'Name' })).toHaveFocus();
+    });
     await user.keyboard('Rework 2{Enter}');
 
     expect(await screen.findByRole('alert')).toHaveTextContent(

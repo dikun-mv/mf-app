@@ -339,7 +339,7 @@ The same person rows with the unit switched to Cost (EUR). Switching never write
 
 ### 3.4 Row actions (T6.3, T6.0, T1.12, D9, D15)
 
-`⋯` on a WBS row shows a short list of plain buttons in a dropdown under it, over the grid: the rows below don't move, and neither the scrolling grid nor the sticky columns cut it off ([ADR 049](adr/049-row-actions-dropdown.md)). It is deliberately minimal (D36): one list open at a time, closed by choosing an action, pressing `⋯` again, Esc or a click outside, with no arrow keys. Actions that can't apply are shown disabled, never hidden, with a `?` beside them whose tooltip gives the reason (on hover or focus, and named in the action's `aria-describedby`). Labels carry no trailing `…`, even where a dialog follows. Rename edits the name in place (Enter saves, Esc cancels).
+`⋯` on a WBS row shows a short list of plain buttons in a dropdown under it, over the grid: the rows below don't move, and neither the scrolling grid nor the sticky columns cut it off ([ADR 049](adr/049-row-actions-dropdown.md)). It is deliberately minimal (D36): one list open at a time, closed by choosing an action, pressing `⋯` again, Esc or a click outside, with no arrow keys. Actions that can't apply are shown disabled, never hidden, with a `?` beside them whose tooltip gives the reason (on hover or focus, and named in the action's `aria-describedby`). Labels carry no trailing `…`, even where a dialog follows. Rename opens a small dialog like Add item, with the current name selected in a `Name` field (Enter or Rename saves; Cancel, × and Esc close it without writing).
 
 ```text
 ┌─ Delivery ───────────────────────────────────────────────────────────────────────────────────────┐
@@ -352,10 +352,20 @@ The same person rows with the unit switched to Cost (EUR). Switching never write
 │                 │ Delete                                               │                         │
 │                 │ Assign person                         (leaves only)  │                         │
 │                 └──────────────────────────────────────────────────────┘                         │
-│                                                                                                  │
-│ Rename in place:   ▾ [ Design discovery▏         ]   Enter saves · Esc cancels                   │
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
+
+**Rename.** The dialog opens on the current name, selected, so typing replaces it. A name the domain refuses is shown next to the field and the dialog stays open; a name that didn't change sends nothing.
+
+```text
+┌─ Rename "Design" ────────────────────────────────────────────────────────┐
+│ Name [ Design discovery▏                  ]                              │
+│                                                                          │
+│                                                    [Cancel]     [Rename] │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+Afterwards the status line reads: _✓ Renamed "Design" to "Design discovery"._
 
 **Add a child item.** When the parent is a leaf with allocations, the dialog says where they go before anything changes (D9). (Every seed leaf is at the third level, so this case first appears for a leaf the user created higher up.)
 
