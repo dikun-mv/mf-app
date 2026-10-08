@@ -741,7 +741,7 @@ Build the screens in [screens.md](screens.md) §3. The grid, cells, tree column,
 
 Run from [phase-7.md](phase-7.md): one `builder` brief for T7.5, and `verifier` runs for T7.1–T7.5, each with its fixed seed values, plus the fix loop for any step that fails.
 
-- [ ] **T7.1** A rate edited in People must update open Delivery cost cells live: a PocketBase realtime event, then the read-model update, then re-render. Verify it hosted (same page), standalone, and across two tabs.
+- [x] **T7.1** A rate edited in People must update open Delivery cost cells live: a PocketBase realtime event, then the read-model update, then re-render. Verify it hosted (same page), standalone, and across two tabs.
 - [ ] **T7.2** A Delivery allocation edit that tips someone over capacity must flag them in People live.
 - [ ] **T7.3** A currency change in the shell must update both remotes immediately, and € editing must use the displayed currency.
 - [ ] **T7.4** Kill one service or remote at a time and confirm the other keeps working with a clear degraded state.
