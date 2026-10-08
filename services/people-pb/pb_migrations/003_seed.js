@@ -1,4 +1,4 @@
-// Seed (T3.5): the 60 employees and 150 rate records of /pb/seed/data.json (a copy of docs/data.json
+// Seed (T3.5): the 60 employees and 150 rate records of /pb/seed/data.json (a copy of .docs/data.json
 // in the image), with their ids as record ids. The other sections of the file belong to delivery-pb.
 // The file is JSON with the collections' field names, so each entry is saved as it is. There are no
 // hooks in people-pb to run (ADR 033 d).

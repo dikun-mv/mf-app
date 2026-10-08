@@ -2,10 +2,10 @@ import { Allocation, BreakdownItem, Project } from '@baseline/delivery-contract'
 import { IsoDateTime } from '@baseline/host-contract';
 import { Employee, RateRecord } from '@baseline/people-contract';
 import { z } from 'zod';
-import seed from '../../../../../docs/data.json';
+import seed from '../../../../../.docs/data.json';
 import type { FakeData } from './fakeRepository';
 
-// The brief's fixtures (docs/data.json), parsed through the contract schemas, for tests that check the
+// The brief's fixtures (.docs/data.json), parsed through the contract schemas, for tests that check the
 // screens against the seed's own numbers. Test support only: nothing in the app imports it.
 
 /** Seed rows have no edit time, so they all share one (D18). */

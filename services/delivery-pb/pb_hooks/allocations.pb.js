@@ -1,4 +1,4 @@
-// The two rules on `allocations` (docs/phase-3.md §4). Handlers run in isolated scopes, so each one
+// The two rules on `allocations` (.docs/phase-3.md §4). Handlers run in isolated scopes, so each one
 // `require`s what it uses inside itself (ADR 033 f). Both kinds of hook also run for every item of a batch.
 
 // editedAt (D18): set by the server on create and on a change of `amount`, whatever the client sent.

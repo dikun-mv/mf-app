@@ -95,12 +95,12 @@ You are building the PocketBase runtime for Phase 3.
 
 Follow your Start section first. The lead names your branch p3/runtime when merging.
 
-Read: docs/phase-3.md (all of it; §1 is binding), plan §3 "Service design (PocketBase)", T3.4 and
-T3.8 in docs/plan.md, ADR 029, ADR 031 and ADR 032.
+Read: .docs/phase-3.md (all of it; §1 is binding), plan §3 "Service design (PocketBase)", T3.4 and
+T3.8 in .docs/plan.md, ADR 029, ADR 031 and ADR 032.
 
 You own: infra/docker/pocketbase.Dockerfile, docker-compose.yml, infra/nginx/gateway.conf,
-infra/scripts/reset.sh, docs/adr/031-infra-and-break-methods.md (the /api and reset parts),
-docs/adr/033-*.md, .dependency-cruiser.cjs, .dependency-cruiser.test.ts, rstest.config.ts,
+infra/scripts/reset.sh, .docs/adr/031-infra-and-break-methods.md (the /api and reset parts),
+.docs/adr/033-*.md, .dependency-cruiser.cjs, .dependency-cruiser.test.ts, rstest.config.ts,
 rstest.integration.config.ts, rslint.config.ts, the root package.json scripts, services/.gitkeep, and
 the skeletons of services/people-pb/ and services/delivery-pb/ (package.json, tsconfig.json,
 pb_migrations/001_settings.js). Nothing else.
@@ -108,7 +108,7 @@ pb_migrations/001_settings.js). Nothing else.
 Tasks, one commit each:
 1. Checks (no commit of the scratch files). In a throwaway container of the pinned release, with
    scratch migrations and hooks under /tmp, find out each of these, with the exact API calls that work:
-   a. a migration can change the `id` field's pattern and max (docs/phase-3.md §3), and records with
+   a. a migration can change the `id` field's pattern and max (.docs/phase-3.md §3), and records with
       ids `emp-001` and `alloc-<uuid>` save;
    b. a migration can enable the batch API and set maxRequests and the timeout; a batch with one bad
       operation leaves nothing behind;
@@ -123,10 +123,10 @@ Tasks, one commit each:
       unique-index violation, a duplicate id;
    i. the `pocketbase` SDK in Node, with the `eventsource` polyfill on globalThis, works against a
       base URL with a path (through the gateway) for REST, batch and a realtime subscription.
-   Record every answer in docs/adr/033-pocketbase-runtime-and-checks.md: what was checked, the result,
+   Record every answer in .docs/adr/033-pocketbase-runtime-and-checks.md: what was checked, the result,
    the snippet that works, and the fallback used where plan.md's assumptions table names one.
    If an answer breaks a decision with no fallback, stop and report.
-2. The image, compose services, volumes and gateway routes from docs/phase-3.md §3. Update ADR 031
+2. The image, compose services, volumes and gateway routes from .docs/phase-3.md §3. Update ADR 031
    for the new /api routes.
 3. The two service skeletons: package.json (private, test-only, with no `typecheck` script yet: P
    and D add it with their first test, since tsc fails on a package with no inputs), tsconfig.json
@@ -153,12 +153,12 @@ You are building People's data service for Phase 3.
 
 Follow your Start section first. The lead names your branch p3/people-pb when merging.
 
-Read: docs/phase-3.md (all of it; §1 is binding), ADR 033 (what the PocketBase checks found; use the
-snippets that work), plan §3 "Service design (PocketBase)", T3.1, T3.5 and T3.9 in docs/plan.md,
+Read: .docs/phase-3.md (all of it; §1 is binding), ADR 033 (what the PocketBase checks found; use the
+snippets that work), plan §3 "Service design (PocketBase)", T3.1, T3.5 and T3.9 in .docs/plan.md,
 and D7, D16 and D21.
 
 You own: packages/people-contract/, services/people-pb/ (except pb_migrations/001_settings.js),
-docs/adr/034-*.md. Nothing else.
+.docs/adr/034-*.md. Nothing else.
 
 Tasks, one commit each:
 1. people-contract v1 (T3.1): PEOPLE_BASE_PATH ('/api/people'), the collection names (each is
@@ -167,7 +167,7 @@ Tasks, one commit each:
    Employee or RateRecord and drops PocketBase's own fields. Add the conformance fixture: A. Okafor's
    rate records and the expected March 2026 slices (8 days at 80, 14 at 95). Tests next to the code.
    Update the header comment, which still promises REST paths and events.
-2. Collections (T3.5): pb_migrations/002_collections.js, exactly as docs/phase-3.md §4.
+2. Collections (T3.5): pb_migrations/002_collections.js, exactly as .docs/phase-3.md §4.
 3. Seed: pb_migrations/003_seed.js inserts the 60 employees and 150 rate records from
    /pb/seed/data.json, keeping their ids.
 4. Integration tests in services/people-pb/test/integration/, through the gateway with the SDK:
@@ -175,7 +175,7 @@ Tasks, one commit each:
    rate on the same (employeeId, validFrom) fails with the unique-index error from ADR 033; a rate
    edit reaches a realtime subscriber on rate_records; every record parses with the contract
    schemas.
-5. docs/adr/034-people-pb.md: what was built, and anything that differed from docs/phase-3.md.
+5. .docs/adr/034-people-pb.md: what was built, and anything that differed from .docs/phase-3.md.
 
 No hooks in people-pb. You may run `docker compose up` (gateway on 8080) and infra/scripts/reset.sh. Done when
 `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm test:integration` (after a reset) are green.
@@ -188,12 +188,12 @@ You are building Delivery's data service for Phase 3.
 
 Follow your Start section first. The lead names your branch p3/delivery-pb when merging.
 
-Read: docs/phase-3.md (all of it; §1 is binding), ADR 033, plan §1 (facts from the fixtures), plan §3
-"Service design (PocketBase)", T3.2, T3.6 and T3.9 in docs/plan.md, D8, D9, D18 and D21, and
+Read: .docs/phase-3.md (all of it; §1 is binding), ADR 033, plan §1 (facts from the fixtures), plan §3
+"Service design (PocketBase)", T3.2, T3.6 and T3.9 in .docs/plan.md, D8, D9, D18 and D21, and
 packages/delivery-domain/src/capacity.ts.
 
 You own: packages/delivery-contract/, services/delivery-pb/ (except pb_migrations/001_settings.js),
-the header comment of packages/delivery-domain/src/capacity.ts, docs/adr/035-*.md. Nothing else.
+the header comment of packages/delivery-domain/src/capacity.ts, .docs/adr/035-*.md. Nothing else.
 
 Tasks, one commit each:
 1. delivery-contract v1 (T3.2): DELIVERY_BASE_PATH ('/api/delivery'), the employee_month_loads
@@ -205,8 +205,8 @@ Tasks, one commit each:
    loadOf gives the same numbers, flag and causer as delivery-domain's loadsOf, over random
    allocations for one (employee, month) with small id and editedAt pools, so ties happen. Write the
    arbitraries in the test; don't import delivery-domain's testing/ folder.
-3. Collections: pb_migrations/002_collections.js, exactly as docs/phase-3.md §4.
-4. Hooks: pb_hooks/lib/refresh.js and pb_hooks/allocations.pb.js, exactly as docs/phase-3.md §4.
+3. Collections: pb_migrations/002_collections.js, exactly as .docs/phase-3.md §4.
+4. Hooks: pb_hooks/lib/refresh.js and pb_hooks/allocations.pb.js, exactly as .docs/phase-3.md §4.
 5. Seed: pb_migrations/003_seed.js inserts the 4 projects, the 90 breakdown items (parents before
    children) and the 720 allocations with editedAt = 2026-01-01T00:00:00.000Z, then the load rows.
    Use what ADR 033 found about hooks in migrations, so each row is written once.
@@ -222,7 +222,7 @@ Tasks, one commit each:
    - a write to employee_month_loads is refused;
    - an allocation edit reaches a realtime subscriber on employee_month_loads;
    - every load row parses with EmployeeMonthLoadRecord.
-7. docs/adr/035-delivery-pb.md: what was built, and anything that differed from docs/phase-3.md.
+7. .docs/adr/035-delivery-pb.md: what was built, and anything that differed from .docs/phase-3.md.
 
 No other hooks and no custom routes. You may run `docker compose up` (gateway on 8080) and
 infra/scripts/reset.sh.

@@ -37,7 +37,7 @@ RUN mkdir -p /pb/pb_migrations /pb/pb_hooks /pb/seed /pb_data \
     && cp -r /tmp/service/pb_migrations/. /pb/pb_migrations/ \
     && if [ -d /tmp/service/pb_hooks ]; then cp -r /tmp/service/pb_hooks/. /pb/pb_hooks/; fi \
     && rm -rf /tmp/service
-COPY docs/data.json /pb/seed/data.json
+COPY .docs/data.json /pb/seed/data.json
 
 EXPOSE 8090
 # The healthcheck (wget on /api/health) is in docker-compose.yml.

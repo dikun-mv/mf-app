@@ -1,4 +1,4 @@
-// Delivery's collections (T3.6, docs/phase-3.md §4). API rules: '' is public, null is locked (superusers only).
+// Delivery's collections (T3.6, .docs/phase-3.md §4). API rules: '' is public, null is locked (superusers only).
 //
 // - `projects` is read-only through the API: no project is created, changed or deleted.
 // - `breakdown_items` and `allocations` are open for writes. The tree and allocation rules (depth, leaves,

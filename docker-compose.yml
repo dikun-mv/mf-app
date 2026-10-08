@@ -1,5 +1,5 @@
 # The whole suite behind one gateway: `docker compose up`, then http://localhost:8080.
-# Design notes and the break methods are in docs/adr/031-infra-and-break-methods.md.
+# Design notes and the break methods are in .docs/adr/031-infra-and-break-methods.md.
 name: baseline
 
 services:

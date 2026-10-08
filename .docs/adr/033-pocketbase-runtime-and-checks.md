@@ -10,7 +10,7 @@ Status: accepted
 
 **Release.** PocketBase **v0.40.4** (the latest 0.x when T3.4 started). The Dockerfile has the version and both Linux checksums (`amd64`, `arm64`, from the release's `checksums.txt`) as `ARG`s, and fails the build when the download doesn't match. Changing the pin means changing the three `ARG`s together.
 
-**Image.** `infra/docker/pocketbase.Dockerfile`, build arg `SERVICE` (`people-pb` or `delivery-pb`), build context the repo root. A `fetch` stage downloads and checks the zip for `TARGETARCH`; the final stage is plain `alpine` with `/pb/pocketbase`, the service's `pb_migrations/` and `pb_hooks/` (an empty folder when the service has none), `/pb/seed/data.json` (from `docs/data.json`) and `/pb_data`. The command is the one in [phase-3.md](../phase-3.md) §3. The healthcheck is in compose, where the other services have theirs.
+**Image.** `infra/docker/pocketbase.Dockerfile`, build arg `SERVICE` (`people-pb` or `delivery-pb`), build context the repo root. A `fetch` stage downloads and checks the zip for `TARGETARCH`; the final stage is plain `alpine` with `/pb/pocketbase`, the service's `pb_migrations/` and `pb_hooks/` (an empty folder when the service has none), `/pb/seed/data.json` (from `.docs/data.json`) and `/pb_data`. The command is the one in [phase-3.md](../phase-3.md) §3. The healthcheck is in compose, where the other services have theirs.
 
 **Compose and gateway.** `people-pb` and `delivery-pb` with the volumes `people-data` and `delivery-data` at `/pb_data`, no published ports. The gateway routes are in [ADR 031](031-infra-and-break-methods.md).
 

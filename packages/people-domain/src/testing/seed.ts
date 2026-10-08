@@ -1,8 +1,8 @@
 import { RateRecord } from '@baseline/people-contract';
 import { z } from 'zod';
-import seed from '../../../../docs/data.json';
+import seed from '../../../../.docs/data.json';
 
-// The brief's rate records (docs/data.json), parsed through the contract schema. Test support only.
+// The brief's rate records (.docs/data.json), parsed through the contract schema. Test support only.
 
 export const seedRateRecords = z.array(RateRecord).parse(seed.rateRecords);
 

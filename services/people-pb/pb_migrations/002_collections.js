@@ -1,4 +1,4 @@
-// People's collections (T3.5, docs/phase-3.md §4). All rules are fields, indexes and API rules; there are
+// People's collections (T3.5, .docs/phase-3.md §4). All rules are fields, indexes and API rules; there are
 // no hooks. API rules: '' is public, null is locked (superusers only).
 //
 // - `employees` is read-only through the API (D16): no employee is created, changed or deleted.

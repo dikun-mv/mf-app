@@ -94,15 +94,15 @@ You are writing ADRs 036–047 for the frontend decisions of Phases 4–6 (T4.0a
 
 Follow your Start section first. The lead names your branch p4/adrs when merging.
 
-Read: docs/phases-4-6.md §1 and §3, plan.md §2 rows D26–D37 and the T4.0a task, docs/screens.md §6,
+Read: .docs/phases-4-6.md §1 and §3, plan.md §2 rows D26–D37 and the T4.0a task, .docs/screens.md §6,
 and ADR 032 and ADR 035 for the format.
 
-You own: docs/adr/036-*.md to docs/adr/047-*.md, and one dated "Amended 2026-10-07" note at the end of
-docs/adr/011-display-currency.md (People's rate editor takes input in the display currency). Nothing
+You own: .docs/adr/036-*.md to .docs/adr/047-*.md, and one dated "Amended 2026-10-07" note at the end of
+.docs/adr/011-display-currency.md (People's rate editor takes input in the display currency). Nothing
 else.
 
 Tasks, one commit per ADR:
-1. One ADR per decision, numbered as docs/phases-4-6.md §3 says, in the format of the existing ADRs:
+1. One ADR per decision, numbered as .docs/phases-4-6.md §3 says, in the format of the existing ADRs:
    status, context, decision, the alternatives and why not, consequences. Keep each short (about
    20–40 lines): the plan row is the source; don't add new decisions. Name each file after its
    decision, e.g. 036-server-state.md.
@@ -119,7 +119,7 @@ rules (T4.0c for all three apps, then T4.0b).
 
 Follow your Start section first. The lead names your branch p4/restructure when merging.
 
-Read: docs/phases-4-6.md §1 and §3, T4.0b and T4.0c in plan.md, D10, D22, D23 and D28, ADR 023, ADR
+Read: .docs/phases-4-6.md §1 and §3, T4.0b and T4.0c in plan.md, D10, D22, D23 and D28, ADR 023, ADR
 030, .dependency-cruiser.cjs with its test, rstest.config.ts, and the dependency-cruiser row of the
 plan's assumptions table.
 
@@ -163,8 +163,8 @@ You are building the shared UI primitives for Phases 4–6 (T4.6).
 
 Follow your Start section first. The lead names your branch p4/ui when merging.
 
-Read: docs/phases-4-6.md §1 and §3 (binding), plan §3 "Shared UI (packages/ui)" including its Layout
-rule, T4.6, D12, D13, D27, D33, D36, docs/screens.md (all of it: it shows where each primitive is
+Read: .docs/phases-4-6.md §1 and §3 (binding), plan §3 "Shared UI (packages/ui)" including its Layout
+rule, T4.6, D12, D13, D27, D33, D36, .docs/screens.md (all of it: it shows where each primitive is
 used), ADR 012, ADR 013 and ADR 030 (§5, the token override hook).
 
 You own: packages/ui/, and the components-ui project (plus a ui test-setup file) in
@@ -177,10 +177,10 @@ Tasks, one commit each:
 3. TextField. 4. Select. 5. Dialog. 6. StatusMessage. 7. Table. 8. PageHeader. Each exactly as the
    T4.6 table says, with its CSS Module and a test of its behaviour and roles.
 9. The visual language: refine src/tokens.css (spacing scale, type scale, colours for the message
-   tones, borders, the focus ring) so every screen in docs/screens.md reads clearly and calmly, and
+   tones, borders, the focus ring) so every screen in .docs/screens.md reads clearly and calmly, and
    use it in all ten components. Keep the --bl-theme-* override hook from ADR 030.
 
-Use the frontend-design skill for task 9 and the look of each component, within docs/phases-4-6.md
+Use the frontend-design skill for task 9 and the look of each component, within .docs/phases-4-6.md
 §1. Use vercel-react-best-practices for the components. No new dependencies. Done when `pnpm lint`,
 `pnpm typecheck` and `pnpm test` are green (the ui-deps rule included).
 ```
@@ -192,8 +192,8 @@ You are adding the People domain functions the People screens need (T5.0 and T5.
 
 Follow your Start section first. The lead names your branch p5/people-domain when merging.
 
-Read: docs/phases-4-6.md §1 and §3, T1.13, T5.0, T5.3 and T5.6 in plan.md, D11, D16, D21 and D34,
-docs/screens.md §2, and packages/people-domain as it is (rateHistory.ts, pricingImpact.ts).
+Read: .docs/phases-4-6.md §1 and §3, T1.13, T5.0, T5.3 and T5.6 in plan.md, D11, D16, D21 and D34,
+.docs/screens.md §2, and packages/people-domain as it is (rateHistory.ts, pricingImpact.ts).
 
 You own: packages/people-domain/. Nothing else.
 
@@ -220,8 +220,8 @@ You are adding the Delivery domain functions the grid needs (T6.0).
 
 Follow your Start section first. The lead names your branch p6/delivery-domain when merging.
 
-Read: docs/phases-4-6.md §1 and §3, T6.0, T6.3, T6.4, T6.9, T6.12 and T6.13 in plan.md, D15, D17,
-D18, D19, D32, D34 and D35, docs/screens.md §3, and packages/delivery-domain as it is (start with
+Read: .docs/phases-4-6.md §1 and §3, T6.0, T6.3, T6.4, T6.9, T6.12 and T6.13 in plan.md, D15, D17,
+D18, D19, D32, D34 and D35, .docs/screens.md §3, and packages/delivery-domain as it is (start with
 projectGrid.ts, grid.ts, roundGrid.ts, pricing.ts, capacity.ts, tree.ts, format.ts and
 reference.test.ts).
 
@@ -233,7 +233,7 @@ Tasks, one commit each, each with tests next to the code:
    values, cell states and markers, and each cell's details content for T6.12 (all four units, the
    person-month and hours per day, the working days per rate slice, the blended rate, the marker
    texts). Without People's data (people = null) it gives PM and % only, with employee ids as names.
-   Add a test that the reference cell's details give the numbers in docs/phases-4-6.md §3.
+   Add a test that the reference cell's details give the numbers in .docs/phases-4-6.md §3.
 2. rowActions(state, itemId) and moveTargets(state, itemId), each action or target allowed or
    refused with its reason (screens 3.4). Reuse tree.ts's checks; don't duplicate them.
 3. itemPath(state, itemId): "Project › item › item" (screens 3.3).
@@ -251,8 +251,8 @@ You are building the shell's screens (T4.1–T4.5).
 
 Follow your Start section first. The lead names your branch p4/shell when merging.
 
-Read: docs/phases-4-6.md §1 and §3 (binding), T4.1–T4.5 in plan.md, D11, D22, D28 and D31, ADR 029
-§9, ADR 030 §6–7, ADR 031, docs/screens.md §1, and apps/shell as it is.
+Read: .docs/phases-4-6.md §1 and §3 (binding), T4.1–T4.5 in plan.md, D11, D22, D28 and D31, ADR 029
+§9, ADR 030 §6–7, ADR 031, .docs/screens.md §1, and apps/shell as it is.
 
 You own: apps/shell/. Nothing else.
 
@@ -264,14 +264,14 @@ Tasks, one commit each:
 4. T4.4: the status strip: each remote's status and remoteEntry.js URL, plus the React readout.
 5. T4.5: everything built from ui primitives and tokens.
 
-Use the frontend-design and vercel-react-best-practices skills within docs/phases-4-6.md §1. Done
+Use the frontend-design and vercel-react-best-practices skills within .docs/phases-4-6.md §1. Done
 when `pnpm lint`, `pnpm typecheck` and `pnpm test` are green.
 ```
 
 _Verify:_
 
 ```text
-Base URL http://localhost:8080. Compare with docs/screens.md §1.1–§1.3.
+Base URL http://localhost:8080. Compare with .docs/screens.md §1.1–§1.3.
 1. Open /people. The top bar shows Baseline, the People and Delivery links (People active), a
    Currency select (EUR) and a User select (Demo Planner). The status strip shows people and delivery
    as loaded, each with its /remotes/<name>/remoteEntry.js URL, and the React readout.
@@ -292,9 +292,9 @@ You are building People's data plumbing and the register screen (T5.0a, T5.1).
 
 Follow your Start section first. The lead names your branch p5/register when merging.
 
-Read: docs/phases-4-6.md §1 and §3 (binding), T5.0a and T5.1 in plan.md, D6, D21, D26, D29, D30,
+Read: .docs/phases-4-6.md §1 and §3 (binding), T5.0a and T5.1 in plan.md, D6, D21, D26, D29, D30,
 D31, D32 and D33, ADR 033 (error responses), ADR 034, ADR 035 ("What it means for T3.7": every write
-is a batch), packages/people-contract, packages/delivery-contract, docs/screens.md §2.1 and §4, and
+is a batch), packages/people-contract, packages/delivery-contract, .docs/screens.md §2.1 and §4, and
 apps/people as it is.
 
 You own: apps/people/. Nothing else.
@@ -310,14 +310,14 @@ Tasks, one commit each:
    Rate today in the display currency. Its loading and load-failed states as screens 4 shows them.
    Component tests: filtering, the count, the no-match message.
 
-Use the frontend-design and vercel-react-best-practices skills within docs/phases-4-6.md §1. Done
+Use the frontend-design and vercel-react-best-practices skills within .docs/phases-4-6.md §1. Done
 when `pnpm lint`, `pnpm typecheck` and `pnpm test` are green.
 ```
 
 _Verify:_
 
 ```text
-Base URL http://localhost:8080. Compare with docs/screens.md §2.1.
+Base URL http://localhost:8080. Compare with .docs/screens.md §2.1.
 1. Open /people. A table of employees: Name, Role, Weekly hours, Rate today. The count says 60 of 60.
    Adaeze Okafor: Tech Lead, 40 h, €95.00/h. Milan Brandt: Backend Engineer, 40 h, €100.00/h.
 2. Type "okafor" in the search: 2 of 60, Adaeze Okafor and Lena Okafor. The URL has ?q=okafor.
@@ -339,9 +339,9 @@ You are building Delivery's data plumbing, its read model and the project picker
 
 Follow your Start section first. The lead names your branch p6/projects when merging.
 
-Read: docs/phases-4-6.md §1 and §3 (binding), T6.0a, T6.1 and T6.2 in plan.md, and T5.0a (T6.0a
+Read: .docs/phases-4-6.md §1 and §3 (binding), T6.0a, T6.1 and T6.2 in plan.md, and T5.0a (T6.0a
 follows it), D6, D21, D22, D26, D29, D30, D31, D32 and D33, ADR 033, ADR 035, packages/
-delivery-contract, packages/people-contract, docs/screens.md §3.1, §3.7 and §4, and apps/delivery
+delivery-contract, packages/people-contract, .docs/screens.md §3.1, §3.7 and §4, and apps/delivery
 as it is.
 
 You own: apps/delivery/. Nothing else.
@@ -356,14 +356,14 @@ Tasks, one commit each:
    (name and dates), the unknown-project message (screens 3.7), and the loading and load-failed
    states (screens 4). The grid itself comes in brief D2.
 
-Use the frontend-design and vercel-react-best-practices skills within docs/phases-4-6.md §1. Done
+Use the frontend-design and vercel-react-best-practices skills within .docs/phases-4-6.md §1. Done
 when `pnpm lint`, `pnpm typecheck` and `pnpm test` are green.
 ```
 
 _Verify:_
 
 ```text
-Base URL http://localhost:8080. Compare with docs/screens.md §3.1 and §3.7.
+Base URL http://localhost:8080. Compare with .docs/screens.md §3.1 and §3.7.
 1. Open /delivery: a table of 4 projects with dates and months: Ledger Consolidation (1 Mar 2026 –
    28 Feb 2027, 12), Reporting Platform (12), Client Portal Rebuild (10), Warehouse Data Migration (9).
 2. Click Ledger Consolidation: the URL is /delivery/prj-1 and the page header shows its name and
@@ -380,8 +380,8 @@ You are building People's employee page, the rate editor and the capacity states
 
 Follow your Start section first. The lead names your branch p5/employee when merging.
 
-Read: docs/phases-4-6.md §1 and §3 (binding), T5.2–T5.5 in plan.md, D11, D16, D27, D29, D32, D33,
-D34 and D37, ADR 034, docs/screens.md §2 and §4, and apps/people as it is (brief P1's plumbing).
+Read: .docs/phases-4-6.md §1 and §3 (binding), T5.2–T5.5 in plan.md, D11, D16, D27, D29, D32, D33,
+D34 and D37, ADR 034, .docs/screens.md §2 and §4, and apps/people as it is (brief P1's plumbing).
 
 You own: apps/people/. Nothing else.
 
@@ -396,14 +396,14 @@ Tasks, one commit each:
    error, a refused cost of 0, an unchanged correction making no write, the removal warning.
 5. T5.5: Delivery unreachable (screens 2.2).
 
-Use the frontend-design and vercel-react-best-practices skills within docs/phases-4-6.md §1. Done
+Use the frontend-design and vercel-react-best-practices skills within .docs/phases-4-6.md §1. Done
 when `pnpm lint`, `pnpm typecheck` and `pnpm test` are green.
 ```
 
 _Verify:_
 
 ```text
-Base URL http://localhost:8080. Compare with docs/screens.md §2.
+Base URL http://localhost:8080. Compare with .docs/screens.md §2.
 1. /people: the Capacity column shows "Over capacity · Sep 2026" for Lena Okafor and "Over capacity
    · Jun 2026" for Milan Brandt; Adaeze Okafor has none.
 2. Open /people/emp-001: Adaeze Okafor, Tech Lead · 40 h/week · emp-001, Within capacity. Rate
@@ -435,8 +435,8 @@ T6.10).
 
 Follow your Start section first. The lead names your branch p6/grid when merging.
 
-Read: docs/phases-4-6.md §1 and §3 (binding), T6.4, T6.8 and T6.10 in plan.md and the "Parallel
-lanes" rule "The grid leaves slots", D19, D31, D35 and D36, docs/screens.md §3.2, and apps/delivery as
+Read: .docs/phases-4-6.md §1 and §3 (binding), T6.4, T6.8 and T6.10 in plan.md and the "Parallel
+lanes" rule "The grid leaves slots", D19, D31, D35 and D36, .docs/screens.md §3.2, and apps/delivery as
 it is (brief D1's plumbing) and gridView in packages/delivery-domain.
 
 You own: apps/delivery/. Nothing else.
@@ -452,14 +452,14 @@ Tasks, one commit each:
 3. The grid on the project page. Component tests: the seed sums, collapse keeps a node's sums,
    derived rows aren't focusable.
 
-Use the frontend-design and vercel-react-best-practices skills within docs/phases-4-6.md §1. Done
+Use the frontend-design and vercel-react-best-practices skills within .docs/phases-4-6.md §1. Done
 when `pnpm lint`, `pnpm typecheck` and `pnpm test` are green.
 ```
 
 _Verify:_
 
 ```text
-Base URL http://localhost:8080. Compare with docs/screens.md §3.2.
+Base URL http://localhost:8080. Compare with .docs/screens.md §3.2.
 1. Open /delivery/prj-1. The grid has a Work package / person column, the months Mar 26 … Feb 27 and
    a Total column. The project row reads 0.50, 1.30, 2.65, 4.99, 5.35, 6.40 for Mar–Aug 26 and 57.06
    in Total.
@@ -481,8 +481,8 @@ T6.13).
 
 Follow your Start section first. The lead names your branch p6/editing when merging.
 
-Read: docs/phases-4-6.md §1 and §3 (binding), T6.5, T6.6 and T6.13 in plan.md, D11, D17, D26, D31,
-D32, D34, D36 and D37, docs/screens.md §3.2, §3.3, §3.6 and §4, and apps/delivery as it is (the grid
+Read: .docs/phases-4-6.md §1 and §3 (binding), T6.5, T6.6 and T6.13 in plan.md, D11, D17, D26, D31,
+D32, D34, D36 and D37, .docs/screens.md §3.2, §3.3, §3.6 and §4, and apps/delivery as it is (the grid
 and its slots from brief D2).
 
 You own: apps/delivery/src/features/switch-unit/, apps/delivery/src/features/edit-cell/, and one
@@ -496,14 +496,14 @@ Tasks, one commit each:
    value makes no write, a refused € edit.
 3. T6.13: People unreachable (screens 3.6): the message, Hours and Cost disabled, ids for names.
 
-Use the frontend-design and vercel-react-best-practices skills within docs/phases-4-6.md §1. Done
+Use the frontend-design and vercel-react-best-practices skills within .docs/phases-4-6.md §1. Done
 when `pnpm lint`, `pnpm typecheck` and `pnpm test` are green.
 ```
 
 _Verify:_
 
 ```text
-Base URL http://localhost:8080. Compare with docs/screens.md §3.2, §3.3 and §3.6.
+Base URL http://localhost:8080. Compare with .docs/screens.md §3.2, §3.3 and §3.6.
 1. Open /delivery/prj-1. The unit switcher shows Hours, Person-months (selected), % of capacity, Cost.
 2. Switch to Cost: Adaeze Okafor's Mar 26 cell in Design reads €7,880.00 and the URL has
    ?unit=cost. Switch to Hours: 88.00. To %: 50.0. Back to Person-months: 0.50.
@@ -530,8 +530,8 @@ You are adding the WBS tree operations and assign-person to the grid (T6.3, T6.7
 
 Follow your Start section first. The lead names your branch p6/tree when merging.
 
-Read: docs/phases-4-6.md §1 and §3 (binding), T6.3 and T6.7 in plan.md, D9, D15, D27, D31, D33, D36
-and D37, docs/screens.md §3.4, §3.5 and §4, and apps/delivery as it is (the grid and its slots from
+Read: .docs/phases-4-6.md §1 and §3 (binding), T6.3 and T6.7 in plan.md, D9, D15, D27, D31, D33, D36
+and D37, .docs/screens.md §3.4, §3.5 and §4, and apps/delivery as it is (the grid and its slots from
 brief D2), and rowActions, moveTargets and the tree operations in packages/delivery-domain.
 
 You own: apps/delivery/src/features/add-item/, rename-item/, move-item/, delete-item/,
@@ -549,14 +549,14 @@ Tasks, one commit each:
 Component tests: a refused action shows its reason, add child under a leaf with allocations moves
 them, delete reports its counts.
 
-Use the frontend-design and vercel-react-best-practices skills within docs/phases-4-6.md §1. Done
+Use the frontend-design and vercel-react-best-practices skills within .docs/phases-4-6.md §1. Done
 when `pnpm lint`, `pnpm typecheck` and `pnpm test` are green.
 ```
 
 _Verify:_
 
 ```text
-Base URL http://localhost:8080. Compare with docs/screens.md §3.4 and §3.5.
+Base URL http://localhost:8080. Compare with .docs/screens.md §3.4 and §3.5.
 1. Open /delivery/prj-1. On the Design row, press ⋯: Rename, Add child item (disabled: Design is at
    the third level), Move…, Delete…, Assign person…. Press ⋯ again: the list closes.
 2. Rename Design to "Design work" in place, Enter: the row shows the new name; reload: still there.
@@ -580,8 +580,8 @@ You are adding the cell markers and the cell details panel (T6.9, T6.12).
 
 Follow your Start section first. The lead names your branch p6/details when merging.
 
-Read: docs/phases-4-6.md §1 and §3 (binding), T6.9 and T6.12 in plan.md, D17, D18, D35 and D36,
-docs/screens.md §3.2 and §3.3, apps/delivery as it is (the grid and its slots from brief D2), and
+Read: .docs/phases-4-6.md §1 and §3 (binding), T6.9 and T6.12 in plan.md, D17, D18, D35 and D36,
+.docs/screens.md §3.2 and §3.3, apps/delivery as it is (the grid and its slots from brief D2), and
 gridView's details content in packages/delivery-domain.
 
 You own: apps/delivery/src/widgets/cell-details/, the marker rendering (a small ui segment in
@@ -593,14 +593,14 @@ Tasks, one commit each:
 2. T6.12: the cell details panel in the details slot, following the focused cell.
 Component tests: the details for the reference cell, a † cell names its causer.
 
-Use the frontend-design and vercel-react-best-practices skills within docs/phases-4-6.md §1. Done
+Use the frontend-design and vercel-react-best-practices skills within .docs/phases-4-6.md §1. Done
 when `pnpm lint`, `pnpm typecheck` and `pnpm test` are green.
 ```
 
 _Verify:_
 
 ```text
-Base URL http://localhost:8080. Compare with docs/screens.md §3.2 and §3.3.
+Base URL http://localhost:8080. Compare with .docs/screens.md §3.2 and §3.3.
 1. Open /delivery/prj-1 and focus Adaeze Okafor's Mar 26 cell in Design. The details panel reads:
    0.50 PM = 88.00 h = 50.0% of capacity = €7,880.00; person-month 176.00 h (40 h/week × 22 working
    days ÷ 5), 4.00 h per working day; 8 working days before 12 Mar at €80.00/h and 14 from 12 Mar at
@@ -619,7 +619,7 @@ You are making the grid re-render only what changed (T6.11).
 
 Follow your Start section first. The lead names your branch p6/performance when merging.
 
-Read: docs/phases-4-6.md §1 and §3 (binding), T6.11 in plan.md, D26, D29 and D35, and apps/delivery
+Read: .docs/phases-4-6.md §1 and §3 (binding), T6.11 in plan.md, D26, D29 and D35, and apps/delivery
 as it is (briefs D2–D5).
 
 You own: apps/delivery/. Nothing else; no behaviour changes.

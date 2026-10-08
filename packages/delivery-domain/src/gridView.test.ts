@@ -97,7 +97,7 @@ describe('gridView layout (screens 3.2)', () => {
   });
 });
 
-describe('gridView values on the seed (docs/phases-4-6.md §3)', () => {
+describe('gridView values on the seed (.docs/phases-4-6.md §3)', () => {
   const view = seedView('personMonths');
 
   it('gives the project row 0.50, 1.30, 2.65, 4.99, 5.35, 6.40 from March, and a Total of 57.06', () => {
@@ -167,7 +167,7 @@ describe('gridView in every unit', () => {
   });
 });
 
-describe('the reference cell’s details (docs/phases-4-6.md §3, screens 3.2)', () => {
+describe('the reference cell’s details (.docs/phases-4-6.md §3, screens 3.2)', () => {
   const details = cellOf(seedView('personMonths'), REFERENCE, '2026-03').details;
 
   it('gives 0.50 PM = 88.00 h = 50.0% of capacity = €7,880.00', () => {

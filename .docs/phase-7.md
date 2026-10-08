@@ -77,17 +77,17 @@ You are making person names in Delivery's staffing grid link to that employee in
 
 Follow your Start section first. The lead names your branch p7/employee-link when merging.
 
-Read: docs/phase-7.md (all of it; §1 and §3 are binding), docs/phases-4-6.md §1, T7.5 in plan.md,
-D22, D30, D32, D35 and D36, ADR 022 and ADR 029, docs/screens.md §3.2, §3.6 and §5, and in
+Read: .docs/phase-7.md (all of it; §1 and §3 are binding), .docs/phases-4-6.md §1, T7.5 in plan.md,
+D22, D30, D32, D35 and D36, ADR 022 and ADR 029, .docs/screens.md §3.2, §3.6 and §5, and in
 apps/delivery: app/standalone.ts, shared/lib/HostContextProvider.tsx, widgets/staffing-grid/ui/
 RowLabel.tsx and GridRows.tsx, and the T6.11 test StaffingGrid.rerender.test.tsx.
 
 You own: apps/delivery/src/shared/lib/, apps/delivery/src/entities/employee/,
 apps/delivery/src/widgets/staffing-grid/ui/ (RowLabel.tsx, GridRows.tsx, StaffingGrid.module.css and
-one new test file), and the dated note at the end of docs/adr/022-routing.md. Nothing else.
+one new test file), and the dated note at the end of .docs/adr/022-routing.md. Nothing else.
 
 Tasks, one commit each:
-1. hostHref(basePath, to) in shared/lib, exactly as docs/phase-7.md §3 (Cross-app href) says, and
+1. hostHref(basePath, to) in shared/lib, exactly as .docs/phase-7.md §3 (Cross-app href) says, and
    useHostLink(to) beside it, returning { href, onClick } with the click rule of §3 (Link clicks),
    reading navigate and basePath through useHost. Unit tests for hostHref: hosted /delivery, standalone
    /remotes/delivery, and the dev basePath "".
@@ -101,7 +101,7 @@ Tasks, one commit each:
    don't call it; with People unreachable the link reads emp-001 and keeps its href. Keep the T6.11
    re-render test green without changing what it asserts: the link reads the host context, not row
    props, so PersonRow keeps its props.
-5. The ADR 022 note (docs/phase-7.md §3, ADR).
+5. The ADR 022 note (.docs/phase-7.md §3, ADR).
 
 No host-contract change, no new dependencies, no ui change. Use vercel-react-best-practices. Done when
 `pnpm lint`, `pnpm typecheck` and `pnpm test` are green.
@@ -121,8 +121,8 @@ The verifier's evidence, verbatim:
 
 What the lead found: <the cause as far as known, with file:line>.
 
-Read: docs/phase-7.md §1 and §3 (binding), docs/phases-4-6.md §1, <task> in plan.md and the
-decisions it cites, docs/screens.md <section>, and the code above.
+Read: .docs/phase-7.md §1 and §3 (binding), .docs/phases-4-6.md §1, <task> in plan.md and the
+decisions it cites, .docs/screens.md <section>, and the code above.
 
 You own: <the one app or package the cause is in>. Nothing else.
 
@@ -138,7 +138,7 @@ Done when `pnpm lint`, `pnpm typecheck` and `pnpm test` are green.
 ### V1: rate edits reach Delivery (T7.1)
 
 ```text
-Base URL http://localhost:8080. Compare with docs/screens.md §3.2 and §2.3. "Live" means the change
+Base URL http://localhost:8080. Compare with .docs/screens.md §3.2 and §2.3. "Live" means the change
 shows within 5 s without reloading that tab. Use two tabs in your one browser session.
 Hosted, one tab:
 1. Open /delivery/prj-1?unit=cost. Adaeze Okafor's Mar 26 cell in Design reads €7,880.00.
@@ -165,7 +165,7 @@ Criteria: each step as described; no console errors.
 ### V2: capacity reaches People (T7.2)
 
 ```text
-Base URL http://localhost:8080. Compare with docs/screens.md §2.1, §2.6, §3.2 and §3.3. "Live" means the
+Base URL http://localhost:8080. Compare with .docs/screens.md §2.1, §2.6, §3.2 and §3.3. "Live" means the
 change shows within 5 s without reloading that tab. Use two tabs in your one browser session.
 Hosted, two tabs:
 1. Tab A: open /delivery/prj-1 (Person-months). Clara Bergmann's May 26 cell in Design reads 0.50, with
@@ -195,7 +195,7 @@ Criteria: each step as described; no console errors.
 ### V3: the display currency (T7.3)
 
 ```text
-Base URL http://localhost:8080. Compare with docs/screens.md §1.1, §2.3, §3.2 and §5.
+Base URL http://localhost:8080. Compare with .docs/screens.md §1.1, §2.3, §3.2 and §5.
 1. Open /delivery/prj-1?unit=cost. Collapse Reporting cut-over. Adaeze Okafor's Mar 26 cell in Design
    reads €7,880.00.
 2. Set the shell's Currency to USD. At once, without a reload: the cell reads $8,510.40, every Cost
@@ -218,7 +218,7 @@ Criteria: each step as described; no console errors.
 ### V5: the person link (T7.5)
 
 ```text
-Base URL http://localhost:8080. Compare with docs/screens.md §3.2 and §5.
+Base URL http://localhost:8080. Compare with .docs/screens.md §3.2 and §5.
 Hosted:
 1. Open /delivery/prj-1?unit=cost. In Design, Adaeze Okafor's name is a link whose href is
    /people/emp-001.
@@ -239,7 +239,7 @@ Criteria: each step as described; no console errors.
 
 ```text
 Base URL http://localhost:8080. The lead has stopped the `people` container (People's remote code).
-People's data service is up. Compare with docs/screens.md §1.2.
+People's data service is up. Compare with .docs/screens.md §1.2.
 1. Open /people: the panel says People couldn't load, with Try again; the status strip shows people
    failed. The nav still works.
 2. Click Delivery and open Ledger Consolidation: the grid loads with names. Pick Cost: Adaeze Okafor's
@@ -259,7 +259,7 @@ in steps 1–4 and at the pause.
 
 ```text
 Base URL http://localhost:8080. The lead has stopped the `delivery` container (Delivery's remote code).
-Delivery's data service is up. Compare with docs/screens.md §1.2 and §2.1.
+Delivery's data service is up. Compare with .docs/screens.md §1.2 and §2.1.
 1. Open /delivery: the panel says Delivery couldn't load, with Try again; the status strip shows
    delivery failed. The nav still works.
 2. Click People: the register shows 60 of 60 and the Capacity column: Milan Brandt "Over capacity ·
@@ -277,7 +277,7 @@ in steps 1–3 and at the pause.
 ### V4c: People's data service down (T7.4, T7.5)
 
 ```text
-Base URL http://localhost:8080. The lead has stopped `people-pb`. Compare with docs/screens.md §3.6
+Base URL http://localhost:8080. The lead has stopped `people-pb`. Compare with .docs/screens.md §3.6
 and §4.
 1. Open /people: "Employees couldn't be loaded", with Try again. The nav still works.
 2. Click Delivery and open Ledger Consolidation: a message says People's data can't be reached; Hours
@@ -298,7 +298,7 @@ steps 1–4.
 ### V4d: Delivery's data service down (T7.4)
 
 ```text
-Base URL http://localhost:8080. The lead has stopped `delivery-pb`. Compare with docs/screens.md §2.2
+Base URL http://localhost:8080. The lead has stopped `delivery-pb`. Compare with .docs/screens.md §2.2
 and §4.
 1. Open /delivery: "Projects couldn't be loaded", with Try again. The nav still works.
 2. Click People: a message says capacity is unknown; the Capacity column reads unknown for every

@@ -2,7 +2,7 @@ import { EmployeeMonthLoad } from '@baseline/delivery-contract';
 import { IsoDate } from '@baseline/host-contract';
 import { Employee, RateRecord } from '@baseline/people-contract';
 
-// A small register in the shape of the seed (docs/data.json): the two Okafors, a Brandt, and enough roles to
+// A small register in the shape of the seed (.docs/data.json): the two Okafors, a Brandt, and enough roles to
 // search. Dates are fixed and far from today, so no test depends on the clock: a rate "in effect today" starts
 // in the past, and `FUTURE` starts so far ahead it never is.
 

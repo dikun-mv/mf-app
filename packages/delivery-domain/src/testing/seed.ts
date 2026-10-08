@@ -3,9 +3,9 @@ import { IsoDateTime } from '@baseline/host-contract';
 import { Employee, RateRecord } from '@baseline/people-contract';
 import { z } from 'zod';
 import type { PlanState } from '../changeSet';
-import seed from '../../../../docs/data.json';
+import seed from '../../../../.docs/data.json';
 
-// The brief's fixtures (docs/data.json), parsed through the contract schemas. Test support only:
+// The brief's fixtures (.docs/data.json), parsed through the contract schemas. Test support only:
 // it isn't exported from the package.
 
 /** Seed rows have no edit time, so they all share one (D18). */

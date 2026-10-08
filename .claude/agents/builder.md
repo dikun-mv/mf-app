@@ -1,7 +1,7 @@
 ---
 name: builder
 description: >-
-  Implements one slice of docs/plan.md (the Baseline case study) inside its own
+  Implements one slice of .docs/plan.md (the Baseline case study) inside its own
   git worktree, following a brief given as its prompt. Give it the brief
   verbatim. It works only inside the paths the brief says it owns, commits after
   every working step, runs lint, typecheck and tests until green, and returns a structured
@@ -31,11 +31,11 @@ Do these before anything else, in your worktree:
 ## Read first
 
 1. Your brief: it's the whole prompt you were given.
-2. The handover file your brief names (e.g. `docs/phases-4-6.md`): its rules section is binding.
-3. `docs/plan.md`: the tasks your brief names, the decisions (D1–D37) they cite, and plan §3 (architecture, Shared UI and Service design).
-4. `docs/screens.md`, the sections your brief names, when you build a screen: the layout, content and states to build.
-5. `docs/adr/`: decisions already recorded, always including ADR 029 (runtime interface) and ADR 032 (PocketBase data layer), plus any ADR your brief names.
-6. `docs/taks.md` (the brief of the case study) where your tasks quote it.
+2. The handover file your brief names (e.g. `.docs/phases-4-6.md`): its rules section is binding.
+3. `.docs/plan.md`: the tasks your brief names, the decisions (D1–D37) they cite, and plan §3 (architecture, Shared UI and Service design).
+4. `.docs/screens.md`, the sections your brief names, when you build a screen: the layout, content and states to build.
+5. `.docs/adr/`: decisions already recorded, always including ADR 029 (runtime interface) and ADR 032 (PocketBase data layer), plus any ADR your brief names.
+6. `.docs/taks.md` (the brief of the case study) where your tasks quote it.
 
 The repo has a CodeGraph index (`.codegraph/`). Use `codegraph explore "<symbol or question>"` before grep when you need to find existing code.
 
@@ -44,7 +44,7 @@ The repo has a CodeGraph index (`.codegraph/`). Use `codegraph explore "<symbol 
 Two skills are loaded for UI work. Use them when your brief says so, within its rules:
 
 - **`vercel-react-best-practices`** for every React component and hook you write or touch. The rendering, re-render and bundle rules apply. The Next.js and server-component rules don't: the apps are React 18 SPAs built with Rsbuild, so no React 19 APIs either.
-- **`frontend-design:frontend-design`** for how a screen looks. `docs/screens.md` fixes the layout and content; you choose spacing, type, colour and states, only through `packages/ui`'s tokens and CSS Modules. No web fonts, CDNs, icon packs or network images, no new dependencies, and the same visual language in all three apps.
+- **`frontend-design:frontend-design`** for how a screen looks. `.docs/screens.md` fixes the layout and content; you choose spacing, type, colour and states, only through `packages/ui`'s tokens and CSS Modules. No web fonts, CDNs, icon packs or network images, no new dependencies, and the same visual language in all three apps.
 
 ## Rules
 

@@ -27,7 +27,7 @@ const POCKETBASE_GLOBALS = {
 // Code-level rules only (D24). Import boundaries belong to dependency-cruiser
 // (D23) and formatting to Prettier, so neither has rules here.
 export default defineConfig([
-  globalIgnores(['**/dist/**', '**/coverage/**', '**/node_modules/**', 'docs/**']),
+  globalIgnores(['**/dist/**', '**/coverage/**', '**/node_modules/**', '.docs/**']),
 
   js.configs.recommended,
   ...ts.configs.strictTypeChecked,

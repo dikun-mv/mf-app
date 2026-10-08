@@ -1,5 +1,5 @@
 // Seed (T3.6): the 4 projects, 90 breakdown items and 720 allocations of /pb/seed/data.json (a copy of
-// docs/data.json in the image), with their ids as record ids, then the load rows. Every seed allocation
+// .docs/data.json in the image), with their ids as record ids, then the load rows. Every seed allocation
 // gets the same `editedAt`, so the causer of a seed conflict is the higher id (D18).
 //
 // Model hooks fire for migration saves (ADR 033 d). The allocations are therefore saved without hooks,
