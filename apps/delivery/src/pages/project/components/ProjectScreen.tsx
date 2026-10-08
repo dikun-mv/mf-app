@@ -4,7 +4,7 @@ import { InlineMessage, PageHeader } from '@baseline/ui';
 import { Link, useParams } from 'react-router';
 import { useProject } from '../../../entities/project';
 import { useUnit } from '../../../features/switch-unit';
-import { PageBoundary } from '../../../shared/ui';
+import { PageBoundary } from '../../../shared/components';
 import { StaffingGrid } from '../../../widgets/staffing-grid';
 import styles from './ProjectScreen.module.css';
 

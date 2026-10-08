@@ -1,1 +1,1 @@
-export { AddRateForm, type AddRateFormProps } from './ui/AddRateForm';
+export { AddRateForm, type AddRateFormProps } from './components/AddRateForm';

@@ -1,2 +1,2 @@
-export { RemotePanel } from './ui/RemotePanel';
-export { RemoteRoute } from './ui/RemoteRoute';
+export { RemotePanel } from './components/RemotePanel';
+export { RemoteRoute } from './components/RemoteRoute';

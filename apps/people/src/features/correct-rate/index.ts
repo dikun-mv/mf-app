@@ -1,1 +1,1 @@
-export { CorrectRateForm } from './ui/CorrectRateForm';
+export { CorrectRateForm } from './components/CorrectRateForm';

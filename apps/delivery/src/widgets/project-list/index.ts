@@ -1,1 +1,1 @@
-export { ProjectList } from './ui/ProjectList';
+export { ProjectList } from './components/ProjectList';

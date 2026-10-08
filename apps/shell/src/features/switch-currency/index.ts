@@ -1,1 +1,1 @@
-export { CurrencySelect } from './ui/CurrencySelect';
+export { CurrencySelect } from './components/CurrencySelect';

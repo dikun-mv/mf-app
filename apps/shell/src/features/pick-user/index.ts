@@ -1,1 +1,1 @@
-export { UserSelect } from './ui/UserSelect';
+export { UserSelect } from './components/UserSelect';

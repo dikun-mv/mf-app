@@ -1,5 +1,5 @@
 import { PageHeader } from '@baseline/ui';
-import { PageBoundary } from '../../../shared/ui';
+import { PageBoundary } from '../../../shared/components';
 import { EmployeeRegister } from '../../../widgets/employee-register';
 
 /** The register page at the app's base path (screens 2.1): its title, then the register under the page's loading and failed states. */

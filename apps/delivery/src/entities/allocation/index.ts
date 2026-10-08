@@ -1,3 +1,3 @@
-export { CellDetailsPanel, type CellDetailsPanelProps } from './ui/CellDetailsPanel';
-export { CellMarkers } from './ui/CellMarkers';
+export { CellDetailsPanel, type CellDetailsPanelProps } from './components/CellDetailsPanel';
+export { CellMarkers } from './components/CellMarkers';
 export { useAllocations } from './hooks/useAllocations';

@@ -2,7 +2,7 @@ import { EmployeeId } from '@baseline/people-contract';
 import { InlineMessage } from '@baseline/ui';
 import { useParams } from 'react-router';
 import { useEmployee } from '../../../entities/employee';
-import { BackToRegister, PageBoundary } from '../../../shared/ui';
+import { BackToRegister, PageBoundary } from '../../../shared/components';
 import { EmployeeProfile } from '../../../widgets/employee-profile';
 import { RateHistory } from '../../../widgets/rate-history';
 import styles from './EmployeeScreen.module.css';

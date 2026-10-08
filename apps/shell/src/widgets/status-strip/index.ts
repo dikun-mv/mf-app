@@ -1,1 +1,1 @@
-export { StatusStrip } from './ui/StatusStrip';
+export { StatusStrip } from './components/StatusStrip';

@@ -1,1 +1,1 @@
-export { EmployeeScreen } from './ui/EmployeeScreen';
+export { EmployeeScreen } from './components/EmployeeScreen';

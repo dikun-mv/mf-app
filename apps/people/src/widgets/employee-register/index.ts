@@ -1,1 +1,1 @@
-export { EmployeeRegister } from './ui/EmployeeRegister';
+export { EmployeeRegister } from './components/EmployeeRegister';

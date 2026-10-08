@@ -1,2 +1,2 @@
-export { Nav } from './ui/Nav';
-export { TopBar } from './ui/TopBar';
+export { Nav } from './components/Nav';
+export { TopBar } from './components/TopBar';

@@ -1,1 +1,1 @@
-export { RateHistory } from './ui/RateHistory';
+export { RateHistory } from './components/RateHistory';

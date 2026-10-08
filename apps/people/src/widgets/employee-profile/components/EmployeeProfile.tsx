@@ -1,7 +1,7 @@
 import type { Employee } from '@baseline/people-contract';
 import { PageHeader } from '@baseline/ui';
 import { CapacityBadge, overCapacityCountLabel, useCapacity, type Capacity } from '../../../entities/capacity';
-import { BackToRegister } from '../../../shared/ui';
+import { BackToRegister } from '../../../shared/components';
 import styles from './EmployeeProfile.module.css';
 import { OverCapacityNotice } from './OverCapacityNotice';
 

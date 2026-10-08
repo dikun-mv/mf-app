@@ -1,1 +1,1 @@
-export { RemoveRateDialog, type RemoveRateDialogProps } from './ui/RemoveRateDialog';
+export { RemoveRateDialog, type RemoveRateDialogProps } from './components/RemoveRateDialog';

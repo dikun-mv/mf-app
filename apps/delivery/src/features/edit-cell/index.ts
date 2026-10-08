@@ -2,5 +2,5 @@
 //
 //   EditableCell        the grid's cell renderer: a button with the value that turns into an input.
 //   WriteFailedMessage  the screens 4 message for the last write, for the top of the grid.
-export { EditableCell } from './ui/EditableCell';
-export { WriteFailedMessage } from './ui/WriteFailedMessage';
+export { EditableCell } from './components/EditableCell';
+export { WriteFailedMessage } from './components/WriteFailedMessage';

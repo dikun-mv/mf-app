@@ -1,1 +1,1 @@
-export { ProjectPickerScreen } from './ui/ProjectPickerScreen';
+export { ProjectPickerScreen } from './components/ProjectPickerScreen';

@@ -36,7 +36,7 @@ export interface StaffingGridProps {
  * Delivery's collections are loaded; the page shows that state (D32).
  *
  * The toolbar above the table, the cell renderer and its adornment, the row actions and the details panel below are slots
- * (`ui/slots/`, see the widget's `index.ts`).
+ * (`components/slots/`, see the widget's `index.ts`).
  */
 export function StaffingGrid({ projectId, unit = 'personMonths' }: StaffingGridProps) {
   // People assigned to a leaf and not yet given a value: rows that exist only in this page (T6.7, D31).

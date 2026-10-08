@@ -1,1 +1,1 @@
-export { EmployeeProfile } from './ui/EmployeeProfile';
+export { EmployeeProfile } from './components/EmployeeProfile';
