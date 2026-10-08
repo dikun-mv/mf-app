@@ -7,6 +7,10 @@
     "node": ">=24"
   },
   "scripts": {
+    "start": "docker compose up -d --build --wait",
+    "start:dev": "docker compose up -d --build --wait gateway people-pb delivery-pb && pnpm --filter './apps/*' --parallel dev",
+    "stop": "docker compose down",
+    "stop:clean": "docker compose down -v",
     "typecheck": "pnpm typecheck:root && pnpm -r typecheck",
     "typecheck:root": "tsc --noEmit -p tsconfig.json",
     "lint": "pnpm lint:code && pnpm format:check && pnpm lint:deps",
