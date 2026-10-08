@@ -1,6 +1,6 @@
 # ADR 014: Test stack (D14)
 
-Status: accepted
+Status: accepted; amended 2026-10-08 (Playwright E2E dropped, see the end)
 
 ## Decision
 
@@ -46,6 +46,8 @@ Two workarounds are needed:
 ## Phase 0 layout
 
 Projects `domain`, `services` and `tooling` (the dependency-rule fixtures in `.dependency-cruiser.test.ts`). The jsdom `components` project is added with T2.3a.
+
+_Since T2.3a (2026-10-06) and T4.6 (2026-10-07): there is one jsdom `components-<app>` project per app instead, each extending that app's Rsbuild config ([ADR 030](030-module-federation-skeleton.md)), plus `components-ui` for `packages/ui`'s tests on the shell's config. Integration tests against the running stack have their own config, `rstest.integration.config.ts`._
 
 ## Amended 2026-10-08
 

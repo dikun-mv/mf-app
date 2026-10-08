@@ -31,6 +31,8 @@ The three builds (`shell`, `people`, `delivery`) run standalone and hosted from 
 8. **The standalone host context** is built in the remote (`standalone.ts`): EUR, the stub user `user-1`, `basePath` from `document.baseURI`, and `navigate` opening `/remotes/<other>/…` on the same origin. In dev that URL does not exist (the remotes run on separate ports), which is fine while the skeleton has no cross-app links. Phase 5 and 6 decide whether to hide those links.
 9. **`<base href>`** is added through `html.tags` in each remote's Rsbuild config: `/` for `dev`, `/remotes/<name>/` for `build`. The container entrypoint rewrites the built value. The shell has no `<base>`; its asset URLs are absolute (`output.assetPrefix: '/'`), and its deep links reload correctly.
 
+_Since then: the adapters moved from `src/data/` to `src/shared/api/` with the FSD restructure (T4.0b, 2026-10-07; [ADR 038](038-feature-sliced-design.md)), which the `components-<app>` projects exclude; `packages/ui`'s tests got a `components-ui` project on the shell's config (T4.6). Item 8's open question was settled by T7.5 (2026-10-08, [ADR 022](022-routing.md)): the person link is shown standalone too and opens `/remotes/people/<employeeId>`._
+
 ## Checked in a browser (playwright-cli)
 
 With the three dev servers on 3000, 3010 and 3020, and with the three builds served by a scratch static server (no Docker) on port 4100 with the SPA fallback described in ADR 029:
@@ -43,6 +45,8 @@ With the three dev servers on 3000, 3010 and 3020, and with the three builds ser
 - CSS: the production builds extract CSS to files; class names carry the app prefix for `ui` too (`bl-people-button-…`, `bl-delivery-button-…`); the built CSS contains only `.bl-<app>-…` selectors, `[data-baseline-root]` and prefixed keyframes, so nothing leaks.
 
 Not verified in a browser: the Docker and nginx paths (the Docker setup, T2.9, wires `BASE_PATH`, `config.json` and the gateway), and `docker compose stop people`.
+
+_Checked later through the gateway: the Docker paths in [ADR 031](031-infra-and-break-methods.md), stopping each container in turn in T7.4, and a clean clone in T8.4 (both 2026-10-08)._
 
 ## Consequences
 

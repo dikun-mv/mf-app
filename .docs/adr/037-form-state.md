@@ -11,7 +11,7 @@ People and Delivery have a handful of real forms: the rate editor, the WBS dialo
 - **react-hook-form v7, for real forms only:** the rate editor (add, correct), WBS create, rename and move, and assign-person.
 - **Fields are checked in three layers.** (1) `zodResolver` (`@hookform/resolvers` v5) with a form schema built from the contract schemas checks shapes. (2) On submit, the domain function's `Result` maps its `DomainError` to `setError` on the field it concerns. (3) A server `conflict` maps to `setError('root.server')`.
 - `ui`'s `TextField` and `Select` forward refs to the native element, so `register` works on every field. Amounts are text fields (`inputMode="decimal"`) whose text the form schema parses with `parseAmount` ([ADR 044](044-locale-and-number-input.md)), so no field needs `Controller`.
-- **Grid cells don't use it:** a cell is one input that saves on Enter or blur and cancels on Esc, so `GridCell` keeps a small local draft ([ADR 047](047-concurrent-edits.md)).
+- **Grid cells don't use it:** a cell is one input that saves on Enter or blur and cancels on Esc, so `GridCell` (built as `EditableCell`, see ADR 046's note) keeps a small local draft ([ADR 047](047-concurrent-edits.md)).
 - Not in MF `shared` or the catalog.
 
 ## Alternatives

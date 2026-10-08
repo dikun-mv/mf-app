@@ -25,3 +25,5 @@ PocketBase realtime sends the action and the whole record for each change ([ADR 
 - One subscription per collection per app, owned by the app root, ties its lifetime to `mount` and `unmount`.
 - Realtime patches and the optimistic updates of ADR 036 meet in one cache. Serial writes and "the server's record wins" keep it consistent.
 - The SDK's `PB_CONNECT` event fires on the first connect and after every reconnect, which is what triggers the refetch; T5.4 checks it.
+
+_Checked: both apps' `RealtimeProvider`s refetch on it, with tests for a drop and reconnect (People's `RealtimeProvider.test.tsx`, Delivery's `connectRealtime.test.ts`), and in T7.4 (2026-10-08) a stopped `people-pb` or `delivery-pb`, started again, cleared the other app's degraded state within 30 s without a reload._

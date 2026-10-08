@@ -91,5 +91,5 @@ Two short hooks and a pure function are the whole server logic, and the function
 - **`allocations` and `breakdown_items` writes are public.** There is no auth (plan §1).
 - **Each allocation write re-reads its pair.** A D9 batch with N allocations does N small queries inside the transaction. The pair has at most a handful of rows (one per leaf and month), so this is cheap at this size.
 - **Deleting a parent before its children** is silently allowed by PocketBase for the optional `parentId` (ADR 033 g) and leaves orphan roots; "children first" stays the adapter's rule.
-- **The server patterns are looser than the contract schemas**, as in ADR 034: `startDate` only has to look like a date, and an `id` only has to match the widened pattern. The app adapter parses per record.
+- **The server patterns are looser than the contract schemas**, as in ADR 034: `startDate` only has to look like a date, and an `id` only has to match the widened pattern. The app adapter parses per record (ADR 034's last note says what a bad record does in each app).
 - **A seed allocation's `editedAt` is one shared time.** The six seed conflicts are resolved by id alone, the higher one winning, until someone edits one of the two allocations.

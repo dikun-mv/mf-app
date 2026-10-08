@@ -24,3 +24,5 @@ The staffing grid is the most interactive screen: editable cells, expand and col
 
 - Native table semantics cost nothing and screen readers already understand them; `jsx-a11y` (D24) checks the markup.
 - Tabbing across a row of months is slow but correct. Arrow keys can be added later inside `widgets/staffing-grid` without changing `GridCell`'s props. T9.2 lists it as a known limitation.
+
+_As built (T6.6, T6.12, 2026-10-07): the cell is `EditableCell` in `features/edit-cell`. Enter or Esc closes the editor and returns focus to the button; blur saves and leaves focus where the user moved it. A marker's full text is in the cell-details panel, which the cell's `aria-describedby` points at; the marker itself has the text as its `title`._

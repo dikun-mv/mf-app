@@ -25,3 +25,5 @@ The staffing grid shows rows, exact and rounded values, cell states, markers and
 - T6.11's memoisation follows from it.
 - `roundGrid` reruns for the whole open project after any change, which is cheap at this size (D19).
 - The function also works without People's data: PM and % only, employee ids as names ([ADR 042](042-loading.md)).
+
+_Names as built: since [ADR 048](048-slice-segment-names.md) (2026-10-08) the memoising code is in `widgets/staffing-grid/hooks` (`useGridView`), and the cell the plan calls `GridCell` is `EditableCell` in `features/edit-cell` (T6.6), rendered by the `React.memo` rows in `GridRows.tsx`._

@@ -53,3 +53,5 @@ Most of the server work is now configuration: REST, realtime, transactions, seri
 - **Hook code is untyped JS,** so it's kept to `pb_hooks/lib/` files with their own tests.
 - **The `pocketbase` SDK is one more dependency in each app.** Like `react-router`, it's bundled per app and kept out of MF `shared`.
 - **Some PocketBase behaviour is still unverified on the pinned release:** custom id patterns, batch settings from a migration, hooks inside batch transactions, `$os.readFile`, and `require` of CommonJS in hooks. Each has a fallback, listed in the plan's assumptions table, and gets checked in T3.4–T3.6.
+
+_Checked in T3.4 (2026-10-07, [ADR 033](033-pocketbase-runtime-and-checks.md)): every one held on v0.40.4, and no fallback was needed. [ADR 035](035-delivery-pb.md) found that a single (non-batch) allocation write is not atomic with its load refresh, so every app write is a batch._

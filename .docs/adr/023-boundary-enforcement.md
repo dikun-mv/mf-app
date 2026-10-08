@@ -6,7 +6,7 @@ Status: accepted; amended by [ADR 032](032-pocketbase-data-layer.md) (2026-10-07
 
 ## Decision
 
-dependency-cruiser, run as `pnpm lint:deps` inside `pnpm lint`, configured in `.dependency-cruiser.cjs` at the repo root. It enforces the rules below over the whole import graph, including type-only imports and cycles, and will generate the dependency diagram for the README. Rslint handles code-level rules (ADR 024).
+dependency-cruiser, run as `pnpm lint:deps` inside `pnpm lint`, configured in `.dependency-cruiser.cjs` at the repo root. It enforces the rules below over the whole import graph, including type-only imports and cycles, and generates the dependency diagram for the README (`pnpm graph`, Mermaid at package level, T9.1). Rslint handles code-level rules (ADR 024).
 
 ## Alternative
 
@@ -46,5 +46,7 @@ Writing this test caught a real typo in `shell-no-team-internals`, which would h
 ## Notes
 
 - depcruise reports one rule per dependency, so a violating import that matches several rules shows only one name. The fixtures use imports that match exactly one rule.
-- `pnpm lint:deps` scans `apps`, `packages` and `services`. Those folders hold a `.gitkeep` until real packages exist.
+- `pnpm lint:deps` scans `apps`, `packages` and `services`. Those folders held a `.gitkeep` until real packages existed; none is left.
 - Needs TypeScript 6 (ADR 026).
+
+_As of 2026-10-08, `.dependency-cruiser.cjs` has more rules than the Phase 0 table: `apps-no-services` in place of `app-to-own-service-types-only` (T3.4, ADR 032); `contract-tests-are-leaves`, which holds a contract's tests to the same rule plus the test tools (ADR 028); `ui-test-deps`, the same for `ui`'s tests and `src/testing/` (T4.6); and the three FSD rules `fsd-layers-import-down`, `fsd-no-cross-slice` and `fsd-public-api` (T4.0b, [ADR 038](038-feature-sliced-design.md)). Each rule's `comment` in the config says what it forbids._

@@ -59,3 +59,5 @@ Each container owns what it serves, and the gateway only routes. That is what le
 ## To verify
 
 First with the built apps absent: `docker compose config` is valid, `nginx -t` passes for both configs in the stock image, the entrypoints give the right output in an nginx container, and the routes behave as above against fake upstreams. Then with the real apps through `localhost:8080`.
+
+_Done. The Phase 2 exit check (2026-10-06) ran the real apps through `localhost:8080` with a stopped remote; T7.4 stopped and restarted each of the four containers in turn; and T8.4 (2026-10-08) brought a fresh clone with fresh volumes up healthy with `docker compose up -d --build --wait`, with no Node on the host._

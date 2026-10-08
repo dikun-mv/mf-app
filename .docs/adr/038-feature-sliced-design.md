@@ -30,3 +30,5 @@ Segments inside a slice: `ui`, `model`, `api`, `lib`. **The domain packages stay
 - One structure in all three apps; you know where a change goes before opening a file. "What may this import" becomes checkable, in the same tool and diagram as the team boundaries.
 - No alias, because dependency-cruiser resolves with the one root `tsConfig`, and three apps would each need their own `@/`.
 - More folders than an app of this size strictly needs; creating them only with their first file keeps them from becoming scaffolding. T4.0c restructures the existing code.
+
+_As built (2026-10-08), two of the examples above landed elsewhere: the cell-details panel is `entities/allocation`'s `CellDetailsPanel`, not a `cell-details` widget, and People's load-row entity is `entities/capacity`. Delivery has no `employee-month-load` entity, since it computes capacity from its own allocations. The shell has no `entities/` layer._
