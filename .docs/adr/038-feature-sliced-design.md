@@ -1,6 +1,6 @@
 # ADR 038: Feature-Sliced Design in each app (D28)
 
-Status: accepted (2026-10-07, after Phase 3 and before Phase 4). Extends [ADR 023](023-boundary-enforcement.md).
+Status: accepted (2026-10-07, after Phase 3 and before Phase 4). Extends [ADR 023](023-boundary-enforcement.md). [ADR 048](048-slice-segment-names.md) renames the slice segments `ui` and `model` to `components` and `hooks` (and `shared/ui` to `shared/components`); the text below keeps the original names.
 
 ## Context
 

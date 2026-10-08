@@ -42,22 +42,22 @@ function fsdLayout(app: string): Files {
   const src = `apps/${app}/src`;
   return {
     [`${src}/app/main.ts`]: `import { Register } from '../pages/register';\nimport { api } from '../shared/api';\nexport const main = [Register, api];`,
-    [`${src}/pages/register/index.ts`]: `export { Register } from './ui/Register';`,
-    [`${src}/pages/register/ui/Register.ts`]: [
+    [`${src}/pages/register/index.ts`]: `export { Register } from './components/Register';`,
+    [`${src}/pages/register/components/Register.ts`]: [
       `import { Table } from '../../../widgets/table';`,
       `import { Search } from '../../../features/search';`,
-      `import { format } from '../model/format';`,
+      `import { format } from '../hooks/format';`,
       `export const Register = [Table, Search, format];`,
     ].join('\n'),
-    [`${src}/pages/register/model/format.ts`]: `export const format = 1;`,
-    [`${src}/widgets/table/index.ts`]: `export { Table } from './ui/Table';`,
-    [`${src}/widgets/table/ui/Table.ts`]: `import { Employee } from '../../../entities/employee';\nimport { util } from '../../../shared/lib';\nexport const Table = [Employee, util];`,
+    [`${src}/pages/register/hooks/format.ts`]: `export const format = 1;`,
+    [`${src}/widgets/table/index.ts`]: `export { Table } from './components/Table';`,
+    [`${src}/widgets/table/components/Table.ts`]: `import { Employee } from '../../../entities/employee';\nimport { util } from '../../../shared/lib';\nexport const Table = [Employee, util];`,
     [`${src}/widgets/chart/index.ts`]: `export const Chart = 1;`,
-    [`${src}/features/search/index.ts`]: `export { Search } from './ui/Search';`,
-    [`${src}/features/search/ui/Search.ts`]: `import { Employee } from '../../../entities/employee';\nexport const Search = Employee;`,
+    [`${src}/features/search/index.ts`]: `export { Search } from './components/Search';`,
+    [`${src}/features/search/components/Search.ts`]: `import { Employee } from '../../../entities/employee';\nexport const Search = Employee;`,
     [`${src}/features/filter/index.ts`]: `export const Filter = 1;`,
-    [`${src}/entities/employee/index.ts`]: `export { Employee } from './model/employee';`,
-    [`${src}/entities/employee/model/employee.ts`]: `import { api } from '../../../shared/api';\nexport const Employee = api;`,
+    [`${src}/entities/employee/index.ts`]: `export { Employee } from './hooks/employee';`,
+    [`${src}/entities/employee/hooks/employee.ts`]: `import { api } from '../../../shared/api';\nexport const Employee = api;`,
     [`${src}/entities/rate/index.ts`]: `export const Rate = 1;`,
     [`${src}/shared/api/index.ts`]: `export { api } from './client';`,
     [`${src}/shared/api/client.ts`]: `export const api = 1;`,
@@ -293,17 +293,17 @@ describe('dependency boundary rules', () => {
     {
       rule: 'fsd-layers-import-down',
       description: 'an entity imports a feature',
-      files: { 'apps/people/src/entities/employee/model/leak.ts': `import '../../../features/search';` },
+      files: { 'apps/people/src/entities/employee/hooks/leak.ts': `import '../../../features/search';` },
     },
     {
       rule: 'fsd-layers-import-down',
       description: 'a feature imports a page',
-      files: { 'apps/people/src/features/search/ui/leak.ts': `import '../../../pages/register';` },
+      files: { 'apps/people/src/features/search/components/leak.ts': `import '../../../pages/register';` },
     },
     {
       rule: 'fsd-layers-import-down',
       description: 'a widget imports the app layer',
-      files: { 'apps/people/src/widgets/table/ui/leak.ts': `import '../../../app/main';` },
+      files: { 'apps/people/src/widgets/table/components/leak.ts': `import '../../../app/main';` },
     },
     {
       rule: 'fsd-layers-import-down',
@@ -320,24 +320,24 @@ describe('dependency boundary rules', () => {
     {
       rule: 'fsd-no-cross-slice',
       description: 'a widget imports another widget, through its index.ts',
-      files: { 'apps/people/src/widgets/table/ui/leak.ts': `import '../../chart';` },
+      files: { 'apps/people/src/widgets/table/components/leak.ts': `import '../../chart';` },
     },
     {
       rule: 'fsd-no-cross-slice',
       description: 'a feature imports another feature',
-      files: { 'apps/people/src/features/search/ui/leak.ts': `import '../../filter';` },
+      files: { 'apps/people/src/features/search/components/leak.ts': `import '../../filter';` },
     },
     {
       rule: 'fsd-no-cross-slice',
       description: 'an entity imports another entity (no @x cross-imports)',
-      files: { 'apps/people/src/entities/employee/model/leak.ts': `import '../../rate';` },
+      files: { 'apps/people/src/entities/employee/hooks/leak.ts': `import '../../rate';` },
     },
     {
       rule: 'fsd-no-cross-slice',
       description: 'a page imports another page',
       files: {
         'apps/people/src/pages/other/index.ts': `export const Other = 1;`,
-        'apps/people/src/pages/register/ui/leak.ts': `import '../../other';`,
+        'apps/people/src/pages/register/components/leak.ts': `import '../../other';`,
       },
     },
     {
@@ -345,23 +345,27 @@ describe('dependency boundary rules', () => {
       description: 'a widget imports another widget, type-only',
       files: {
         'apps/shell/src/widgets/chart/index.ts': `export type Chart = 1;`,
-        'apps/shell/src/widgets/table/ui/leak.ts': `import type { Chart } from '../../chart';\nexport type { Chart };`,
+        'apps/shell/src/widgets/table/components/leak.ts': `import type { Chart } from '../../chart';\nexport type { Chart };`,
       },
     },
     {
       rule: 'fsd-public-api',
       description: 'a page reaches into a widget’s folders',
-      files: { 'apps/people/src/pages/register/ui/leak.ts': `import '../../../widgets/table/ui/Table';` },
+      files: {
+        'apps/people/src/pages/register/components/leak.ts': `import '../../../widgets/table/components/Table';`,
+      },
     },
     {
       rule: 'fsd-public-api',
-      description: 'a widget reaches into an entity’s model',
-      files: { 'apps/people/src/widgets/table/ui/leak.ts': `import '../../../entities/employee/model/employee';` },
+      description: 'a widget reaches into an entity’s hooks',
+      files: {
+        'apps/people/src/widgets/table/components/leak.ts': `import '../../../entities/employee/hooks/employee';`,
+      },
     },
     {
       rule: 'fsd-public-api',
       description: 'the app layer reaches into a page',
-      files: { 'apps/people/src/app/leak.ts': `import '../pages/register/ui/Register';` },
+      files: { 'apps/people/src/app/leak.ts': `import '../pages/register/components/Register';` },
     },
     {
       rule: 'fsd-public-api',
@@ -377,8 +381,8 @@ describe('dependency boundary rules', () => {
       rule: 'fsd-public-api',
       description: 'a deep import, type-only',
       files: {
-        'apps/shell/src/app/leak.ts': `import type { Table } from '../widgets/table/ui/Table';\nexport type { Table };`,
-        'apps/shell/src/widgets/table/ui/Table.ts': `export type Table = 1;`,
+        'apps/shell/src/app/leak.ts': `import type { Table } from '../widgets/table/components/Table';\nexport type { Table };`,
+        'apps/shell/src/widgets/table/components/Table.ts': `export type Table = 1;`,
       },
     },
     {
