@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useMemo, useState, type ReactNo
 import type { BreakdownItemId } from '@baseline/delivery-contract';
 import type { EmployeeId } from '@baseline/people-contract';
 import type { ActionReport } from '../../../shared/lib';
-import { NO_ASSIGNMENTS, type PendingAssignment } from './pendingRows';
+import { NO_ASSIGNMENTS, type PendingAssignment } from '../lib/pendingRows';
 
 // What the slots' features share with the widget (D33): the status line's text lives in the widget, and the
 // features reach it through `report`. A context rather than slot props because the toolbar, the rows and the

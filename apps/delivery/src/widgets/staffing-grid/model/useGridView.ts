@@ -15,7 +15,7 @@ import { useEmployees } from '../../../entities/employee';
 import { useProjects } from '../../../entities/project';
 import { useRateRecords } from '../../../entities/rate-record';
 import { useHost } from '../../../shared/lib';
-import { NO_ASSIGNMENTS, withoutPlaceholders, withPendingRows, type PendingAssignment } from './pendingRows';
+import { NO_ASSIGNMENTS, withoutPlaceholders, withPendingRows, type PendingAssignment } from '../lib/pendingRows';
 import { useSharedStructure } from './useSharedStructure';
 
 export interface GridModel {

@@ -4,6 +4,6 @@ export {
   type FieldRefusal,
   type RateFormFields,
   type RateFormValues,
-} from './model/rateForm';
+} from './lib/rateForm';
 export { useRateHistory } from './model/useRateHistory';
 export { useRateRecords } from './model/useRateRecords';
