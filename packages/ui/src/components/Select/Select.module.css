@@ -1,6 +1,9 @@
 .select {
   composes: control from '../Field/Field.module.css';
   cursor: pointer;
+  appearance: none; /* Disable the default arrow */
+  -webkit-appearance: none; /* For WebKit-based browsers */
+  -moz-appearance: none; /* For Firefox */
 }
 
 /* After `.select`, so a disabled select doesn't keep the pointer. */
