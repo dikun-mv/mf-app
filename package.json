@@ -16,6 +16,7 @@
     "lint": "pnpm lint:code && pnpm format:check && pnpm lint:deps",
     "lint:code": "rslint",
     "lint:deps": "depcruise apps packages services --config .dependency-cruiser.cjs",
+    "graph": "depcruise apps packages services --config .dependency-cruiser.cjs --output-type mermaid --collapse '^(apps|packages|services)/[^/]+' --exclude 'node_modules|\\.test\\.tsx?$|/test/|/testing/|\\.d\\.ts$'",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "test": "rstest run",
