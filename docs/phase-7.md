@@ -317,7 +317,7 @@ steps 1–3.
 ## 6. Exit check (lead, after every run has passed)
 
 1. `docker compose down -v && docker compose up -d --build --wait`, then `pnpm lint && pnpm typecheck && pnpm test`, then `infra/scripts/reset.sh && pnpm test:integration`.
-2. Regression, one verifier run each after a reset: brief D2's Verify block from [phases-4-6.md](phases-4-6.md), with step 5 read as "focus moves through the expand/collapse controls and the person name links in the first column, and never lands on a value cell"; then steps 2–4 of brief D3's block.
+2. Regression, one verifier run each after a reset: brief D2's Verify block from [phases-4-6.md](phases-4-6.md), with step 5 read as "focus moves through the expand/collapse controls and the person name links in the first column, and never lands on a project or WBS row's value cell (person cells are editable since brief D3)"; then steps 2–4 of brief D3's block.
 3. Check that every run in §2 has passed since its last fix: V1, V2, V3, V5 and V4a–V4d. A run that passed before a later fix merged is run again if the fix touched its app.
 4. Tick T7.1–T7.5 in plan.md (those not ticked yet) and add "**Passed on <date>.**" to Phase 7's exit check. Commit `Tick Phase 7 after its exit check`.
 5. Report to the user and stop. Phase 8 starts from a new handover; T8.1 turns V1–V5 into Playwright tests.
