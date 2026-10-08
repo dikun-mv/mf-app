@@ -24,4 +24,3 @@ export {
   type TableHeaderCellProps,
 } from './components/Table/Table';
 export { TextField, type TextFieldProps } from './components/TextField/TextField';
-export { vars } from './vars';

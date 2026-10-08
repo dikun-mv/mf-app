@@ -182,13 +182,12 @@ Contract packages hold only **types, runtime schemas (zod, D21), constants (base
 - **No React context or global state**, so two copies at different versions on one page can't interfere.
 - **Only build what's used.** Add a component when a second app needs it or the same pattern repeats; until then it lives in the app. Unused components count as dead scaffolding. The T4.6 primitives are built ahead of their screens so the app lanes can run in parallel; each is listed with its two consumers, and T8.2a removes any that ends up with fewer.
 - **Hand-written on native elements** (`<button>`, `<input>`, `<label>`, `<dialog>`). The brief bans kits and headless primitive libraries.
-- **Layout:** component code lives under `src/components/`, one folder per component holding its `.tsx`, its `*.module.css` with the generated `.d.ts`, and its test. Only the package-wide files stay at `src/`: `index.ts` (the public API, the only barrel: it re-exports each component from its folder), `tokens.css` and `vars.ts`. The package `exports` don't change (`.` → `src/index.ts`, `./tokens.css` → `src/tokens.css`), so no app import changes.
+- **Layout:** component code lives under `src/components/`, one folder per component holding its `.tsx`, its `*.module.css` with the generated `.d.ts`, and its test. Only the package-wide files stay at `src/`: `index.ts` (the public API, the only barrel: it re-exports each component from its folder) and `tokens.css`. The package `exports` don't change (`.` → `src/index.ts`, `./tokens.css` → `src/tokens.css`), so no app import changes.
 
   ```text
   packages/ui/src/
     index.ts
     tokens.css
-    vars.ts
     components/
       Button/
         Button.tsx
@@ -230,7 +229,7 @@ Contract packages hold only **types, runtime schemas (zod, D21), constants (base
   - **Per-app class-name prefix** through `output.cssModules.localIdentName` in each app's Rsbuild config: `bl-shell-[local]-[hash:base64:5]`, `bl-people-…`, `bl-delivery-…`. Each app compiles `ui` from source, so `ui` classes get the consuming app's prefix too. Two remotes built with different `ui` versions can then never emit the same class name with different rules.
   - **Tokens** are CSS custom properties in `ui/src/tokens.css`, scoped to `[data-baseline-root]` rather than `:root`. Every app's root element sets that attribute, both standalone and hosted.
     - Module CSS uses tokens through `var(--bl-…)`.
-    - For the rare token needed in TS, `ui` exports a small typed `vars` map of `var(--bl-…)` strings.
+    - For the rare token needed in TS, `ui` exported a small typed `vars` map of `var(--bl-…)` strings. *Removed by T8.2a: no app used it.*
   - **The shell can re-theme a panel** by overriding custom properties on its container.
   - **No global resets or element selectors,** apart from the scoped token block.
 - **Versioning:** consumed as `workspace:^`. Changes must be backward compatible: add props and components, don't remove them. The README notes that in a multi-repo setup this would be a semver-published package each team upgrades on its own schedule.
@@ -769,7 +768,8 @@ Run from [phase-7.md](phase-7.md): one `builder` brief for T7.5, and `verifier` 
   - Components get an in-memory fake data client through the repository interface, with no HTTP mocking.
   - Routed views render inside `createMemoryRouter` with the app's real route objects (D22).
   - *Checked 2026-10-08: cell editing (`EditableCell`, `StaffingGrid.editing`) and the error boundaries (`ui` `ErrorBoundary`, the shell's `RemotePanel` for a failed load and a render error, each app's `PageBoundary` with Try again) are covered, all through `renderWithApp` and the fake repository. Only the `shared/api` adapter tests stub `fetch`, and they run in the Node `domain` project.*
-- [ ] **T8.2a** Audit `ui`: remove any primitive that only one app uses, or that no app uses, and move single-use ones back into that app.
+- [x] **T8.2a** Audit `ui`: remove any primitive that only one app uses, or that no app uses, and move single-use ones back into that app.
+  - *Done 2026-10-08: every primitive has at least two consuming apps. The typed `vars` map had none and was removed.*
 - [ ] **T8.3** Do a type audit: no `any`, no unchecked casts at boundaries (schemas instead), and exhaustive `switch` with `never`.
 - [ ] **T8.4** Run a clean-clone rehearsal: `git clone`, then `docker compose up`, then go through the checklist in plan §5.
 
