@@ -6,7 +6,7 @@ import type { Instance } from './collections';
  * What went wrong with a request, in the codes the app switches over (plan §3, request flow, step 4):
  * 400 `validation`, 404 `notFound`, a unique-index clash or a duplicate client-generated id `conflict`
  * (ADR 033 h), a service that can't be reached `unavailable`, any other 5xx or refusal `server`, and a
- * record or event that doesn't parse as its contract `invalidData`.
+ * write whose answer doesn't parse as its record `invalidData` (a read skips such records instead).
  */
 export type RepositoryErrorCode = 'validation' | 'notFound' | 'conflict' | 'unavailable' | 'server' | 'invalidData';
 

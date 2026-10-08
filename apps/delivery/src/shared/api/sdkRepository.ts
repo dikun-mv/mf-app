@@ -3,7 +3,7 @@ import type { ChangeSet } from '@baseline/delivery-domain';
 import { PEOPLE_BASE_PATH } from '@baseline/people-contract';
 import PocketBase, { type RecordSubscription } from 'pocketbase';
 import { batchOperations } from './batch';
-import { COLLECTIONS, type CollectionKey, type Instance } from './collections';
+import { COLLECTIONS, type CollectionKey, type Instance, type RecordOf } from './collections';
 import { mapError } from './errors';
 import { RECORD_SCHEMAS } from './records';
 import type { ChangeSetResult, ConnectionEvent, RealtimeEvent, Repository, Unsubscribe } from './repository';
@@ -39,6 +39,20 @@ export function parseRealtimeEvent<K extends CollectionKey>(
     return null;
   }
   return { action: event.action, record: parsed.data };
+}
+
+/**
+ * Parses a collection's records. One that fails its schema is logged and skipped, never cached (D29): a bad
+ * row, which only a hand-made API call can make (ADR 034), must not fail the whole read and blank the page.
+ */
+function parseRecords<K extends CollectionKey>(key: K, records: readonly unknown[]): RecordOf<K>[] {
+  const parsed: RecordOf<K>[] = [];
+  for (const record of records) {
+    const result = RECORD_SCHEMAS[key].safeParse(record);
+    if (result.success) parsed.push(result.data);
+    else console.error(`Skipped a record of ${COLLECTIONS[key].name} that fails its schema`, result.error);
+  }
+  return parsed;
 }
 
 function isAction(action: string): action is RealtimeEvent<CollectionKey>['action'] {
@@ -86,7 +100,7 @@ export function createSdkRepository(clients: Clients): Repository {
       try {
         // `@rowid` is insertion order, so siblings keep the order they were created in.
         const records = await clients[instance].collection(name).getFullList({ sort: '@rowid' });
-        return records.map((record) => RECORD_SCHEMAS[key].parse(record));
+        return parseRecords(key, records);
       } catch (error) {
         throw mapError(error, instance);
       }

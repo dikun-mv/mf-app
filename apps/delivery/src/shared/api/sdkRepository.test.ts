@@ -77,9 +77,18 @@ describe('list', () => {
     expect(calls[0]?.url).toContain('http://gateway.test/api/people/api/collections/employees/records');
   });
 
-  it('fails with invalidData when a record does not parse', async () => {
-    answerWith(page([asPocketBase('employees', { id: 'emp-001', name: '', role: 'Tech Lead', weeklyHours: 40 })]));
-    await expect(repository().list('employees')).rejects.toMatchObject({ code: 'invalidData', instance: 'people' });
+  it('logs and skips a record that does not parse, and keeps the rest', async () => {
+    const logged = rs.spyOn(console, 'error').mockImplementation(() => undefined);
+    answerWith(
+      page([
+        asPocketBase('employees', { id: 'emp-001', name: '', role: 'Tech Lead', weeklyHours: 40 }),
+        asPocketBase('employees', { id: 'emp-002', name: 'Ben Ito', role: 'Engineer', weeklyHours: 32 }),
+      ]),
+    );
+    const employees = await repository().list('employees');
+    expect(employees).toEqual([{ id: 'emp-002', name: 'Ben Ito', role: 'Engineer', weeklyHours: 32 }]);
+    expect(logged).toHaveBeenCalledTimes(1);
+    logged.mockRestore();
   });
 
   it('fails with unavailable when the service gives no answer, or the gateway answers 502', async () => {
