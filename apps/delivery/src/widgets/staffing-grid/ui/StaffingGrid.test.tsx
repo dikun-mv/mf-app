@@ -176,8 +176,10 @@ describe('StaffingGrid', () => {
       await user.tab();
       const stop = document.activeElement;
       if (stop === document.body) break;
-      // The unit switcher above the table and the editable person cells are other tasks' stops.
+      // The unit switcher above the table and the editable person cells are other tasks' stops, and so are
+      // the person name links in the first column (T7.5).
       if (stop === null || stop.closest('tr') === null || stop.closest('td[data-row-key]') !== null) continue;
+      if (stop.matches('th a[href^="/people/"]')) continue;
       reached.push(stop.getAttribute('aria-expanded') ?? 'not a toggle');
     }
     expect(reached.length).toBeGreaterThan(0);

@@ -15,3 +15,7 @@ A hand-written router per app; shell-only routing with remote state in React; on
 ## Why
 
 Deep links, reload and the back button work in both modes with the same code. Not sharing the router means no router version or state crosses the boundary. Costs: up to three copies of `react-router` on the page, and the shell must never depend on more than the first segment. Deep links need an SPA fallback in nginx and asset paths that don't depend on the current URL (T2.4, T2.9).
+
+## Amended 2026-10-08
+
+A person's name in Delivery's staffing grid links to that employee in People (T7.5). It is a plain `<a>` whose `href` is the other app's URL, so open-in-new-tab and copy-link work. The `href` comes from `ctx.basePath` and needs no new `HostContext` field: the apps sit next to each other (ADR 029), so it is the `basePath` without its last segment followed by the path. Hosted, `/delivery` gives `/people/emp-001`; standalone, `/remotes/delivery` gives `/remotes/people/emp-001`, the URL the standalone `navigate` opens. A plain primary click (button 0, no Ctrl, Meta, Shift or Alt) calls `ctx.navigate('/people/emp-001')` and prevents the default, so the shell switches app without a reload and Back returns to the grid; any other click is left to the browser. Without People's data the name is the employee id and still links (D32).
