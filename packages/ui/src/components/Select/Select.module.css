@@ -1,12 +1,40 @@
 .select {
   composes: control from '../Field/Field.module.css';
+  --chevron: var(--bl-color-text-muted);
+  padding-inline-end: calc(var(--bl-control-padding) + 1.25rem);
   cursor: pointer;
-  appearance: none; /* Disable the default arrow */
-  -webkit-appearance: none; /* For WebKit-based browsers */
-  -moz-appearance: none; /* For Firefox */
+  appearance: none;
+}
+
+/*
+ * The native arrow is replaced by a chevron of our own, drawn as two triangles in the text colour, so it
+ * follows the tokens and dims with the text when the select is disabled. `.control:disabled` resets the
+ * whole background, so the disabled select draws it again.
+ */
+.select,
+.select:disabled {
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--chevron) 50%),
+    linear-gradient(135deg, var(--chevron) 50%, transparent 50%);
+  background-position:
+    right calc(var(--bl-control-padding) + 5px) center,
+    right var(--bl-control-padding) center;
+  background-size: 5px 5px;
+  background-repeat: no-repeat;
+}
+
+.select:hover:not(:disabled) {
+  --chevron: var(--bl-color-text);
 }
 
 /* After `.select`, so a disabled select doesn't keep the pointer. */
 .select:disabled {
   cursor: not-allowed;
+}
+
+/* Forced colours drop background images, so the browser's own arrow comes back. */
+@media (forced-colors: active) {
+  .select {
+    appearance: auto;
+  }
 }
