@@ -266,11 +266,12 @@ Delivery's data service is up. Compare with docs/screens.md §1.2 and §2.1.
    Jun 2026", Lena Okafor "Over capacity · Sep 2026".
 3. Open /people/emp-001 and add a rate valid from 2026-11-01 with cost 98.00: a status line confirms it
    and it's listed first.
-Pause: report steps 1–3 and wait, without closing the browser. The lead starts `delivery` and resumes
+Pause: click Delivery (Delivery couldn't load again: every entry into Delivery retries its remote),
+report steps 1–3 and wait there, without closing the browser. The lead starts `delivery` and resumes
 you.
-4. Click Delivery and press Try again: the four projects are listed.
+4. Without leaving the page, press Try again: the four projects are listed.
 Criteria: each step as described; no console errors except failed requests for /remotes/delivery/…
-in steps 1–3.
+in steps 1–3 and at the pause.
 ```
 
 ### V4c: People's data service down (T7.4, T7.5)
