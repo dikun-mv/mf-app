@@ -743,7 +743,7 @@ Run from [phase-7.md](phase-7.md): one `builder` brief for T7.5, and `verifier` 
 
 - [x] **T7.1** A rate edited in People must update open Delivery cost cells live: a PocketBase realtime event, then the read-model update, then re-render. Verify it hosted (same page), standalone, and across two tabs.
 - [x] **T7.2** A Delivery allocation edit that tips someone over capacity must flag them in People live.
-- [ ] **T7.3** A currency change in the shell must update both remotes immediately, and € editing must use the displayed currency.
+- [x] **T7.3** A currency change in the shell must update both remotes immediately, and € editing must use the displayed currency.
 - [ ] **T7.4** Kill one service or remote at a time and confirm the other keeps working with a clear degraded state.
 - [ ] **T7.5** ([screens.md](screens.md) §3.2, §5) **Cross-app link:** a person name in Delivery's grid links to that employee in People, through `HostContext.navigate('/people/<employeeId>')` (D22). Hosted, the shell switches to People at that employee, and back returns to the grid. Standalone, it opens `/remotes/people/<employeeId>`. When `people-pb` is down the name is an id and still links (D32). Render it as a real `<a href>` built from the same path, with the click handled by `navigate`, so open-in-new-tab works.
 
