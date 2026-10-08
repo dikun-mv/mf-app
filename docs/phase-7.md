@@ -247,11 +247,12 @@ People's data service is up. Compare with docs/screens.md §1.2.
 3. Pick Person-months, set Anja Keller's Apr 26 cell in Design to 0.3, Enter: it reads 0.30.
 4. Click Adaeze Okafor's name: the URL is /people/emp-001 and the panel says People couldn't load,
    with Try again. Back: the grid.
-Pause: report steps 1–4 and wait, without closing the browser. The lead starts `people` and resumes
-you.
-5. Click Forward to /people/emp-001 and press Try again: Adaeze Okafor's employee page loads.
+Pause: click Forward to /people/emp-001 (People couldn't load again: every entry into People retries
+its remote), report steps 1–4 and wait there, without closing the browser. The lead starts `people`
+and resumes you.
+5. Without leaving the page, press Try again: Adaeze Okafor's employee page loads.
 Criteria: each step as described; no console errors except failed requests for /remotes/people/…
-in steps 1–4.
+in steps 1–4 and at the pause.
 ```
 
 ### V4b: the Delivery remote down (T7.4)
