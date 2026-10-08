@@ -3,7 +3,7 @@ import { formatDate, formatHourlyRate, formatMonth, type PricingImpact } from '@
 import { Button, Dialog, InlineMessage } from '@baseline/ui';
 import { EMPTY_RATE_CHANGE_SET, useApplyChangeSet } from '../../../shared/api';
 import { useHost } from '../../../shared/lib';
-import { useRemovalImpact } from '../model/useRemovalImpact';
+import { useRemovalImpact } from '../hooks/useRemovalImpact';
 import styles from './RemoveRateDialog.module.css';
 
 export interface RemoveRateDialogProps {

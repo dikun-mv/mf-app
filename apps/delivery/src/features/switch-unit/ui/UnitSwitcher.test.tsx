@@ -4,7 +4,7 @@ import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useSearchParams } from 'react-router';
 import { createFakeRepository, renderWithApp, seedData } from '../../../shared/testing';
-import { useUnit } from '../model/useUnit';
+import { useUnit } from '../hooks/useUnit';
 import { UnitSwitcher } from './UnitSwitcher';
 
 function Switcher({ units = DISPLAY_UNITS }: { units?: readonly DisplayUnit[] }) {

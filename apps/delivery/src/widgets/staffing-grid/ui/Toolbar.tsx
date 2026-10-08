@@ -1,8 +1,8 @@
 import { AddTopLevelItem } from '../../../features/add-item';
 import { WriteFailedMessage } from '../../../features/edit-cell';
 import { PeopleUnreachableMessage, UnitSwitcher } from '../../../features/switch-unit';
-import { useGridActions } from '../model/GridActions';
-import { usePlanState } from '../model/usePlanState';
+import { useGridActions } from '../hooks/GridActions';
+import { usePlanState } from '../hooks/usePlanState';
 import type { ToolbarSlotProps } from './slots/types';
 import styles from './Toolbar.module.css';
 

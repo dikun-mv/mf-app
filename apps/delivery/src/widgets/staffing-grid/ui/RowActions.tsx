@@ -1,6 +1,6 @@
 import { rowActions, type RowActionId } from '@baseline/delivery-domain';
 import { useId, useState } from 'react';
-import { usePlanState } from '../model/usePlanState';
+import { usePlanState } from '../hooks/usePlanState';
 import { ChosenAction } from './ChosenAction';
 import styles from './RowActions.module.css';
 import type { RowActionsSlotProps } from './slots/types';

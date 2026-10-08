@@ -6,7 +6,7 @@ import { Link } from 'react-router';
 import { CapacityBadge } from '../../../entities/capacity';
 import { EmployeeSearch, useSearchTerm } from '../../../features/search-employees';
 import { useHost } from '../../../shared/lib';
-import { useRegisterRows } from '../model/useRegisterRows';
+import { useRegisterRows } from '../hooks/useRegisterRows';
 import styles from './EmployeeRegister.module.css';
 
 const NO_RATE = 'No rate yet';

@@ -5,5 +5,5 @@ export {
   type RateFormFields,
   type RateFormValues,
 } from './lib/rateForm';
-export { useRateHistory } from './model/useRateHistory';
-export { useRateRecords } from './model/useRateRecords';
+export { useRateHistory } from './hooks/useRateHistory';
+export { useRateRecords } from './hooks/useRateRecords';

@@ -1,5 +1,5 @@
 import { Button, InlineMessage, TableCell, TextField } from '@baseline/ui';
-import { useCorrectRate, type CorrectRateOptions } from '../model/useCorrectRate';
+import { useCorrectRate, type CorrectRateOptions } from '../hooks/useCorrectRate';
 import styles from './CorrectRateForm.module.css';
 
 /**

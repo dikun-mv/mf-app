@@ -6,8 +6,8 @@ import { AssignPerson } from '../../../features/assign-person';
 import { DeleteItem } from '../../../features/delete-item';
 import { MoveItem } from '../../../features/move-item';
 import { RenameItem } from '../../../features/rename-item';
-import { useGridActions } from '../model/GridActions';
-import { usePlanState } from '../model/usePlanState';
+import { useGridActions } from '../hooks/GridActions';
+import { usePlanState } from '../hooks/usePlanState';
 
 interface ChosenActionProps {
   readonly action: RowActionId;

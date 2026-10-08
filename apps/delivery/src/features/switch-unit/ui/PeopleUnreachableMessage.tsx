@@ -1,6 +1,6 @@
 import type { DisplayUnit } from '@baseline/delivery-domain';
 import { InlineMessage } from '@baseline/ui';
-import { usePeopleUnreachable } from '../model/usePeopleUnreachable';
+import { usePeopleUnreachable } from '../hooks/usePeopleUnreachable';
 
 export interface PeopleUnreachableMessageProps {
   /** The unit the grid shows now. */

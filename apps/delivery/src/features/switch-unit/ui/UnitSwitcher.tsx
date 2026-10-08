@@ -1,6 +1,6 @@
 import { DISPLAY_UNITS, type DisplayUnit } from '@baseline/delivery-domain';
 import { clsx } from 'clsx';
-import { useUnit } from '../model/useUnit';
+import { useUnit } from '../hooks/useUnit';
 import styles from './UnitSwitcher.module.css';
 
 /** How each unit reads on its radio (screens 3.2). */

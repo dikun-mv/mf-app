@@ -1,2 +1,2 @@
 export { projectMonths } from './lib/projectMonths';
-export { useProject, useProjects } from './model/useProjects';
+export { useProject, useProjects } from './hooks/useProjects';

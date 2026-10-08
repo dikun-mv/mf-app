@@ -1,6 +1,6 @@
 import type { EmployeeId, RateRecord } from '@baseline/people-contract';
 import { Button, InlineMessage, TextField } from '@baseline/ui';
-import { useAddRate } from '../model/useAddRate';
+import { useAddRate } from '../hooks/useAddRate';
 import styles from './AddRateForm.module.css';
 
 export interface AddRateFormProps {

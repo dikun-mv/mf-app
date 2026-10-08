@@ -8,7 +8,7 @@ import type {
   SumRowView,
 } from '@baseline/delivery-domain';
 import type { ComponentType, ReactNode } from 'react';
-import type { FocusedCell } from '../../model/useFocusedCell';
+import type { FocusedCell } from '../../hooks/useFocusedCell';
 
 // The props of the grid's five slots. They are written in `delivery-domain`'s types alone, so a feature
 // slice can type its component without importing this widget (a feature can't import a widget upward).

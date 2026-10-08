@@ -1,5 +1,5 @@
 import { EditableCell } from '../../../features/edit-cell';
-import { useGridReport } from '../model/GridActions';
+import { useGridReport } from '../hooks/GridActions';
 import type { CellSlotProps } from './slots/types';
 
 /**

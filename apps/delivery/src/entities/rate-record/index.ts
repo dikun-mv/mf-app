@@ -1,1 +1,1 @@
-export { useRateRecords } from './model/useRateRecords';
+export { useRateRecords } from './hooks/useRateRecords';
