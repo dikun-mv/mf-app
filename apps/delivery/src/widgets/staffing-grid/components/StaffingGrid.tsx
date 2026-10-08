@@ -10,6 +10,7 @@ import { GridActionsProvider, useGridAssignments, useGridFeedback } from '../hoo
 import { useFocusedCell } from '../hooks/useFocusedCell';
 import { useGridView } from '../hooks/useGridView';
 import { PersonRow, SumRow } from './GridRows';
+import { PlanProblems } from './PlanProblems';
 import { detailsSlot as Details } from './slots/details';
 import { toolbarSlot as Toolbar } from './slots/toolbar';
 import styles from './StaffingGrid.module.css';
@@ -78,6 +79,8 @@ export function StaffingGrid({ projectId, unit = 'personMonths' }: StaffingGridP
   const toolbar = Toolbar !== null && <Toolbar projectId={projectId} unit={unit} units={units} />;
   // The last result, in the status line under the toolbar (D33). A failed write is the toolbar's message.
   const statusLine = <StatusMessage>{status}</StatusMessage>;
+  // Data a change outside the app left broken (T1.12b), shown whether or not the grid can be drawn.
+  const problems = <PlanProblems projectId={projectId} />;
   if (!result.ok) {
     // Hours and cost wait for People's data (which never suspends, D32), unless it has failed.
     const waiting = result.error.code === 'unitUnavailable' && peopleLoading;
@@ -85,6 +88,7 @@ export function StaffingGrid({ projectId, unit = 'personMonths' }: StaffingGridP
       <GridActionsProvider value={actions}>
         <div className={styles.widget}>
           {statusLine}
+          {problems}
           {toolbar}
           {waiting ? (
             <p className={styles.loading}>
@@ -103,6 +107,7 @@ export function StaffingGrid({ projectId, unit = 'personMonths' }: StaffingGridP
     <GridActionsProvider value={actions}>
       <div className={styles.widget}>
         {statusLine}
+        {problems}
         {toolbar}
         <div className={styles.scroll} onFocus={onFocus}>
           <table className={styles.grid}>

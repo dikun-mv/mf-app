@@ -13,6 +13,7 @@ export * from './ids';
 export * from './invariants';
 export * from './itemPath';
 export * from './parseAmount';
+export * from './planProblems';
 export * from './pricing';
 export * from './projectGrid';
 export * from './rates';

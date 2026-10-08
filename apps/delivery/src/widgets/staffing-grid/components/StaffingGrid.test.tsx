@@ -1,4 +1,4 @@
-import { ProjectId } from '@baseline/delivery-contract';
+import { BreakdownItemId, ProjectId } from '@baseline/delivery-contract';
 import { describe, expect, it } from '@rstest/core';
 import { screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -102,6 +102,31 @@ describe('StaffingGrid', () => {
     renderGrid({ ...seedData(), employees: [], rateRecords: [] });
     expect(await screen.findAllByRole('rowheader', { name: 'emp-001' })).not.toHaveLength(0);
     expect(countOf('Adaeze Okafor')).toBe(0);
+  });
+
+  it('says nothing about the data when it keeps every rule', async () => {
+    renderGrid();
+    await screen.findByRole('rowheader', { name: 'Ledger Consolidation' });
+    expect(screen.queryByText(/changed outside the app/)).toBeNull();
+  });
+
+  it('lists what a change outside the app broke, above the grid', async () => {
+    const data = seedData();
+    // alloc-001 is Okafor's March cell on wbs-012; moved by hand onto a root item, which has children.
+    const allocations = data.allocations.map((allocation) =>
+      allocation.id === 'alloc-001' ? { ...allocation, breakdownItemId: BreakdownItemId.parse('wbs-001') } : allocation,
+    );
+    renderGrid({ ...data, allocations });
+    const message = await screen.findByText(/changed outside the app/);
+    expect(
+      within(message)
+        .getAllByRole('listitem')
+        .map((item) => item.textContent),
+    ).toEqual([
+      expect.stringMatching(
+        /^Allocation alloc-001 is on “Ledger migration”, which has children; allocations belong on leaves\.$/,
+      ),
+    ]);
   });
 
   it('starts with every node expanded, and collapsing one keeps its row and its sums', async () => {

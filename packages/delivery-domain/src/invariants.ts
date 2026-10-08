@@ -27,9 +27,9 @@ function duplicates(ids: readonly string[]): string[] {
 
 /**
  * Reports data the operations would never produce but a hand edit or a bug could: allocations on a
- * non-leaf or a missing item, unknown employees, broken or too-deep trees. The service runs it at
- * startup and the UI uses it to mark orphaned rows. `knownEmployees` is People's register; leave it
- * out to skip that check.
+ * non-leaf or a missing item, unknown employees, broken or too-deep trees. The project page lists
+ * what it finds in the open project, in words (`projectProblems`). `knownEmployees` is People's
+ * register; leave it out to skip that check.
  */
 export function checkInvariants(state: PlanState, knownEmployees?: ReadonlySet<EmployeeId>): InvariantViolation[] {
   const violations: InvariantViolation[] = [];
