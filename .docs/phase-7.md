@@ -19,7 +19,7 @@ Every brief carries these rules, and [phases-4-6.md](phases-4-6.md) §1 still ap
 - **Checks first, code only where a check fails.** T7.1–T7.4 add no code. A failing step gets a fix brief (§5, brief F) with a test that reproduces it, and nothing beyond that fix.
 - **No contract changes.** `host-contract` stays as it is. The link's `href` comes from `ctx.basePath` (§3, Cross-app href), not from a new `HostContext` field.
 - **No new dependencies, no new `ui` primitives.** The link is a plain `<a>` in Delivery.
-- **No E2E tests.** T8.1 automates these checks in Phase 8; the Verify blocks below are written so it can lift them step by step.
+- **No E2E tests.** T8.1, which would have automated these checks in Phase 8, is out of scope (2026-10-08), so the Verify blocks below are the record of them.
 - **One stack, one verifier at a time.** Verifier runs change data (rates, cells), so they run one after another, each after a reset.
 
 ## 2. Order
@@ -320,4 +320,4 @@ steps 1–3.
 2. Regression, one verifier run each after a reset: brief D2's Verify block from [phases-4-6.md](phases-4-6.md), with step 5 read as "focus moves through the expand/collapse controls and the person name links in the first column, and never lands on a project or WBS row's value cell (person cells are editable since brief D3)"; then steps 2–4 of brief D3's block.
 3. Check that every run in §2 has passed since its last fix: V1, V2, V3, V5 and V4a–V4d. A run that passed before a later fix merged is run again if the fix touched its app.
 4. Tick T7.1–T7.5 in plan.md (those not ticked yet) and add "**Passed on <date>.**" to Phase 7's exit check. Commit `Tick Phase 7 after its exit check`.
-5. Report to the user and stop. Phase 8 starts from a new handover; T8.1 turns V1–V5 into Playwright tests.
+5. Report to the user and stop. Phase 8 starts from a new handover.

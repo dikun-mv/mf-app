@@ -14,7 +14,7 @@ Every brief carries these rules.
 - **React 18.** No React 19 APIs (`use`, `useOptimistic`, actions, `ref` as a prop). The `vercel-react-best-practices` skill's Next.js and server-component rules don't apply; its rendering and re-render rules do.
 - **Look and feel stays small** (visual polish isn't scored, brief §2). Layout comes from screens.md. Style only through `ui`'s tokens (`var(--bl-…)`) and CSS Modules; no web fonts, CDNs, icon packs or images from the network. Brief U sets the visual language in `tokens.css`; every other brief reuses it. Use the `frontend-design` skill inside these limits: a clear, calm, consistent interface across the three apps.
 - **No global stores, no new patterns.** Server state in TanStack Query (D26), forms in react-hook-form (D27), the rest in the URL or local state (D31).
-- **Tests where they defend behaviour:** domain tests for every pure function, component tests for the behaviour a brief names, rendered through `renderWithApp` with the in-memory fake (D30). No E2E tests: those are Phase 8.
+- **Tests where they defend behaviour:** domain tests for every pure function, component tests for the behaviour a brief names, rendered through `renderWithApp` with the in-memory fake (D30). No E2E tests (T8.1, planned for Phase 8, is out of scope).
 - **Size check.** A component file over about 200 lines, or a hook over about 80, means it does too much: split it or ask the lead.
 
 ## 2. Order

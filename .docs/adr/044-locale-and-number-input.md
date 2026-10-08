@@ -4,7 +4,7 @@ Status: accepted (2026-10-07, after Phase 3 and before Phase 4)
 
 ## Context
 
-The apps format money, percentages and dates, and parse amounts typed into the rate editor and the grid. The E2E tests and the reference values (for example `€7,880.00`) must read the same on every machine, and in a cost grid a wrong guess about `0,5` or `7,880` changes a number.
+The apps format money, percentages and dates, and parse amounts typed into the rate editor and the grid. The tests and the reference values (for example `€7,880.00`) must read the same on every machine, and in a cost grid a wrong guess about `0,5` or `7,880` changes a number.
 
 ## Decision
 
@@ -14,11 +14,11 @@ The apps format money, percentages and dates, and parse amounts typed into the r
 
 ## Alternatives
 
-- **The browser's locale.** E2E strings and reference values would change by machine.
+- **The browser's locale.** Test strings and reference values would change by machine.
 - **`,` as a decimal comma.** `7,880` becomes ambiguous between 7.88 and 7880.
 
 ## Consequences
 
-- E2E tests and the reference values read the same on every machine.
+- Tests and the reference values read the same on every machine.
 - Refusing ambiguous input is safer than guessing, at the cost of an error for someone who types `0,5`.
 - The function is pure and tested next to the units. The two copies are not shared, so each package's tests keep its own.

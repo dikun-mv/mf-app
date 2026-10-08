@@ -46,3 +46,7 @@ Two workarounds are needed:
 ## Phase 0 layout
 
 Projects `domain`, `services` and `tooling` (the dependency-rule fixtures in `.dependency-cruiser.test.ts`). The jsdom `components` project is added with T2.3a.
+
+## Amended 2026-10-08
+
+Playwright E2E is dropped: T8.1 is out of scope. The cross-app scenarios were checked by hand in a browser (Phase 7, and the plan §5 checklist in T8.4) with the `playwright-cli` skill, and no E2E suite or `e2e` compose profile exists.

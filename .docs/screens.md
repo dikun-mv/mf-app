@@ -197,9 +197,9 @@ _Correct_ turns the row into an inline form. A clash with another rate's start d
 └──────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### 2.5 Removing a rate that leaves allocated months unpriced (T1.13, T5.3, T8.1)
+### 2.5 Removing a rate that leaves allocated months unpriced (T1.13, T5.3)
 
-Removal is never blocked, but `people-domain` flags allocated months (from the load feed) that the change leaves unpriced or partly priced. The example is the T8.1 E2E case.
+Removal is never blocked, but `people-domain` flags allocated months (from the load feed) that the change leaves unpriced or partly priced. The example is the partial-month case checked by hand in T8.4.
 
 ```text
 ┌─ Remove the rate from 1 Jan 2025? ───────────────────────────────────────────────────────┐

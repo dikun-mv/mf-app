@@ -27,3 +27,7 @@ Two throwaway workspace packages, where one depended on the other through `works
 Not verified: that the Rslint VS Code extension shows the same errors in the editor. That needs an interactive editor session.
 
 The ESLint fallback was not needed.
+
+## Amended 2026-10-08
+
+T8.3 adds `@typescript-eslint/switch-exhaustiveness-check` with `considerDefaultExhaustiveForUnions` and `requireDefaultForNonUnion`. A `switch` over a union must name every member or say in a `default` what the rest get. That also catches switches that return nothing, where a missing case would otherwise compile. Verified by deleting a case from People's `patchCollection`: the rule names the unmatched member.
