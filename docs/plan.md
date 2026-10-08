@@ -14,7 +14,7 @@ Each phase ends with an **exit check**. Don't start the next phase until it pass
 
 **Starting point**
 - This plan was written when the repository held only `docs/`: [taks.md](taks.md) is the brief, [data.json](data.json) the seed fixtures, and this plan. The ticks in plan §4 show what is done since; ADRs in [adr/](adr/) record what was decided on the way.
-- [phases-4-6.md](phases-4-6.md) is the lead's handover for Phases 4–6: the order, the fixed values, the review and verification loop, and one `builder` brief per slice with its `verifier` check.
+- [phases-4-6.md](phases-4-6.md) is the lead's handover for Phases 4–6: the order, the fixed values, the review and verification loop, and one `builder` brief per slice with its `verifier` check. [phase-7.md](phase-7.md) does the same for Phase 7.
 - [screens.md](screens.md) has schematic mockups of every screen (Phases 4–6), with seed values and the tasks and decisions each part implements. Its first table maps every screen to its tasks; its §6 records the points the mockups raised and how they were decided.
 - Read the brief in full before starting. This plan doesn't restate all of it; plan §5 maps every brief requirement to a check.
 - **References:** a bare `§n` (e.g. §3.4, §3.7) means a section of **the brief**. Sections of this plan are written as "plan §n".
@@ -738,6 +738,8 @@ Build the screens in [screens.md](screens.md) §3. The grid, cells, tree column,
 **Exit check:** every state in [screens.md](screens.md) §3 works hosted, the main ones also standalone; the reference cell shows €7,880.00 in Cost and the details panel shows all five reference numbers; edits in all four units, and every tree operation, survive a reload and a restart of `delivery-pb`. The exact steps are in [phases-4-6.md](phases-4-6.md) §6. **Passed on 2026-10-07.**
 
 ### Phase 7 — Cross-app behaviour
+
+Run from [phase-7.md](phase-7.md): one `builder` brief for T7.5, and `verifier` runs for T7.1–T7.5, each with its fixed seed values, plus the fix loop for any step that fails.
 
 - [ ] **T7.1** A rate edited in People must update open Delivery cost cells live: a PocketBase realtime event, then the read-model update, then re-render. Verify it hosted (same page), standalone, and across two tabs.
 - [ ] **T7.2** A Delivery allocation edit that tips someone over capacity must flag them in People live.
