@@ -149,6 +149,19 @@ thead .total {
   padding-inline-start: 1.25rem;
 }
 
+/* A person's name is a link into People: the primary colour and an underline, which gets heavier on hover. */
+.link {
+  color: var(--bl-color-primary);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+.link:hover {
+  color: var(--bl-color-primary-hover);
+  text-decoration-thickness: 2px;
+}
+
 .empty {
   color: var(--bl-color-text-muted);
 }
