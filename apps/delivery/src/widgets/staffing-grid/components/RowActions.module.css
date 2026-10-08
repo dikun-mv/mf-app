@@ -1,6 +1,7 @@
 /*
- * The row's `⋯` disclosure (D36): the list sits in the label cell's normal flow under the name, so the rows
- * below move down while it is open and nothing is positioned over the scrolling grid.
+ * The row's `⋯` disclosure (D36): the list is a dropdown in the top layer, anchored under the button, so it
+ * shows over the grid without being clipped by the scrolling box or covered by the sticky columns. Where
+ * popovers aren't supported it falls back to the label cell's normal flow, under the name.
  */
 .more {
   align-self: center;
@@ -33,6 +34,36 @@
   font-weight: normal;
 }
 
+.list:popover-open {
+  box-sizing: border-box;
+  min-width: 12rem;
+  max-width: 22rem;
+  margin: 0;
+  padding: var(--bl-space-1) var(--bl-space-3);
+  border: 1px solid var(--bl-color-border);
+  border-radius: var(--bl-radius);
+  background: var(--bl-color-surface);
+  color: var(--bl-color-text);
+  box-shadow: var(--bl-shadow-raised);
+  /* The UA's `overflow: auto` for popovers would clip a reason's tooltip, which reaches past the list. */
+  overflow: visible;
+}
+
+/* Under the button, starting at its edge; flipped above or leftwards when there is no room. */
+@supports (position-area: block-end) {
+  .list:popover-open {
+    inset: auto;
+    margin-block-start: var(--bl-space-1);
+    position-area: block-end span-inline-end;
+    position-try-fallbacks:
+      flip-block,
+      flip-inline,
+      flip-block flip-inline;
+    /* Hidden with its row when the row scrolls out of view. */
+    position-visibility: anchors-visible;
+  }
+}
+
 .entry {
   display: flex;
   flex-wrap: wrap;
@@ -57,10 +88,52 @@
   cursor: not-allowed;
 }
 
-.reason {
-  /* The reason may be long; it wraps inside the label's width. */
-  flex: 1 1 10rem;
+.why {
+  position: relative;
+  display: inline-flex;
+  align-self: center;
+}
+
+.hint {
+  display: inline-grid;
+  place-items: center;
+  width: 1rem;
+  height: 1rem;
+  padding: 0;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  background: none;
   color: var(--bl-color-text-muted);
+  font: inherit;
+  font-size: var(--bl-text-xs);
+  line-height: 1;
+  cursor: help;
+}
+
+.hint:hover,
+.hint:focus-visible {
+  color: var(--bl-color-text);
+}
+
+/* Beside the `?`, out of the list's flow; shown while the `?` or the action's line is hovered or focused. */
+.tooltip {
+  position: absolute;
+  inset-block-start: 50%;
+  inset-inline-start: calc(100% + var(--bl-space-2));
+  z-index: 1;
+  display: none;
+  width: max-content;
+  max-width: 18rem;
+  padding: var(--bl-space-1) var(--bl-space-2);
+  border-radius: var(--bl-radius);
+  background: var(--bl-color-text);
+  color: var(--bl-color-surface);
   font-size: var(--bl-text-xs);
   white-space: normal;
+  translate: 0 -50%;
+}
+
+.entry:hover .tooltip,
+.hint:focus-visible + .tooltip {
+  display: block;
 }

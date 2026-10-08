@@ -140,10 +140,10 @@ export function rowActions(state: PlanState, itemId: BreakdownItemId): Result<re
     depthOf(index, item.id) >= MAX_DEPTH
       ? refused('addChild', 'Add child item', `${item.name} is at the ${deepestLevel()} level, the deepest`)
       : allowed('addChild', 'Add child item', leaf ? heldAllocations : 0),
-    canMove ? allowed('move', 'Move…') : refused('move', 'Move…', `there is nowhere else to move ${item.name}`),
-    allowed('delete', 'Delete…'),
+    canMove ? allowed('move', 'Move') : refused('move', 'Move', `there is nowhere else to move ${item.name}`),
+    allowed('delete', 'Delete'),
     leaf
-      ? allowed('assignPerson', 'Assign person…')
-      : refused('assignPerson', 'Assign person…', `${item.name} has sub-items, and people are assigned to leaves`),
+      ? allowed('assignPerson', 'Assign person')
+      : refused('assignPerson', 'Assign person', `${item.name} has sub-items, and people are assigned to leaves`),
   ]);
 }

@@ -64,9 +64,9 @@ describe('rowActions (screens 3.4)', () => {
     expect(actionsOf('wbs-1').map((action) => action.label)).toEqual([
       'Rename',
       'Add child item',
-      'Move…',
-      'Delete…',
-      'Assign person…',
+      'Move',
+      'Delete',
+      'Assign person',
     ]);
   });
 
@@ -76,7 +76,7 @@ describe('rowActions (screens 3.4)', () => {
     expect(actions[1]).toMatchObject({ allowed: true, movesAllocations: 0 });
     expect(actions[4]).toEqual({
       id: 'assignPerson',
-      label: 'Assign person…',
+      label: 'Assign person',
       allowed: false,
       reason: 'Cut-over has sub-items, and people are assigned to leaves',
     });
@@ -107,7 +107,7 @@ describe('rowActions (screens 3.4)', () => {
     const result = rowActions(alone, wbs('wbs-1'));
     expect(result.ok && result.value[2]).toEqual({
       id: 'move',
-      label: 'Move…',
+      label: 'Move',
       allowed: false,
       reason: 'there is nowhere else to move Only',
     });

@@ -3,9 +3,11 @@
 interface CssExports {
   action: string;
   entry: string;
+  hint: string;
   list: string;
   more: string;
-  reason: string;
+  tooltip: string;
+  why: string;
 }
 declare const cssExports: CssExports;
 export default cssExports;

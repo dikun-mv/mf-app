@@ -33,7 +33,7 @@ describe('Row actions', () => {
     expect(more).toHaveAttribute('aria-expanded', 'true');
     const label = more.closest('th');
     if (label === null) throw new Error('No label cell');
-    for (const action of ['Rename', 'Add child item', 'Move…', 'Delete…', 'Assign person…']) {
+    for (const action of ['Rename', 'Add child item', 'Move', 'Delete', 'Assign person']) {
       expect(within(label).getByRole('button', { name: action })).toBeInTheDocument();
     }
 
@@ -50,21 +50,56 @@ describe('Row actions', () => {
     expect(await moreOf('Discovery')).toHaveAttribute('aria-expanded', 'false');
   });
 
-  it('shows a refused action disabled, with the reason from the domain beside it', async () => {
+  it('closes the list on Esc, and gives focus inside it back to the button', async () => {
+    const { user } = renderGrid();
+    const more = await moreOf('Discovery');
+    await user.click(more);
+    await user.tab();
+    expect(screen.getByRole('button', { name: 'Rename' })).toHaveFocus();
+
+    await user.keyboard('{Escape}');
+    expect(more).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('button', { name: 'Rename' })).not.toBeInTheDocument();
+    expect(more).toHaveFocus();
+  });
+
+  it('closes the list on a click outside it, but not on a click inside it', async () => {
+    const { user } = renderGrid();
+    const more = await moreOf('Discovery');
+    await user.click(more);
+    // A disabled action is part of the list: pressing it keeps the list open.
+    await user.click(screen.getByRole('button', { name: 'Assign person' }));
+    expect(more).toHaveAttribute('aria-expanded', 'true');
+
+    await user.click(screen.getByRole('columnheader', { name: 'Total' }));
+    expect(more).toHaveAttribute('aria-expanded', 'false');
+    expect(screen.queryByRole('button', { name: 'Rename' })).not.toBeInTheDocument();
+  });
+
+  it('shows a refused action disabled, with the reason from the domain in the tooltip of a ? beside it', async () => {
     const { user } = renderGrid();
     // Design is at the third level, so it can take no child; and it is a leaf, so people can be assigned.
     await user.click(await moreOf('Design'));
+    const reason = 'Design is at the third level, the deepest';
     const addChild = screen.getByRole('button', { name: 'Add child item' });
     expect(addChild).toBeDisabled();
-    expect(screen.getByText('Design is at the third level, the deepest')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Assign person…' })).toBeEnabled();
+    expect(addChild).toHaveAccessibleDescription(reason);
+    expect(screen.getByRole('tooltip')).toHaveTextContent(reason);
+    // The disabled action can't take focus, so the keyboard reaches the reason through the `?`.
+    expect(screen.getByRole('button', { name: 'Why Add child item is unavailable' })).toHaveAccessibleDescription(
+      reason,
+    );
+    expect(screen.getByRole('button', { name: 'Assign person' })).toBeEnabled();
+    expect(screen.queryByRole('button', { name: 'Why Assign person is unavailable' })).not.toBeInTheDocument();
   });
 
   it('refuses Assign person on an item with sub-items, and says why', async () => {
     const { user } = renderGrid();
     await user.click(await moreOf('Discovery'));
-    expect(screen.getByRole('button', { name: 'Assign person…' })).toBeDisabled();
-    expect(screen.getByText(/Discovery has sub-items, and people are assigned to leaves/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Assign person' })).toHaveAccessibleDescription(
+      /Discovery has sub-items, and people are assigned to leaves/,
+    );
+    expect(screen.getByRole('button', { name: 'Assign person' })).toBeDisabled();
   });
 
   it('renames in place: the new name shows in the grid and the status line says so', async () => {
@@ -141,7 +176,7 @@ describe('Row actions', () => {
   it('moves an item from its row: the tree changes and the status line says where it went', async () => {
     const { user } = renderGrid();
     await user.click(await moreOf('Rework'));
-    await user.click(screen.getByRole('button', { name: 'Move…' }));
+    await user.click(screen.getByRole('button', { name: 'Move' }));
     await user.click(await screen.findByRole('radio', { name: 'Ledger migration › Migration' }));
     await user.click(screen.getByRole('button', { name: 'Move' }));
 
@@ -155,7 +190,7 @@ describe('Row actions', () => {
   it('deletes an item from its row after counting, and the grid and totals follow', async () => {
     const { user, repository } = renderGrid();
     await user.click(await moreOf('Discovery'));
-    await user.click(screen.getByRole('button', { name: 'Delete…' }));
+    await user.click(screen.getByRole('button', { name: 'Delete' }));
     const dialog = await screen.findByRole('dialog', { name: 'Delete "Discovery"?' });
     expect(dialog).toHaveTextContent('This deletes 3 items (Discovery, Design, Rework) and their 24 allocations.');
     await user.click(within(dialog).getByRole('button', { name: 'Delete' }));
@@ -172,7 +207,7 @@ describe('Row actions', () => {
     const { user, repository, unmount } = renderGrid();
     const before = (await screen.findAllByRole('rowheader', { name: 'Henrik Bauer' })).length;
     await user.click(await moreOf('Design'));
-    await user.click(screen.getByRole('button', { name: 'Assign person…' }));
+    await user.click(screen.getByRole('button', { name: 'Assign person' }));
     const dialog = await screen.findByRole('dialog', { name: 'Assign a person to "Design"' });
     await user.selectOptions(await within(dialog).findByRole('combobox', { name: 'Employee' }), 'emp-023');
     await user.click(within(dialog).getByRole('button', { name: 'Assign' }));
@@ -203,7 +238,7 @@ describe('Row actions', () => {
 
     // Offered once only: he is on Design now.
     await user.click(await moreOf('Design'));
-    await user.click(screen.getByRole('button', { name: 'Assign person…' }));
+    await user.click(screen.getByRole('button', { name: 'Assign person' }));
     const again = await screen.findByRole('dialog', { name: 'Assign a person to "Design"' });
     await within(again).findByRole('option', { name: /Hanna Virtanen/ });
     expect(within(again).queryByRole('option', { name: /Henrik Bauer/ })).not.toBeInTheDocument();
@@ -219,7 +254,7 @@ describe('Row actions', () => {
     await screen.findAllByRole('rowheader', { name: 'Adaeze Okafor' });
     const before = screen.queryAllByRole('rowheader', { name: 'Sara Lindholm' }).length;
     await user.click(await moreOf('Design'));
-    await user.click(screen.getByRole('button', { name: 'Assign person…' }));
+    await user.click(screen.getByRole('button', { name: 'Assign person' }));
     const dialog = await screen.findByRole('dialog', { name: 'Assign a person to "Design"' });
     await user.selectOptions(await within(dialog).findByRole('combobox', { name: 'Employee' }), 'emp-060');
     await user.click(within(dialog).getByRole('button', { name: 'Assign' }));
@@ -245,7 +280,7 @@ describe('Row actions', () => {
     await screen.findAllByRole('rowheader', { name: 'Adaeze Okafor' });
     const before = screen.queryAllByRole('rowheader', { name: 'Sara Lindholm' }).length;
     await user.click(await moreOf('Design'));
-    await user.click(screen.getByRole('button', { name: 'Assign person…' }));
+    await user.click(screen.getByRole('button', { name: 'Assign person' }));
     const dialog = await screen.findByRole('dialog', { name: 'Assign a person to "Design"' });
     await user.selectOptions(await within(dialog).findByRole('combobox', { name: 'Employee' }), 'emp-060');
     await user.click(within(dialog).getByRole('button', { name: 'Assign' }));
@@ -292,7 +327,7 @@ describe('Row actions', () => {
 
     async function assignSara(user: ReturnType<typeof userEvent.setup>) {
       await user.click(await moreOf('Data checks'));
-      await user.click(screen.getByRole('button', { name: 'Assign person…' }));
+      await user.click(screen.getByRole('button', { name: 'Assign person' }));
       const dialog = await screen.findByRole('dialog', { name: 'Assign a person to "Data checks"' });
       await user.selectOptions(await within(dialog).findByRole('combobox', { name: 'Employee' }), 'emp-060');
       await user.click(within(dialog).getByRole('button', { name: 'Assign' }));
@@ -341,7 +376,7 @@ describe('Row actions', () => {
       expect(rowsOf('Sara Lindholm')).toBe(before);
 
       await user.click(await moreOf('Checks'));
-      await user.click(screen.getByRole('button', { name: 'Delete…' }));
+      await user.click(screen.getByRole('button', { name: 'Delete' }));
       await user.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Delete' }));
       await screen.findByText(/^Deleted 1 item/);
       // Data checks is a leaf again; the person was dropped when it stopped being one.
