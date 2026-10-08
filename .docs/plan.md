@@ -628,7 +628,7 @@ Phases 4, 5 and 6 run in parallel lanes, each one `builder` in its own worktree,
 - **Domain first, outside the apps.** T5.0, T5.6 and T6.0 put every calculation the screens need into the domain packages, tested without React, so the app lanes only wire them up.
 - **The grid leaves slots.** T6.4 builds the staffing grid with named slots: a cell renderer, a row-actions slot, a toolbar slot and a details slot. Each later Delivery task then adds its own FSD slice (`features/edit-cell`, `features/move-item`, `widgets/cell-details`, …) plus one wiring line, so parallel worktrees don't edit the same files.
 - **Same plumbing, written twice to one spec.** People and Delivery each build their own query client, `RealtimeProvider`, repository context and `renderWithApp` (D26, D29, D30), in parallel. ADRs 036, 039 and 040 from T4.0a (D26, D29, D30) are the spec both follow (T5.0a, T6.0a); the lead compares the two once both have merged.
-- **Definition of done for a screen task:** it matches its [screens.md](screens.md) section, including every state shown there, and `pnpm lint`, `pnpm typecheck` and `pnpm test` stay green. E2E scenarios come later, in Phase 8 (T8.1).
+- **Definition of done for a screen task:** it matches its [screens.md](screens.md) section, including every state shown there, and `pnpm lint`, `pnpm typecheck` and `pnpm test` stay green. E2E scenarios were planned for Phase 8 (T8.1), which is out of scope.
 
 ### Phase 4 — Shell
 
@@ -747,11 +747,11 @@ Run from [phase-7.md](phase-7.md): one `builder` brief for T7.5, and `verifier` 
 - [x] **T7.4** Kill one service or remote at a time and confirm the other keeps working with a clear degraded state.
 - [x] **T7.5** ([screens.md](screens.md) §3.2, §5) **Cross-app link:** a person name in Delivery's grid links to that employee in People, through `HostContext.navigate('/people/<employeeId>')` (D22). Hosted, the shell switches to People at that employee, and back returns to the grid. Standalone, it opens `/remotes/people/<employeeId>`. When `people-pb` is down the name is an id and still links (D32). Render it as a real `<a href>` built from the same path, with the click handled by `navigate`, so open-in-new-tab works.
 
-**Exit check:** T7.1–T7.5 pass hosted, standalone and across two tabs, checked by hand on the composed stack; T8.1 automates them. **Passed on 2026-10-08.**
+**Exit check:** T7.1–T7.5 pass hosted, standalone and across two tabs, checked by hand on the composed stack (T8.1, which would have automated them, is out of scope). **Passed on 2026-10-08.**
 
 ### Phase 8 — Verification
 
-- [ ] **T8.1** Write Playwright E2E tests against the composed stack, run in a container: Playwright's Docker image as a compose service under an `e2e` profile, against the gateway, with one page object per screen of [screens.md](screens.md):
+- [ ] **T8.1** *Out of scope (2026-10-08): the scenarios below were checked by hand in Phase 7 and aren't automated.* Write Playwright E2E tests against the composed stack, run in a container: Playwright's Docker image as a compose service under an `e2e` profile, against the gateway, with one page object per screen of [screens.md](screens.md):
   - reference cell values in all four units
   - unit-switch round-trip
   - € edit
@@ -764,10 +764,11 @@ Run from [phase-7.md](phase-7.md): one `builder` brief for T7.5, and `verifier` 
   - a person name in the grid opens their People page, hosted and standalone (T7.5)
   - deep links: reload `/people/emp-003` and `/delivery/prj-1`, hosted and standalone, and check the same view comes back; back and forward move between register and employee (D22)
   - partial month: remove Okafor's 2025-01-01 rate, then check March shows €5,320.00 (14 × 4 h × €95), the partial marker, and a refused € edit (D17)
-- [ ] **T8.2** Add a few component tests (Rstest, Testing Library, jsdom) for cell editing and the error boundary. Keep the weight on the domain tests. Render through `renderWithApp` (D30).
+- [x] **T8.2** Add a few component tests (Rstest, Testing Library, jsdom) for cell editing and the error boundary. Keep the weight on the domain tests. Render through `renderWithApp` (D30).
   - The `components` project reuses each app's Rsbuild config, so CSS Modules resolve the same as in the app. Assert on behaviour and accessible roles, not on class names.
   - Components get an in-memory fake data client through the repository interface, with no HTTP mocking.
   - Routed views render inside `createMemoryRouter` with the app's real route objects (D22).
+  - *Checked 2026-10-08: cell editing (`EditableCell`, `StaffingGrid.editing`) and the error boundaries (`ui` `ErrorBoundary`, the shell's `RemotePanel` for a failed load and a render error, each app's `PageBoundary` with Try again) are covered, all through `renderWithApp` and the fake repository. Only the `shared/api` adapter tests stub `fetch`, and they run in the Node `domain` project.*
 - [ ] **T8.2a** Audit `ui`: remove any primitive that only one app uses, or that no app uses, and move single-use ones back into that app.
 - [ ] **T8.3** Do a type audit: no `any`, no unchecked casts at boundaries (schemas instead), and exhaustive `switch` with `never`.
 - [ ] **T8.4** Run a clean-clone rehearsal: `git clone`, then `docker compose up`, then go through the checklist in plan §5.
