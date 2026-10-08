@@ -1,14 +1,13 @@
-import { createRequire } from 'node:module';
 import { pluginModuleFederation } from '@module-federation/rsbuild-plugin';
 import { defineConfig } from '@rsbuild/core';
 import { pluginReact } from '@rsbuild/plugin-react';
 import { pluginTypedCSSModules } from '@rsbuild/plugin-typed-css-modules';
+import { version as reactVersion } from 'react';
 
 const NAME = 'shell';
 const GATEWAY_ORIGIN = 'http://localhost:8080';
 
 // The installed version decides the range, so this can't drift from the pnpm catalog.
-const reactVersion = (createRequire(import.meta.url)('react/package.json') as { version: string }).version;
 const singleton = { singleton: true, requiredVersion: `^${reactVersion}` } as const;
 
 export default defineConfig({

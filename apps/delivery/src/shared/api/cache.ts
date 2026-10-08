@@ -1,4 +1,3 @@
-import type { Allocation, BreakdownItem } from '@baseline/delivery-contract';
 import type { QueryClient } from '@tanstack/react-query';
 import type { CollectionKey, RecordOf } from './collections';
 import { removeRecord, upsertRecord } from './patch';
@@ -31,6 +30,19 @@ export function patchCollection<K extends CollectionKey>(
   );
 }
 
+/** Hands the server's version of a record to the pending write that touched it; true if there is one. */
+type Claim<K extends CollectionKey> = (
+  client: QueryClient,
+  id: string,
+  serverVersion: RecordOf<K> | undefined,
+) => boolean;
+
+/** The collections the app writes, keyed so that each claim takes its own collection's record. */
+const CLAIMS: { readonly [K in CollectionKey]?: Claim<K> } = {
+  breakdownItems: claimItem,
+  allocations: claimAllocation,
+};
+
 /**
  * Applies a realtime event to its collection by id (D29): create and update replace or add, delete removes.
  * A record a pending write has changed is not touched: the cache shows that write's value, and the event
@@ -43,8 +55,7 @@ export function applyRealtimeEvent<K extends CollectionKey>(
 ): void {
   const { id } = event.record;
   const record = event.action === 'delete' ? undefined : event.record;
-  // `key` says which entity `record` is; TypeScript can't carry that through the generic.
-  if (key === 'breakdownItems' && claimItem(client, id, record as BreakdownItem | undefined)) return;
-  if (key === 'allocations' && claimAllocation(client, id, record as Allocation | undefined)) return;
+  const claim: Claim<K> | undefined = CLAIMS[key];
+  if (claim?.(client, id, record)) return;
   patchCollection(client, key, (records) => (record ? upsertRecord(records, record) : removeRecord(records, id)));
 }

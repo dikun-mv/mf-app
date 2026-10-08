@@ -44,6 +44,11 @@ export default defineConfig([
       '@typescript-eslint/no-unsafe-call': 'error',
       '@typescript-eslint/no-unsafe-member-access': 'error',
       '@typescript-eslint/no-unsafe-return': 'error',
+      // A switch over a union names every member, or says in a `default` what the others get (T8.3).
+      '@typescript-eslint/switch-exhaustiveness-check': [
+        'error',
+        { considerDefaultExhaustiveForUnions: true, requireDefaultForNonUnion: true },
+      ],
     },
   },
 

@@ -1,8 +1,8 @@
-type Fields = Record<string, unknown>;
+/** A record's fields by name, as a parsed record is. */
+export type Fields = Readonly<Record<string, unknown>>;
 
 /** Whether two records hold the same fields with the same values (shallow). */
-export function sameFields(a: object, b: object): boolean {
-  const left = Object.entries(a as Fields);
-  const right = b as Fields;
-  return left.length === Object.keys(right).length && left.every(([key, value]) => right[key] === value);
+export function sameFields(a: Fields, b: Fields): boolean {
+  const left = Object.entries(a);
+  return left.length === Object.keys(b).length && left.every(([key, value]) => b[key] === value);
 }

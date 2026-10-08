@@ -1,7 +1,7 @@
 import type { EmployeeMonthLoad } from '@baseline/delivery-contract';
 import type { Employee, RateRecord } from '@baseline/people-contract';
 import type { QueryClient } from '@tanstack/react-query';
-import { sameFields } from './fields';
+import { sameFields, type Fields } from './fields';
 import { employeeKeys, employeeMonthLoadKeys, rateRecordKeys } from './queryKeys';
 import type { RealtimeAction, RecordEvent } from './repository';
 import { absorbServerRecord } from './writes';
@@ -11,7 +11,7 @@ import { absorbServerRecord } from './writes';
 // re-renders nothing and the memoisation that relies on stable references holds (D35).
 
 /** Replaces or adds `record` (create and update), or removes it (delete), by `keyOf`. */
-export function patchList<T extends object>(
+export function patchList<T extends Fields>(
   list: readonly T[],
   action: RealtimeAction,
   record: T,

@@ -770,7 +770,9 @@ Run from [phase-7.md](phase-7.md): one `builder` brief for T7.5, and `verifier` 
   - *Checked 2026-10-08: cell editing (`EditableCell`, `StaffingGrid.editing`) and the error boundaries (`ui` `ErrorBoundary`, the shell's `RemotePanel` for a failed load and a render error, each app's `PageBoundary` with Try again) are covered, all through `renderWithApp` and the fake repository. Only the `shared/api` adapter tests stub `fetch`, and they run in the Node `domain` project.*
 - [x] **T8.2a** Audit `ui`: remove any primitive that only one app uses, or that no app uses, and move single-use ones back into that app.
   - *Done 2026-10-08: every primitive has at least two consuming apps. The typed `vars` map had none and was removed.*
-- [ ] **T8.3** Do a type audit: no `any`, no unchecked casts at boundaries (schemas instead), and exhaustive `switch` with `never`.
+- [x] **T8.3** Do a type audit: no `any`, no unchecked casts at boundaries (schemas instead), and exhaustive `switch` with `never`.
+  - *Done 2026-10-08.* The only `any` is in the `jest-dom.d.ts` augmentations, which must repeat Rstest's `Assertion<T = any>` to merge. Every boundary parses with a schema (records, realtime events, `config.json`, the stored selection). Removed the casts in Delivery's realtime cache patch (a per-collection claims map) and People's `sameFields`, and the rsbuild configs import React's `version` instead of casting `package.json`. Three commented casts remain, none at a data boundary: the SDK's private `realtime.disconnect`, `Object.keys` over `COLLECTIONS`, and a CSS custom property in `style`.
+  - rslint's `switch-exhaustiveness-check` now fails any `switch` over a union that misses a member and has no `default`, including the `void` ones the return type can't catch. Domain switches keep `assertNever`; the deliberate partial ones (`describeGridError`, the move refusals, `CellEditor`'s refusals) keep a `default` fallback.
 - [ ] **T8.4** Run a clean-clone rehearsal: `git clone`, then `docker compose up`, then go through the checklist in plan §5.
 
 ### Phase 9 — Handover
