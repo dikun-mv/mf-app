@@ -773,7 +773,8 @@ Run from [phase-7.md](phase-7.md): one `builder` brief for T7.5, and `verifier` 
 - [x] **T8.3** Do a type audit: no `any`, no unchecked casts at boundaries (schemas instead), and exhaustive `switch` with `never`.
   - *Done 2026-10-08.* The only `any` is in the `jest-dom.d.ts` augmentations, which must repeat Rstest's `Assertion<T = any>` to merge. Every boundary parses with a schema (records, realtime events, `config.json`, the stored selection). Removed the casts in Delivery's realtime cache patch (a per-collection claims map) and People's `sameFields`, and the rsbuild configs import React's `version` instead of casting `package.json`. Three commented casts remain, none at a data boundary: the SDK's private `realtime.disconnect`, `Object.keys` over `COLLECTIONS`, and a CSS custom property in `style`.
   - rslint's `switch-exhaustiveness-check` now fails any `switch` over a union that misses a member and has no `default`, including the `void` ones the return type can't catch. Domain switches keep `assertNever`; the deliberate partial ones (`describeGridError`, the move refusals, `CellEditor`'s refusals) keep a `default` fallback.
-- [ ] **T8.4** Run a clean-clone rehearsal: `git clone`, then `docker compose up`, then go through the checklist in plan §5.
+- [x] **T8.4** Run a clean-clone rehearsal: `git clone`, then `docker compose up`, then go through the checklist in plan §5.
+  - *Done 2026-10-08: a fresh clone, with fresh volumes, came up healthy with `docker compose up -d --build --wait` and no Node on the host (every app builds in a `node:24` image). A `verifier` run passed every browser item of plan §5. The leaf-insert check needs a leaf above the third level: the seed's allocated leaves are all at the deepest level, so the run used a new top-level leaf, an allocation and Add child (the 0.20 PM moved and every total stayed the same). The three-slice check added two April rates for Okafor: €3,536.00, 7 / 6 / 9 days at €95 / €100 / €105, blended €100.4545/h. The README and commit-history items wait for T9.1 and T9.4.*
 
 ### Phase 9 — Handover
 
@@ -802,20 +803,20 @@ Run from [phase-7.md](phase-7.md): one `builder` brief for T7.5, and `verifier` 
 
 ## 5. Acceptance checklist (maps to the brief)
 
-- [ ] The reference calculation gives all five numbers in the UI (the cell details panel, T6.12) and in tests (§3.4).
-- [ ] Months with two or more rate changes split into three or more slices (§3.3).
-- [ ] Switching units and back leaves stored values unchanged (§3.5).
-- [ ] Displayed totals equal the sum of displayed cells in both directions, and every displayed number is within one display step of its exact value (controlled largest-remainder rounding, D19) (§3.7).
-- [ ] Parent rows are derived and read-only. Inserting a child under a leaf loses nothing (§3.8).
-- [ ] Capacity is cross-project. People flags the person, and Delivery names the causing assignment. Edits are never blocked (§3.9).
-- [ ] People: searchable register, and rate history that is addable, correctable and removable, including retroactively (§3.1).
-- [ ] Delivery: tree create, rename, move and delete, and every leaf cell editable (§3.1). In € that excludes partially and fully unpriced months, which are refused with a reason (D17).
-- [ ] A rate edit reaches Delivery with no reload (§3.1).
-- [ ] A failed remote leaves the shell alive with an in-place message, and there is a documented trigger (§3.1).
-- [ ] Three MF builds. Remote URLs come from container config. React is a singleton. Standalone and hosted run from one build (§4).
-- [ ] No UI, table, grid or tree libraries (§4).
-- [ ] `docker compose up` serves `localhost:8080` with no Node on the host (§4).
-- [ ] TS strict with no `any` (§4).
+- [x] The reference calculation gives all five numbers in the UI (the cell details panel, T6.12) and in tests (§3.4).
+- [x] Months with two or more rate changes split into three or more slices (§3.3).
+- [x] Switching units and back leaves stored values unchanged (§3.5).
+- [x] Displayed totals equal the sum of displayed cells in both directions, and every displayed number is within one display step of its exact value (controlled largest-remainder rounding, D19) (§3.7).
+- [x] Parent rows are derived and read-only. Inserting a child under a leaf loses nothing (§3.8).
+- [x] Capacity is cross-project. People flags the person, and Delivery names the causing assignment. Edits are never blocked (§3.9).
+- [x] People: searchable register, and rate history that is addable, correctable and removable, including retroactively (§3.1).
+- [x] Delivery: tree create, rename, move and delete, and every leaf cell editable (§3.1). In € that excludes partially and fully unpriced months, which are refused with a reason (D17).
+- [x] A rate edit reaches Delivery with no reload (§3.1).
+- [x] A failed remote leaves the shell alive with an in-place message, and there is a documented trigger (§3.1).
+- [x] Three MF builds. Remote URLs come from container config. React is a singleton. Standalone and hosted run from one build (§4).
+- [x] No UI, table, grid or tree libraries (§4).
+- [x] `docker compose up` serves `localhost:8080` with no Node on the host (§4).
+- [x] TS strict with no `any` (§4).
 - [ ] The README has run instructions, break instructions, the repo map and the pricing decision defended (§6).
 - [ ] Real commit history (§6).
 
