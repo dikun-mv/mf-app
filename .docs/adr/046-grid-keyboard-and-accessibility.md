@@ -1,6 +1,6 @@
 # ADR 046: A plain table, Tab order and a minimal row disclosure (D36)
 
-Status: accepted (2026-10-07, after Phase 3 and before Phase 4). The row disclosure was decided with [screens.md](../screens.md) §3.4 and §6.
+Status: accepted (2026-10-07, after Phase 3 and before Phase 4). The row disclosure was decided with [screens.md](../screens.md) §3.4 and §6. [ADR 049](049-row-actions-dropdown.md) turns the row disclosure into a dropdown over the grid that closes on Esc or a click outside; the text below keeps the original in-flow list.
 
 ## Context
 

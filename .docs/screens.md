@@ -339,18 +339,18 @@ The same person rows with the unit switched to Cost (EUR). Switching never write
 
 ### 3.4 Row actions (T6.3, T6.0, T1.12, D9, D15)
 
-`⋯` on a WBS row shows a short list of plain buttons in the row's label cell, under the name; the rows below move down while it's open, so nothing is positioned or clipped by the scrolling grid. It is deliberately minimal (D36): one list open at a time, closed by choosing an action or pressing `⋯` again, with no arrow keys, Esc or outside-click handling. Actions that can't apply are shown disabled with the reason as text, never hidden. Rename edits the name in place (Enter saves, Esc cancels).
+`⋯` on a WBS row shows a short list of plain buttons in a dropdown under it, over the grid: the rows below don't move, and neither the scrolling grid nor the sticky columns cut it off ([ADR 049](adr/049-row-actions-dropdown.md)). It is deliberately minimal (D36): one list open at a time, closed by choosing an action, pressing `⋯` again, Esc or a click outside, with no arrow keys. Actions that can't apply are shown disabled, never hidden, with a `?` beside them whose tooltip gives the reason (on hover or focus, and named in the action's `aria-describedby`). Labels carry no trailing `…`, even where a dialog follows. Rename edits the name in place (Enter saves, Esc cancels).
 
 ```text
 ┌─ Delivery ───────────────────────────────────────────────────────────────────────────────────────┐
 │     ▾ Design  ⋯                                                                                  │
 │                 ┌──────────────────────────────────────────────────────┐                         │
 │                 │ Rename                                               │                         │
-│                 │ Add child item   — not here: Design is at the third  │                         │
-│                 │                    level, the deepest                │                         │
-│                 │ Move…                                                │                         │
-│                 │ Delete…                                              │                         │
-│                 │ Assign person…                        (leaves only)  │                         │
+│                 │ Add child item (?) ◀ tooltip: Design is at the third │                         │
+│                 │                      level, the deepest              │                         │
+│                 │ Move                                                 │                         │
+│                 │ Delete                                               │                         │
+│                 │ Assign person                         (leaves only)  │                         │
 │                 └──────────────────────────────────────────────────────┘                         │
 │                                                                                                  │
 │ Rename in place:   ▾ [ Design discovery▏         ]   Enter saves · Esc cancels                   │
@@ -517,7 +517,7 @@ All decided on 2026-10-07 and written into the plan. Points 6–8 came from chec
 1. **Cell details panel (3.2): a new task, T6.12.** The acceptance checklist wants all five reference numbers _in the UI_ (plan §5), and the grid shows one unit at a time, so the panel shows them for the focused cell.
 2. **Currency of the rate editor (2.3): the display currency.** Input is converted to EUR with `amount ÷ perEur`, as for € grid edits (D11, T5.3).
 3. **A person row with no allocations (3.5): it disappears.** The row lives in the page until a value is saved; a reload before that removes it (T6.7, D31). Listed as a known limitation (T9.2).
-4. **Row actions (3.4): a minimal `⋯` disclosure per row,** with no menu keyboard handling, drawn in the row's label cell so it needs no positioning (D36, T6.3).
+4. **Row actions (3.4): a minimal `⋯` disclosure per row,** with no menu keyboard handling, drawn in the row's label cell so it needs no positioning (D36, T6.3). Later made a dropdown over the grid that closes on Esc or a click outside ([ADR 049](adr/049-row-actions-dropdown.md)).
 5. **Cross-app link from a person row to People's detail view: yes,** through `HostContext.navigate` (T7.5, D22).
 6. **Status strip (1.1): status and `remoteEntry.js` URL, no versions.** Nothing publishes a remote's version, and adding one would change `host-contract`; the URL shows runtime resolution instead (T4.4).
 7. **No separate `Banner`.** A message at the top of a widget is an `InlineMessage` (D33).

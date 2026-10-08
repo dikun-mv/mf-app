@@ -558,9 +558,9 @@ _Verify:_
 ```text
 Base URL http://localhost:8080. Compare with .docs/screens.md §3.4 and §3.5.
 1. Open /delivery/prj-1. On the Design row, press ⋯: Rename, Add child item (disabled: Design is at
-   the third level), Move…, Delete…, Assign person…. Press ⋯ again: the list closes.
+   the third level, in the tooltip of the ? beside it), Move, Delete, Assign person. Press ⋯ again: the list closes.
 2. Rename Design to "Design work" in place, Enter: the row shows the new name; reload: still there.
-3. Use "+ Add top-level item" to add "Data checks". On it, Assign person… Henrik Bauer: a row with
+3. Use "+ Add top-level item" to add "Data checks". On it, Assign person Henrik Bauer: a row with
    empty cells appears. Reload before entering a value: the row is gone. Assign him again, enter
    0.2 in Mar 26 (Person-months), Enter. Reload: the row stays.
 4. On Data checks, Add child item "Reconciliation": the dialog says 1 allocation moves to it.
