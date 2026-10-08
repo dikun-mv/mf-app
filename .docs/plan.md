@@ -778,7 +778,7 @@ Run from [phase-7.md](phase-7.md): one `builder` brief for T7.5, and `verifier` 
 
 ### Phase 9 — Handover
 
-- [ ] **T9.1** Write `README.md` covering:
+- [x] **T9.1** Write `README.md` covering:
   - how to run
   - how to break a remote (each method)
   - the repo map
@@ -786,8 +786,9 @@ Run from [phase-7.md](phase-7.md): one `builder` brief for T7.5, and `verifier` 
   - a decision summary with the D7 pricing rationale argued in full
   - how to reset data
   - how to run tests
+  - *Done 2026-10-08. `pnpm graph` prints the package-level Mermaid graph; the README embeds its output, so rerun it after a change to the package imports.*
 - [ ] **T9.2** Tidy the ADRs. List known limitations and open choices (the D17 future option for € edits in partial months, the D18 id tiebreak and the future `editedBy`, D19 neighbour jitter, D36 arrow-key navigation, D37 last write wins, a newly assigned person row with no values is gone after a reload (T6.7)).
-- [ ] **T9.3** Prepare for the live walkthrough. Rehearse likely small changes:
+- [ ] **T9.3** *Out of scope (2026-10-08): the changes below aren't rehearsed in advance.* Prepare for the live walkthrough. Rehearse likely small changes:
   - add a weekly-hours option
   - add a public-holiday rule
   - add a fifth unit
@@ -797,7 +798,8 @@ Run from [phase-7.md](phase-7.md): one `builder` brief for T7.5, and `verifier` 
   - add a field to the contract with a version bump
 
   Make sure each one touches as few places as possible.
-- [ ] **T9.4** Review the commit history: it should be readable and real, with no "wip" squashes hiding the evolution.
+- [x] **T9.4** Review the commit history: it should be readable and real, with no "wip" squashes hiding the evolution.
+  - *Done 2026-10-08: 300-odd commits, each subject saying what changed (most also name their task), dates in order, no "wip", "fixup" or squash commits. Merges of the lane branches and one revert (the gateway allowlist tests, T3.8) are kept, because they show how the work went. Nothing was rewritten.*
 
 ---
 
@@ -817,8 +819,8 @@ Run from [phase-7.md](phase-7.md): one `builder` brief for T7.5, and `verifier` 
 - [x] No UI, table, grid or tree libraries (§4).
 - [x] `docker compose up` serves `localhost:8080` with no Node on the host (§4).
 - [x] TS strict with no `any` (§4).
-- [ ] The README has run instructions, break instructions, the repo map and the pricing decision defended (§6).
-- [ ] Real commit history (§6).
+- [x] The README has run instructions, break instructions, the repo map and the pricing decision defended (§6).
+- [x] Real commit history (§6).
 
 ---
 
